@@ -399,7 +399,7 @@ static unsigned long
 append_extra_args_ascii(void *data, unsigned long maxchars)
 {
 	char *p = data;
-	int i;
+	int i, appended=0;
 	unsigned long usedchars=0;
 	if (!data) return 0;
 
@@ -407,6 +407,7 @@ append_extra_args_ascii(void *data, unsigned long maxchars)
 	for (i=opts.optind; i < opts.argc && usedchars < maxchars; i++)	{
 		p = strncpy(p, opts.argv[i], maxchars-usedchars-1);
 		p += strlen(p);
+		appended=1;
 
 		usedchars = p - (char *)data; 
 
@@ -420,14 +421,15 @@ append_extra_args_ascii(void *data, unsigned long maxchars)
 
 	}
 	/* Remember the NULL */
-	return strlen(data) + 1;
+	if (appended) return strlen(data) + 1;
+	return 0;
 }
 
 static unsigned long
 append_extra_args_unicode(void *data, unsigned long maxchars)
 {
 	char *p = data;
-	int i;
+	int i, appended=0;
 	unsigned long usedchars=0;
 	if (!data) return 0;
 
@@ -436,6 +438,7 @@ append_extra_args_unicode(void *data, unsigned long maxchars)
 		p += efichar_from_char((efi_char16_t *)p, opts.argv[i],
 				       maxchars-usedchars);
 		usedchars = efichar_strsize(data) - sizeof(efi_char16_t);
+		appended=1;
 
 		/* Put a space between args */
 		if (i < (opts.argc-1)) {
@@ -446,7 +449,8 @@ append_extra_args_unicode(void *data, unsigned long maxchars)
 		}
 	}
 	
-	return efichar_strsize( (efi_char16_t *)data );
+	if (appended) return efichar_strsize( (efi_char16_t *)data );
+	return 0;
 }
 
 
@@ -454,11 +458,9 @@ static unsigned long
 append_extra_args(void *data, unsigned long maxchars)
 {
 	if (opts.unicode)
-		return append_extra_args_unicode(data, maxchars)
-			+ sizeof(efi_char16_t);
+	  return append_extra_args_unicode(data, maxchars);
 	else
-		return append_extra_args_ascii(data, maxchars)
-			+ sizeof(char);
+	  return append_extra_args_ascii(data, maxchars);
 }
 
 
@@ -470,7 +472,7 @@ make_linux_efi_variable(efi_variable_t *var,
 	efi_guid_t guid = EFI_GLOBAL_VARIABLE;
 	char buffer[16];
 	unsigned char *optional_data=NULL;
-	unsigned long load_option_size = 0;
+	unsigned long load_option_size = 0, opt_data_size=0;
 
 	memset(buffer,    0, sizeof(buffer));
 	
@@ -491,9 +493,8 @@ make_linux_efi_variable(efi_variable_t *var,
 
 	/* Set OptionalData (passed as binary to the called app) */
 	optional_data = var->Data + load_option_size;
-	var->DataSize = load_option_size +
-		append_extra_args(optional_data,
+	opt_data_size = append_extra_args(optional_data,
 				  sizeof(var->Data) - load_option_size);
-	
+	var->DataSize = load_option_size + opt_data_size;
 	return;
 }
