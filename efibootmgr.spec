@@ -1,14 +1,15 @@
 Summary: EFI Boot Manager
 Name: efibootmgr
-Version: 0.4.1
+Version: 0.5.0
 Release: 0
 Group: System Environment/Base
 Copyright: GPL
-Vendor: Dell Computer Corporation www.dell.com
+Vendor: Dell linux.dell.com
 Packager: Matt Domsch <Matt_Domsch@dell.com>
 
 
-Source0: http://domsch.com/linux/ia64/efibootmgr/efibootmgr-%{version}.tar.gz
+Source0: http://linux.dell.com/efibootmgr/permalink/efibootmgr-%{version}.tar.gz
+Source1: http://linux.dell.com/efibootmgr/permalink/efibootmgr-%{version}.tar.gz.sign
 
 %description
 efibootmgr displays and allows the user to edit the Intel Extensible
@@ -32,5 +33,8 @@ install --group=root --owner=root --mode 444 src/man/man8/efibootmgr.8 $RPM_BUIL
 
     
 %changelog
+* Thu Aug 24 2004 Matt Domsch <Matt_Domsch@dell.com>
+- new home linux.dell.com
+
 * Fri May 18 2001 Matt Domsch <Matt_Domsch@dell.com>
 - See doc/ChangeLog
