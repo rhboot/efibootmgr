@@ -1,12 +1,12 @@
 Summary: EFI Boot Manager
 Name: efibootmgr
-Version: 0.3.3
+Version: 0.3.4
 Release: 1
 Group: System Environment/Base
 Copyright: GPL
 Vendor: Dell Computer Corporation www.dell.com
 Packager: Matt Domsch <Matt_Domsch@dell.com>
-ExclusiveArch: ia64
+
 
 Source0: http://domsch.com/linux/ia64/efibootmgr-%{version}.tar.gz
 

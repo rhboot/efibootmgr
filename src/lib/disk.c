@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <stdint.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include "disk.h"
@@ -316,6 +317,7 @@ msdos_disk_get_partition_info (int fd, LegacyMBR_t *mbr,
 	uint32_t new_sig=0;
 	long disk_size=0;
 	struct stat stat;
+	struct timeval tv;
 
 	*mbr_type = 0x01;
 	*signature_type = 0x01;
@@ -341,16 +343,21 @@ msdos_disk_get_partition_info (int fd, LegacyMBR_t *mbr,
 		if (rc == -1) {
 			perror("stat disk");
 		}
-		else {
-		
-			/* Write the device type to the signature.
-			   This will be unique per disk per system */
-			mbr->UniqueMBRSignature = stat.st_rdev;
-			
-			/* Write it to the disk */
-			lseek(fd, 0, SEEK_SET);
-			write(fd, mbr, sizeof(*mbr));
+
+		rc = gettimeofday(&tv, NULL);
+		if (rc == -1) {
+			perror("gettimeofday");
 		}
+		
+		/* Write the device type to the signature.
+		   This should be unique per disk per system */
+		mbr->UniqueMBRSignature =  tv.tv_usec << 16;
+		mbr->UniqueMBRSignature |= stat.st_rdev & 0xFFF;
+			
+		/* Write it to the disk */
+		lseek(fd, 0, SEEK_SET);
+		write(fd, mbr, sizeof(*mbr));
+
 	}
 	*(uint32_t *)signature = mbr->UniqueMBRSignature;
 		

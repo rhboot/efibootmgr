@@ -1,3 +1,8 @@
+* Thu Aug 9 2001 Matt Domsch <Matt_Domsch@dell.com>
+- Added some uniqueness to the MBR signature.
+- removed ExclusiveArch from spec file	
+- released v0.3.4
+	
 * Mon Aug 6 2001 Matt Domsch <Matt_Domsch@dell.com>
 - applied patch from Richard Hirst <rhirst@linuxcare.com> to fix
   efichar_char_strcmp().
