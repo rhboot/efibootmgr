@@ -1,6 +1,6 @@
 Summary: EFI Boot Manager
 Name: efibootmgr
-Version: 0.3.2
+Version: 0.3.3
 Release: 1
 Group: System Environment/Base
 Copyright: GPL
@@ -32,13 +32,4 @@ install --group=root --owner=root --mode 555 src/efibootmgr/efibootmgr $RPM_BUIL
     
 %changelog
 * Fri May 18 2001 Matt Domsch <Matt_Domsch@dell.com>
-- Padded HARDDRIVE_DEVICE_PATH out to please EFI Boot Manager.
-- Incorporated patches from Andreas Schwab
-  - replace __u{8,16,32,64} with uint{8,16,32,64}_t
-  - use _FILE_OFFSET_BITS
-  - fix a segfault
-- release v0.3.0	
-
-* Tue May 15 2001 Matt Domsch <Matt_Domsch@dell.com>
-- initial external release v0.2.0
-
+- See doc/ChangeLog

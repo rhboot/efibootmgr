@@ -22,6 +22,9 @@
 #define _EFIBOOTMGR_H
 
 typedef struct {
+	int argc;
+	char **argv;
+	int optind;
 	char *disk;
 	char *loader;
 	char *label;
@@ -39,6 +42,7 @@ typedef struct {
 	unsigned int quiet:1;
 	unsigned int showversion:1;
 	unsigned int create:1;
+	unsigned int unicode:1;
 } efibootmgr_opt_t;
 
 

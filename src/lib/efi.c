@@ -287,7 +287,6 @@ make_edd30_device_path(int fd, void *buffer)
 	return ((void *)p - buffer);
 }
 
-
 static unsigned long
 make_linux_load_option(void *data)
 {
@@ -302,7 +301,7 @@ make_linux_load_option(void *data)
 	uint64_t start=0, size=0;
 	uint8_t mbr_type=0, signature_type=0;
 	char signature[16];
-	long datasize=0;
+	unsigned long datasize=0;
 
 	memset(signature, 0, sizeof(signature));
 
@@ -357,12 +356,85 @@ make_linux_load_option(void *data)
 	efichar_from_char(os_loader_path, opts.loader, sizeof(os_loader_path));
 	p += make_file_path_device_path (p, os_loader_path);
 	p += make_end_device_path       (p);
-
+	
 	load_option->file_path_list_length = p - q;
 
 	datasize = (uint8_t *)p - (uint8_t *)data;
 	return datasize;
 }
+
+/*
+ * append_extra_args()
+ * appends all arguments from argv[] not snarfed by getopt
+ * as one long string onto data, up to maxchars.  allow for nulls
+ */
+
+static unsigned long
+append_extra_args_ascii(void *data, unsigned long maxchars)
+{
+	char *p = data;
+	int i;
+	unsigned long usedchars=0;
+	if (!data) return 0;
+
+
+	for (i=opts.optind; i < opts.argc && usedchars < maxchars; i++)	{
+		p = strncpy(p, opts.argv[i], maxchars-usedchars-1);
+		p += strlen(p);
+
+		usedchars = p - (char *)data; 
+
+		/* Put a space between args */
+		if (i < (opts.argc-1)) {
+			
+			p = strncpy(p, " ", maxchars-usedchars-1);
+			p += strlen(p);
+			usedchars = p - (char *)data;
+		}
+
+	}
+	
+	return strlen(data);
+}
+
+static unsigned long
+append_extra_args_unicode(void *data, unsigned long maxchars)
+{
+	char *p = data;
+	int i;
+	unsigned long usedchars=0;
+	if (!data) return 0;
+
+
+	for (i=opts.optind; i < opts.argc && usedchars < maxchars; i++)	{
+		p += efichar_from_char((efi_char16_t *)p, opts.argv[i],
+				       maxchars-usedchars);
+		usedchars = p - (char *)data; 
+
+		/* Put a space between args */
+		if (i < (opts.argc-1)) {
+			p += efichar_from_char((efi_char16_t *)p, " ",
+					       maxchars-usedchars);
+			usedchars = p - (char *)data;
+		}
+	}
+	
+	return p - (char *)data;
+}
+
+
+static unsigned long
+append_extra_args(void *data, unsigned long maxchars)
+{
+	if (opts.unicode)
+		return append_extra_args_unicode(data, maxchars)
+			+ sizeof(efi_char16_t);
+	else
+		return append_extra_args_ascii(data, maxchars)
+			+ sizeof(char);
+}
+
+
 
 void
 make_linux_efi_variable(efi_variable_t *var,
@@ -370,6 +442,8 @@ make_linux_efi_variable(efi_variable_t *var,
 {
 	efi_guid_t guid = EFI_GLOBAL_VARIABLE;
 	char buffer[16];
+	unsigned char *optional_data=NULL;
+	unsigned long load_option_size = 0;
 
 	memset(buffer,    0, sizeof(buffer));
 	
@@ -386,6 +460,13 @@ make_linux_efi_variable(efi_variable_t *var,
 
 	/* Set Data[] and DataSize */
 
-	var->DataSize =  make_linux_load_option(var->Data);
+	load_option_size =  make_linux_load_option(var->Data);
+
+	/* Set OptionalData (passed as binary to the called app) */
+	optional_data = var->Data + load_option_size;
+	var->DataSize = load_option_size +
+		append_extra_args(optional_data,
+				  sizeof(var->Data) - load_option_size);
+	
 	return;
 }

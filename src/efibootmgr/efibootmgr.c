@@ -745,6 +745,7 @@ usage()
 	printf("\t-O | --delete-bootorder delete BootOrder\n");
 	printf("\t-p | --part part        (defaults to 1) containing loader\n");
 	printf("\t-q | --quiet            be quiet\n");
+	printf("\t-u | --unicode | --UCS-2  pass extra args as UCS-2 (default is ASCII\n");
 	printf("\t-v | --verbose          print additional information\n");
 	printf("\t-V | --version          return version and exit\n");
 }
@@ -767,10 +768,10 @@ static void
 parse_opts(int argc, char **argv)
 {
 	int c, num, rc;
+	int option_index = 0;
 
 	while (1)
 	{
-		int option_index = 0;
 		static struct option long_options[] =
 			/* name, has_arg, flag, val */
 		{
@@ -790,12 +791,14 @@ parse_opts(int argc, char **argv)
 			{"delete-bootorder",       no_argument, 0, 'O'},
 			{"part",             required_argument, 0, 'p'},
 			{"quiet",                  no_argument, 0, 'q'},
+			{"unicode",                no_argument, 0, 'u'},
+			{"UCS-2",                  no_argument, 0, 'u'},
 			{"verbose",          optional_argument, 0, 'v'},
 			{"version",                no_argument, 0, 'V'},
 			{0, 0, 0, 0}
 		};
 		
-		c = getopt_long (argc, argv, "AaBb:cd:e:E:l:L:n:No:Op:qv::V",
+		c = getopt_long (argc, argv, "AaBb:cd:e:E:l:L:n:No:Op:quv::V",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -855,6 +858,9 @@ parse_opts(int argc, char **argv)
 		case 'q':
 			opts.quiet = 1;
 			break;
+		case 'u':
+			opts.unicode = 1;
+			break;
 
 		case 'v':
 			opts.verbose = 1;
@@ -873,6 +879,12 @@ parse_opts(int argc, char **argv)
 			usage();
 			exit(1);
 		}
+	}
+
+	if (c == -1) {
+		opts.argc = argc;
+		opts.argv = argv;
+		opts.optind = option_index;
 	}
 }
 
