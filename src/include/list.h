@@ -20,6 +20,8 @@ struct list_head {
 	struct list_head *next, *prev;
 };
 
+typedef struct list_head list_t;
+
 #define LIST_HEAD_INIT(name) { &(name), &(name) }
 
 #define LIST_HEAD(name) \
@@ -93,7 +95,6 @@ static __inline__ void __list_del(struct list_head * prev,
 static __inline__ void list_del(struct list_head *entry)
 {
 	__list_del(entry->prev, entry->next);
-	entry->prev = entry->next = entry;
 }
 
 /**
@@ -152,5 +153,17 @@ static __inline__ void list_splice(struct list_head *list, struct list_head *hea
  */
 #define list_for_each(pos, head) \
 	for (pos = (head)->next; pos != (head); pos = pos->next)
+
+/**
+ * list_for_each_safe	-	iterate over a list safe against removal of list entry
+ * @pos:	the &struct list_head to use as a loop counter.
+ * @n:		another &struct list_head to use as temporary storage
+ * @head:	the head for your list.
+ */
+#define list_for_each_safe(pos, n, head) \
+	for (pos = (head)->next, n = pos->next; pos != (head); \
+		pos = n, n = pos->next)
+
+
 
 #endif

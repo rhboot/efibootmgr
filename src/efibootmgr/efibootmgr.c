@@ -55,10 +55,10 @@
 
 
 typedef struct _var_entry {
-	struct dirent   *name;
-	uint16_t            num;
-	efi_variable_t   var_data;
-	struct list_head list;
+	struct dirent *name;
+	uint16_t       num;
+	efi_variable_t var_data;
+	list_t         list;
 } var_entry_t;
 
 
@@ -126,7 +126,7 @@ dirent_list_length(struct dirent **namelist)
 static void
 read_vars(struct dirent **namelist,
 	  int num_boot_names,
-	  struct list_head *head)
+	  list_t *head)
 {
 	efi_status_t status;
 	var_entry_t *entry;
@@ -188,11 +188,11 @@ compare(const void *a, const void *b)
   or -1 on failure.
 */
 static int
-find_free_boot_var(struct list_head *boot_list)
+find_free_boot_var(list_t *boot_list)
 {
 	int num_vars=0, i=0, found;
 	uint16_t *vars, free_number;
-	struct list_head *pos;
+	list_t *pos;
 	var_entry_t *boot;
 	list_for_each(pos, boot_list) {
 		num_vars++;
@@ -228,9 +228,9 @@ find_free_boot_var(struct list_head *boot_list)
 
 
 static void
-warn_duplicate_name(struct list_head *boot_list)
+warn_duplicate_name(list_t *boot_list)
 {
-	struct list_head *pos;
+	list_t *pos;
 	var_entry_t *boot;
 	EFI_LOAD_OPTION *load_option;
 
@@ -250,7 +250,7 @@ warn_duplicate_name(struct list_head *boot_list)
 
 
 static var_entry_t *
-make_boot_var(struct list_head *boot_list)
+make_boot_var(list_t *boot_list)
 {
 	var_entry_t *boot;
 	int free_number;
@@ -460,7 +460,7 @@ delete_boot_var(uint16_t num)
 	efi_variable_t var;
 	efi_guid_t guid = EFI_GLOBAL_VARIABLE;
 	char name[80];
-	struct list_head *pos;
+	list_t *pos, *n;
 	var_entry_t *boot;
 	sprintf(name, "Boot%04x", num);
 
@@ -472,13 +472,13 @@ delete_boot_var(uint16_t num)
 
 	if (status) return status;
 
-	list_for_each(pos, &boot_entry_list) {
+	list_for_each_safe(pos, n, &boot_entry_list) {
 		boot = list_entry(pos, var_entry_t, list);
 		if (boot->num == num) {
 			status = remove_from_boot_order(num);
 			if (status) return status;
 			list_del(&(boot->list));
-			break; /* otherwise, we loop here forever! */
+			break; /* short-circuit since it was found */
 		}
 	}
 	return EFI_SUCCESS;
@@ -486,9 +486,9 @@ delete_boot_var(uint16_t num)
 
 
 static void
-set_var_nums(const char *pattern, struct list_head *list)
+set_var_nums(const char *pattern, list_t *list)
 {
-	struct list_head *pos;
+	list_t *pos;
 	var_entry_t *var;
 	int num=0, rc;
 	
@@ -502,9 +502,9 @@ set_var_nums(const char *pattern, struct list_head *list)
 #if 0
 static efi_variable_t *
 find_pci_scsi_disk_blk(int fd, int bus, int device, int func,
-		       struct list_head *blk_list)
+		       list_t *blk_list)
 {
-	struct list_head *pos;
+	list_t *pos;
 	int rc;
 	Scsi_Idlun idlun;
 	unsigned char host, channel, id, lun;
@@ -546,7 +546,7 @@ find_pci_scsi_disk_blk(int fd, int bus, int device, int func,
 
 
 static efi_variable_t *
-find_disk_blk(char *disk_name, struct list_head *blk_list)
+find_disk_blk(char *disk_name, list_t *blk_list)
 {
 	efi_variable_t *disk_blk = NULL;
 	int fd, rc;
@@ -646,7 +646,7 @@ set_boot_order()
 static void
 show_boot_vars()
 {
-	struct list_head *pos;
+	list_t *pos;
 	var_entry_t *boot;
 	char description[80];
 	EFI_LOAD_OPTION *load_option;
@@ -714,7 +714,7 @@ show_boot_order()
 static efi_status_t
 set_active_state()
 {
-	struct list_head *pos;
+	list_t *pos;
 	var_entry_t *boot;
 	EFI_LOAD_OPTION *load_option;
 

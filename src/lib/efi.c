@@ -49,12 +49,12 @@ load_option_path(EFI_LOAD_OPTION *option)
 char *
 efi_guid_unparse(efi_guid_t *guid, char *out)
 {
-        sprintf(out, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-                guid->data1, guid->data2, guid->data3,
-                guid->data4[0], guid->data4[1], guid->data4[2], guid->data4[3],
-                guid->data4[4], guid->data4[5], guid->data4[6], guid->data4[7]);
-
-	return out;
+	sprintf(out, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+		guid->b[3], guid->b[2], guid->b[1], guid->b[0],
+		guid->b[5], guid->b[4], guid->b[7], guid->b[6],
+		guid->b[8], guid->b[9], guid->b[10], guid->b[11],
+		guid->b[12], guid->b[13], guid->b[14], guid->b[15]);
+        return out;
 }
 
 
@@ -254,9 +254,6 @@ get_edd_version()
 	else rc = 1;
 	return rc;
 }
-
-
-
 
 /*
   EFI_DEVICE_PATH, 0x01 (Hardware), 0x04 (Vendor), length 0x0018
