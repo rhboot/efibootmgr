@@ -1,3 +1,10 @@
+* Tue Mar 08 2005 Matt Domsch <Matt_Domsch@dell.com>
+- applied patch from Alex Williamson for handling BootXXXX values
+  using uppercase hex rather than lowercase, per EFI 1.10 spec.
+- this also allows the full 65k boot entries, rather than requiring all
+  entries to begin with a zero.
+- v0.5.1 released
+
 * Thu Aug 26 2004 Matt Domsch <Matt_Domsch@dell.com>
 - v0.5.0-test4 released as v0.5.0 with no code changes
 

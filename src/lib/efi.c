@@ -20,6 +20,7 @@
 
 #define _FILE_OFFSET_BITS 64
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -171,9 +172,12 @@ create_or_edit_variable(efi_variable_t *var)
 static int
 select_boot_var_names(const struct dirent *d)
 {
-	int num, rc;
-	rc = sscanf(d->d_name, "Boot0%03x-%*s", &num);
-	return rc;
+	if (!strncmp(d->d_name, "Boot", 4) &&
+	    isxdigit(d->d_name[4]) && isxdigit(d->d_name[5]) &&
+	    isxdigit(d->d_name[6]) && isxdigit(d->d_name[7]) &&
+	    d->d_name[8] == '-')
+		return 1;
+	return 0;
 }
 
 int
@@ -716,7 +720,7 @@ make_linux_efi_variable(efi_variable_t *var,
 	memset(buffer,    0, sizeof(buffer));
 
 	/* VariableName needs to be BootXXXX */
-	sprintf(buffer, "Boot%04x", free_number);
+	sprintf(buffer, "Boot%04X", free_number);
 
 	efichar_from_char(var->VariableName, buffer, 1024);
 

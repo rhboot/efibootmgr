@@ -32,6 +32,7 @@
 
 #define _GNU_SOURCE
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -215,8 +216,8 @@ warn_duplicate_name(list_t *boot_list)
 			boot->var_data.Data;
 		if (!efichar_char_strcmp(opts.label,
 					 load_option->description)) {
-			fprintf(stderr, "** Warning ** : Boot%04x has same label %s\n",
-			       boot->num,
+			fprintf(stderr, "** Warning ** : %.8s has same label %s\n",
+			       boot->name->d_name,
 			       opts.label);
 		}
 	}
@@ -228,9 +229,21 @@ make_boot_var(list_t *boot_list)
 {
 	var_entry_t *boot;
 	int free_number;
+	list_t *pos;
 
-	if (opts.bootnum == -1) free_number = find_free_boot_var(boot_list);
-	else                    free_number = opts.bootnum;
+	if (opts.bootnum == -1)
+		free_number = find_free_boot_var(boot_list);
+	else {
+		list_for_each(pos, boot_list) {
+			boot = list_entry(pos, var_entry_t, list);
+			if (boot->num == opts.bootnum) {
+				fprintf(stderr, "** Warning ** : bootnum %04X "
+				        "already exists\n", opts.bootnum);
+				return NULL;
+			}
+		}
+		free_number = opts.bootnum;
+	}
 
 	if (free_number == -1) return NULL;
 
@@ -398,13 +411,20 @@ delete_boot_var(uint16_t num)
 	list_t *pos, *n;
 	var_entry_t *boot;
 
-	snprintf(name, sizeof(name), "Boot%04x", num);
+	snprintf(name, sizeof(name), "Boot%04X", num);
 	memset(&var, 0, sizeof(var));
 	fill_var(&var, name);
 	status = delete_variable(&var);
 
-	if (status) return status;
+	/* For backwards compatibility, try to delete abcdef entries as well */
+	if (status) {
+		snprintf(name, sizeof(name), "Boot%04x", num);
+		memset(&var, 0, sizeof(var));
+		fill_var(&var, name);
+		status = delete_variable(&var);
+	}
 
+	if (status) return status;
 	list_for_each_safe(pos, n, &boot_entry_list) {
 		boot = list_entry(pos, var_entry_t, list);
 		if (boot->num == num) {
@@ -424,11 +444,27 @@ set_var_nums(const char *pattern, list_t *list)
 	list_t *pos;
 	var_entry_t *var;
 	int num=0, rc;
+	char *name;
+	int warn=0;
 
 	list_for_each(pos, list) {
 		var = list_entry(pos, var_entry_t, list);
 		rc = sscanf(var->name->d_name, pattern, &num);
-		if (rc == 1) var->num = num;
+		if (rc == 1) {
+			var->num = num;
+			name = var->name->d_name; /* shorter name */
+			if ((isalpha(name[4]) && islower(name[4])) ||
+			    (isalpha(name[5]) && islower(name[5])) ||
+			    (isalpha(name[6]) && islower(name[6])) ||
+			    (isalpha(name[7]) && islower(name[7]))) {
+				fprintf(stderr, "** Warning ** : %.8s is not "
+				        "EFI 1.10 compliant (lowercase hex in name)\n", name);
+				warn++;
+			}
+		}
+	}
+	if (warn) {
+		fprintf(stderr, "** Warning ** : please recreate these using efibootmgr to remove this warning.\n");
 	}
 }
 
@@ -528,7 +564,7 @@ unparse_boot_order(uint16_t *order, int length)
 	int i;
 	printf("BootOrder: ");
 	for (i=0; i<length; i++) {
-		printf("%04x", order[i]);
+		printf("%04X", order[i]);
 		if (i < (length-1))
 			printf(",");
 	}
@@ -586,7 +622,11 @@ show_boot_vars()
 				load_option->description, sizeof(description));
 		memset(text_path, 0, sizeof(text_path));
 		path = load_option_path(load_option);
-		printf("Boot%04x", boot->num);
+		if (boot->name)
+			printf("%.8s", boot->name->d_name);
+		else
+			printf("Boot%04X", boot->num);
+
 		if (load_option->attributes & LOAD_OPTION_ACTIVE)
 			printf("* ");
 		else    printf("  ");
@@ -790,7 +830,7 @@ parse_opts(int argc, char **argv)
 			opts.delete_boot = 1;
 			break;
 		case 'b':
-			rc = sscanf(optarg, "%x", &num);
+			rc = sscanf(optarg, "%X", &num);
 			if (rc == 1) opts.bootnum = num;
 			break;
 		case 'c':
@@ -920,7 +960,7 @@ main(int argc, char **argv)
 	if (!opts.testfile) {
 		num_boot_names = read_boot_var_names(&boot_names);
 		read_vars(boot_names, num_boot_names, &boot_entry_list);
-		set_var_nums("Boot%04x-%*s", &boot_entry_list);
+		set_var_nums("Boot%04X-%*s", &boot_entry_list);
 
 		if (opts.delete_boot) {
 			if (opts.bootnum == -1)
@@ -972,11 +1012,11 @@ main(int argc, char **argv)
 		if (!opts.quiet) {
 			num = read_boot_u16("BootNext");
 			if (num != -1 ) {
-				printf("BootNext: %04x\n", num);
+				printf("BootNext: %04X\n", num);
 			}
 			num = read_boot_u16("BootCurrent");
 			if (num != -1) {
-				printf("BootCurrent: %04x\n", num);
+				printf("BootCurrent: %04X\n", num);
 			}
 			num = read_boot_u16("Timeout");
 			if (num != -1) {
