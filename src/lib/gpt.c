@@ -460,7 +460,7 @@ FindValidGPT(int fd, gpt_header ** pgpt, gpt_header ** agpt, gpt_entry ** ptes)
 	gpt_entry *pptes = NULL, *aptes = NULL;
         legacy_mbr *legacymbr=NULL;
 	uint64_t lastlba;
-
+        
 	lastlba = LastLBA(fd);
 	/* Check the Primary GPT */
 	good_pgpt = IsGuidPartitionTableValid(fd, 1, pgpt, &pptes);
@@ -472,26 +472,25 @@ FindValidGPT(int fd, gpt_header ** pgpt, gpt_header ** agpt, gpt_entry ** ptes)
 			*agpt = NULL;
 			fprintf(stderr, "Alternate GPT is invalid, using primary GPT.\n");
 		}
-
+                
                 compare_gpts(*pgpt, *agpt, lastlba);
                 
 		if (aptes)
 			free(aptes);
 		*ptes = pptes;
-	} /* if primary is valid */
-	else {
+	} else {
 		/* Primary GPT is bad, check the Alternate GPT */
 		*pgpt = NULL;
 		good_agpt = IsGuidPartitionTableValid(fd, lastlba, agpt, &aptes);
 		if (good_agpt) {
 			/* Primary is bad, alternate is good.
 			   Return values from the alternate and warn.
-			 */
+                        */
 			fprintf(stderr, "Primary GPT is invalid, using alternate GPT.\n");
 			*ptes = aptes;
 		}
 	}
-
+        
 	/* Now test for valid PMBR */
 	/* This will be added to the EFI Spec. per Intel after v1.02. */
 	if (good_pgpt || good_agpt) {

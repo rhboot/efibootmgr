@@ -18,9 +18,11 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/* For PRIx64 */
+#define __STDC_FORMAT_MACROS
+
 #include <stdio.h>
-#include <stdint.h>
-#include <stdint.h>
+#include <inttypes.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
@@ -150,7 +152,7 @@ unparse_hardware_path(char *buffer, EFI_DEVICE_PATH *path)
 		return sprintf(buffer, "PCCARD(%x)", pccard->socket);
 		break;
 	case 3:
-		return sprintf(buffer, "MM(%x,%llx,%llx)",
+		return sprintf(buffer, "MM(%x,%" PRIx64 ",%" PRIx64 ")",
 			       mm->memory_type,
 			       mm->start, mm->end);
 		break;
@@ -195,10 +197,10 @@ unparse_messaging_path(char *buffer, EFI_DEVICE_PATH *path)
 		break;
 
 	case 3:
-		return sprintf(buffer, "FC(%llx,%llx)", fc->wwn, fc->lun);
+		return sprintf(buffer, "FC(%" PRIx64 ",%" PRIx64 ")", fc->wwn, fc->lun);
 		break;
 	case 4:
-		return sprintf(buffer, "1394(%llx)", i1394->guid);
+		return sprintf(buffer, "1394(%" PRIx64 ")", i1394->guid);
 		break;
 	case 5:
 		return sprintf(buffer, "USB(%x,%x)", usb->port, usb->endpoint);
@@ -254,7 +256,7 @@ unparse_media_hard_drive_path(char *buffer, EFI_DEVICE_PATH *path)
 		break;
 	}
 
-	return sprintf(buffer, "HD(%x,%llx,%llx,%s)",
+	return sprintf(buffer, "HD(%x,%" PRIx64 ",%" PRIx64 ",%s)",
 		       hd->part_num, hd->start, hd->size, sig);
 }
 
@@ -276,7 +278,7 @@ unparse_media_path(char *buffer, EFI_DEVICE_PATH *path)
 		return unparse_media_hard_drive_path(buffer, path);
 		break;
 	case 2:
-		return sprintf(buffer, "CD-ROM(%x,%llx,%llx)",
+		return sprintf(buffer, "CD-ROM(%x,%" PRIx64 ",%" PRIx64 ")",
 			       cdrom->boot_entry, cdrom->start, cdrom->size);
 		break;
 	case 3:

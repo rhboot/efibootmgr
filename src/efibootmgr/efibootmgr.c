@@ -263,8 +263,10 @@ make_boot_var(struct list_head *boot_list)
 	if (!boot) return NULL;
 	memset(boot, 0, sizeof(*boot));
 	boot->num = free_number;
-	make_linux_efi_variable(&boot->var_data, free_number);
-	
+	if (!make_linux_efi_variable(&boot->var_data, free_number)) {
+		free(boot);
+		return NULL;
+	}
 	write_variable(&boot->var_data);
 	list_add_tail(&boot->list, boot_list);
 	return boot;
@@ -979,7 +981,7 @@ main(int argc, char **argv)
 		warn_duplicate_name(&boot_entry_list);
 		new_boot = make_boot_var(&boot_entry_list);
 		/* Put this boot var in the right BootOrder */
-		if (!opts.testfile) 
+		if (!opts.testfile && new_boot) 
 			add_to_boot_order(new_boot->num);
 	}
 

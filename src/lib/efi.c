@@ -465,7 +465,7 @@ append_extra_args(void *data, unsigned long maxchars)
 
 
 
-void
+int
 make_linux_efi_variable(efi_variable_t *var,
 			unsigned int free_number)
 {
@@ -491,10 +491,12 @@ make_linux_efi_variable(efi_variable_t *var,
 
 	load_option_size =  make_linux_load_option(var->Data);
 
+	if (!load_option_size) return 0;
+
 	/* Set OptionalData (passed as binary to the called app) */
 	optional_data = var->Data + load_option_size;
 	opt_data_size = append_extra_args(optional_data,
 				  sizeof(var->Data) - load_option_size);
 	var->DataSize = load_option_size + opt_data_size;
-	return;
+	return var->DataSize;
 }

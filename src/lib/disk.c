@@ -270,6 +270,21 @@ disk_get_size(int fd, long *size)
 	return ioctl(fd, BLKGETSIZE, size);
 }
 
+/**
+ * is_mbr_valid(): test MBR for validity
+ * @mbr: pointer to a legacy mbr structure
+ *
+ * Description: Returns 1 if MBR is valid, 0 otherwise.
+ * Validity depends on one thing:
+ *  1) MSDOS signature is in the last two bytes of the MBR
+ */
+static int
+is_mbr_valid(legacy_mbr *mbr)
+{
+	if (!mbr)
+		return 0;
+	return (mbr->signature == MSDOS_MBR_SIGNATURE);
+}
 
 /************************************************************
  * msdos_disk_get_extended partition_info()
@@ -313,10 +328,13 @@ msdos_disk_get_partition_info (int fd, legacy_mbr *mbr,
 			       char *signature,
 			       uint8_t *mbr_type, uint8_t *signature_type)
 {	
-	int rc;
+	int rc, mbr_valid=0;
 	long disk_size=0;
 	struct stat stat;
 	struct timeval tv;
+	
+	mbr_valid = is_mbr_valid(mbr);
+	if (!mbr) return 1;
 
 	*mbr_type = 0x01;
 	*signature_type = 0x01;
@@ -381,8 +399,6 @@ msdos_disk_get_partition_info (int fd, legacy_mbr *mbr,
 	return 0;
 }
 
-
-
 /************************************************************
  * disk_get_partition_info()
  * Requires:
@@ -392,11 +408,9 @@ msdos_disk_get_partition_info (int fd, legacy_mbr *mbr,
  * Returns:
  *  0 on success
  *  non-zero on failure
- *
+ *  0 on success
+ *  non-zero on failure
  ************************************************************/
-
-
-
 int
 disk_get_partition_info (int fd, 
 			 uint32_t num,
@@ -407,42 +421,29 @@ disk_get_partition_info (int fd,
 	legacy_mbr mbr;
 	off_t offset;
 	int this_bytes_read = 0;
-	int i, is_gpt=0;
+	int gpt_invalid=0, mbr_invalid=0;
 
 	memset(&mbr, 0, sizeof(mbr));
 	offset = lseek(fd, 0, SEEK_SET);
 	this_bytes_read = read(fd, &mbr, sizeof(mbr));
 	if (this_bytes_read < sizeof(mbr)) return 1;
-
 	
-	if (mbr.signature == MSDOS_MBR_SIGNATURE) {
-	
-		for (i=0; i<4; i++) {
-			if (mbr.partition[i].os_type ==
-			    EFI_PMBR_OSTYPE_EFI_GPT) {
-				is_gpt=1;
-				break;
-			}
-		}
-
-		if (!is_gpt) 
-			return msdos_disk_get_partition_info(fd, &mbr, num,
-							     start, size,
-							     signature,
-							     mbr_type,
-							     signature_type);
+	gpt_invalid = gpt_disk_get_partition_info(fd, num,
+						  start, size,
+						  signature,
+						  mbr_type,
+						  signature_type);
+	if (gpt_invalid) {
+		mbr_invalid = msdos_disk_get_partition_info(fd, &mbr, num,
+							    start, size,
+							    signature,
+							    mbr_type,
+							    signature_type);
+		if (mbr_invalid)
+			return 1;
 	}
-	
-	return gpt_disk_get_partition_info(fd, num,
-					   start, size,
-					   signature,
-					   mbr_type,
-					   signature_type);
+	return 0;
 }
-
-
-
-
 
 #ifdef DISK_EXE
 int
