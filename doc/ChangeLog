@@ -1,3 +1,9 @@
+* Tue May 22 2001 Matt Domsch <Matt_Domsch@dell.com>
+- Applied patch from Andreas Schwab.  remove_from_boot_order() called
+  read_boot_order() without checking the return status.
+- Changed README to remove os loader args comment
+
+	
 * Fri May 18 2001 Matt Domsch <Matt_Domsch@dell.com>
 - changed usage() to *not* let you think you can pass args to the OS
   loader
