@@ -396,7 +396,7 @@ make_linux_load_option(void *data)
 	char buffer[80];
 	int disk_fd=0;
 	char *p = data, *q;
-	efi_char16_t description[40];
+	efi_char16_t description[64];
 	efi_char16_t os_loader_path[40];
 	int rc, edd_version=0;
 	uint64_t start=0, size=0;
