@@ -145,7 +145,7 @@ read_vars(struct dirent **namelist,
 
 
 static void
-free_array_of_arrays(void **ptr)
+free_dirents(struct dirent **ptr)
 {
 	int i;
 	if (!ptr) return;
@@ -737,11 +737,12 @@ delete_boot_order()
 static void
 usage()
 {
-	printf("usage: elilo2bootmgr.bin [options]\n");
+	printf("usage: efibootmgr [options]\n");
 	printf("\t-a | --active         sets bootnum active\n");
 	printf("\t-A | --inactive       sets bootnum inactive\n");
 	printf("\t-b | --bootnum XXXX   modify BootXXXX (hex)\n");
 	printf("\t-B | --delete-bootnum delete bootnum (hex)\n");
+	printf("\t-c | --create         create new variable bootnum and add to bootorder\n");
 	printf("\t-d | --disk disk       (defaults to /dev/sda) containing loader\n");
 	printf("\t-e | --edd [1|3|-1]   force EDD 1.0 or 3.0 creation variables, or guess\n");
 	printf("\t-E | --device num      EDD 1.0 device number (defaults to 0x80)\n");
@@ -755,7 +756,6 @@ usage()
 	printf("\t-q | --quiet            be quiet\n");
 	printf("\t-v | --verbose          print additional information\n");
 	printf("\t-V | --version          return version and exit\n");
-	printf("\t-w | --write            create new variable bootnum and add to bootorder\n");
 }
 
 static void
@@ -787,6 +787,7 @@ parse_opts(int argc, char **argv)
 			{"inactive",               no_argument, 0, 'A'},
 			{"bootnum",          required_argument, 0, 'b'},
 			{"delete-bootnum",         no_argument, 0, 'B'},
+			{"create",                 no_argument, 0, 'c'},
 			{"disk",             required_argument, 0, 'd'},
 			{"edd-device",       required_argument, 0, 'E'},
 			{"edd30",            required_argument, 0, 'e'},
@@ -800,11 +801,10 @@ parse_opts(int argc, char **argv)
 			{"quiet",                  no_argument, 0, 'q'},
 			{"verbose",          optional_argument, 0, 'v'},
 			{"version",                no_argument, 0, 'V'},
-			{"write",                  no_argument, 0, 'w'},
 			{0, 0, 0, 0}
 		};
 		
-		c = getopt_long (argc, argv, "AaBb:d:e:E:l:L:n:No:Op:qv::Vw",
+		c = getopt_long (argc, argv, "AaBb:cd:e:E:l:L:n:No:Op:qv::V",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -823,6 +823,9 @@ parse_opts(int argc, char **argv)
 		case 'b':
 			rc = sscanf(optarg, "%x", &num);
 			if (rc == 1) opts.bootnum = num;
+			break;
+		case 'c':
+			opts.create = 1;
 			break;
 		case 'd':
 			opts.disk = optarg;
@@ -875,9 +878,6 @@ parse_opts(int argc, char **argv)
 			opts.showversion = 1;
 			break;
 
-		case 'w':
-			opts.write = 1;
-			break;
 		default:
 			usage();
 			exit(1);
@@ -914,7 +914,7 @@ main(int argc, char **argv)
 	}
 
 	
-	if (opts.write) {
+	if (opts.create) {
 		new_boot = make_boot_var(&boot_entry_list);
 		/* Put this boot var in the right BootOrder */
 		add_to_boot_order(new_boot->num);
@@ -951,7 +951,7 @@ main(int argc, char **argv)
 		show_boot_vars();
 	}
 
-	free_array_of_arrays(boot_names);
+	free_dirents(boot_names);
 	return 0;
 } 
 

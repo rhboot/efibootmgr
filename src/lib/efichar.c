@@ -24,6 +24,7 @@
   Therefore, we need a UCS-2 library.  
 */
 
+#include <stdlib.h>
 #include "efi.h"
 #include "efichar.h"
 

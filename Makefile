@@ -1,3 +1,4 @@
+# hi
   default: all
 
   RELEASE_MAJOR := 0

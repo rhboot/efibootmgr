@@ -37,7 +37,6 @@
 
 
 #define BLKGETLASTSECT  _IO(0x12,108) /* get last sector of block device */
-#define BLKSETLASTSECT  _IO(0x12,109) /* get last sector of block device */
 #define BLKGETSIZE      _IO(0x12,96)  /* return device size */
 
 static struct blkdev_ioctl_param {

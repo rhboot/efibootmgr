@@ -38,7 +38,7 @@ typedef struct {
 	unsigned int delete_bootnext:1;
 	unsigned int quiet:1;
 	unsigned int showversion:1;
-	unsigned int write:1;
+	unsigned int create:1;
 } efibootmgr_opt_t;
 
 
