@@ -1,3 +1,14 @@
+* Wed Jun 07 2004 Matt Domsch <Matt_Domsch@dell.com>
+- Fixed bug where read_boot_order() would wrongly return EFI_NOT_FOUND
+  when it needed to create a new BootOrder variable.  Reported by Micah Parrish.
+- Added code to recursively walk the PCI bus putting parent PCI bridges
+  in.  This is necessary for Dell PowerEdge 3250 and 7250 servers and
+  Intel Tiger2 and Tiger4 platforms when creating PXE boot entries for
+  the onboard NICs, and if creating EDD30 boot path entries.  Work by Matt
+  and Joshua Giles.
+  - Note, efibootmgr now requires libpci for building.
+- Released v0.5.0-test4
+
 * Sat Apr 24 2004 Matt Domsch <Matt_Domsch@dell.com>
 - Fixed reversed logic of create_or_edit_variable which prevented object
   creation or editing on sysfs.
