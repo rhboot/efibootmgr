@@ -94,9 +94,9 @@ static int
 read_boot_var_names(struct dirent ***namelist)
 {
 	int n;
-	n = scandir(PROC_DIR_EFI, namelist, select_boot_var_names, alphasort);
+	n = scandir(PROC_DIR_EFI_VARS, namelist, select_boot_var_names, alphasort);
 	if (n < 0) {
-		perror("scandir " PROC_DIR_EFI);
+		perror("scandir " PROC_DIR_EFI_VARS);
 		fprintf(stderr, "You must 'modprobe efivars' before running efibootmgr.\n");
 	}
 	return n;
@@ -107,7 +107,7 @@ static int
 read_blk_var_names(struct dirent ***namelist)
 {
 	int n;
-	n = scandir(PROC_DIR_EFI, namelist, select_blk_var_names, alphasort);
+	n = scandir(PROC_DIR_EFI_VARS, namelist, select_blk_var_names, alphasort);
 	if (n < 0)
 		perror("scandir");
 	return n;

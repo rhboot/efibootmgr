@@ -330,7 +330,7 @@ typedef struct {
 /* Used for ACPI _HID */
 #define EISAID_PNP0A03 0xa0341d0
 
-#define PROC_DIR_EFI "/proc/efi/vars/"
+#define PROC_DIR_EFI_VARS "/proc/efi/vars/"
 
 
 
@@ -338,10 +338,9 @@ typedef struct {
 
 efi_status_t read_variable(char *name, efi_variable_t *var);
 efi_status_t write_variable(efi_variable_t *var);
-void char_to_efichar(char *s1, efi_char16_t *s2, size_t s2_len);
 int make_linux_efi_variable(efi_variable_t *var,
 			    unsigned int free_number);
-void efi_guid_unparse(efi_guid_t *guid, char *out);
+char * efi_guid_unparse(efi_guid_t *guid, char *out);
 EFI_DEVICE_PATH *load_option_path(EFI_LOAD_OPTION *option);
 
 

@@ -29,6 +29,7 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <unistd.h>
+#include <dirent.h>
 #include "efi.h"
 #include "efichar.h"
 #include "scsi_ioctls.h"
@@ -45,13 +46,15 @@ load_option_path(EFI_LOAD_OPTION *option)
 		 + efichar_strsize(option->description)); /* Description */
 }
 
-void
+char *
 efi_guid_unparse(efi_guid_t *guid, char *out)
 {
         sprintf(out, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
                 guid->data1, guid->data2, guid->data3,
                 guid->data4[0], guid->data4[1], guid->data4[2], guid->data4[3],
                 guid->data4[4], guid->data4[5], guid->data4[6], guid->data4[7]);
+
+	return out;
 }
 
 
@@ -64,10 +67,10 @@ read_variable(char *name, efi_variable_t *var)
 	size_t readsize;
 	if (!name || !var) return EFI_INVALID_PARAMETER;
 	
-	newnamesize = strlen(PROC_DIR_EFI) + strlen(name) + 1;
+	newnamesize = strlen(PROC_DIR_EFI_VARS) + strlen(name) + 1;
 	newname = malloc(newnamesize);
 	if (!newname) return EFI_OUT_OF_RESOURCES;
-	sprintf(newname, "%s%s", PROC_DIR_EFI,name);
+	sprintf(newname, "%s%s", PROC_DIR_EFI_VARS,name);
 	fd = open(newname, O_RDONLY);
 	if (fd == -1) {
 		free(newname);
@@ -107,6 +110,40 @@ write_variable_to_file(efi_variable_t *var)
 	return EFI_SUCCESS;
 }
 
+static char *
+find_write_victim(efi_variable_t *var, char name[80])
+{
+	struct dirent **namelist = NULL;
+	int i, n, found=0;
+	char *p;
+
+	n = scandir(PROC_DIR_EFI_VARS, &namelist, NULL, alphasort);
+	if (n < 0) {
+		perror("scandir " PROC_DIR_EFI_VARS);
+		fprintf(stderr, "You must 'modprobe efivars' first.\n");
+	}
+
+	for (i=0; namelist[i]; i++) {
+		p = name;
+		efichar_to_char(p, var->VariableName, 80);
+		p += strlen(p);
+		p += sprintf(p, "-");
+		efi_guid_unparse(&var->VendorGuid, p);
+		if (strncmp(name, namelist[i]->d_name, sizeof(name))) {
+			found++;
+			break;
+		}
+	}
+
+	for (i=0; namelist[i]; i++) {
+		free(namelist[i]);
+		namelist[i] = NULL;
+	}
+	free(namelist);
+		
+	if (!found) return NULL;
+	return name;
+}
 
 
 efi_status_t
@@ -114,11 +151,14 @@ write_variable(efi_variable_t *var)
 {
 	int fd;
 	size_t writesize;
-	char buffer[PATH_MAX];
-	char name[]="/proc/efi/vars/Efi-47c7b226-c42a-11d2-8e57-00a0c969723b";
-	if (!var) return EFI_INVALID_PARAMETER;
+	char buffer[PATH_MAX], name[PATH_MAX], *p = NULL;
 
+	if (!var) return EFI_INVALID_PARAMETER;
 	if (opts.testfile) return write_variable_to_file(var);
+	memset(name, 0, sizeof(name));
+
+	p = find_write_victim(var, name);
+	if (!p) return EFI_INVALID_PARAMETER;
 	
 	fd = open(name, O_WRONLY);
 	if (fd == -1) {

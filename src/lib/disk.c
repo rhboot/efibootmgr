@@ -328,7 +328,7 @@ msdos_disk_get_partition_info (int fd, legacy_mbr *mbr,
 			       char *signature,
 			       uint8_t *mbr_type, uint8_t *signature_type)
 {	
-	int rc, mbr_valid=0;
+	int rc;
 	long disk_size=0;
 	struct stat stat;
 	struct timeval tv;

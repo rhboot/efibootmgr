@@ -1,3 +1,12 @@
+* Wed Jan 2 2002 Matt Domsch <Matt_Domsch@dell.com>
+- Changed PROC_DIR_EFI to PROC_DIR_EFI_VARS
+- write_variable() now searches /proc/efi/vars for a variable that's not
+  the one being written.  The EFI 1.1 sample implementation changed the
+  name of the "victim" being written to (was Efi-xxxxx, now EFI-xxxxx), so
+  previous versions of efibootmgr don't work with the new firmware.  This
+  should fix that up.
+- released v0.4.0-test2
+	
 * Fri Dec 7 2001 Matt Domsch <Matt_Domsch@dell.com>
 - Removed read last sector ioctl hack, it's not needed anymore.  The
   kernel takes care of it for us with a new patch.
@@ -5,8 +14,8 @@
 - Added test for returning size of block device as a u64.
 - Added test for returning sector size as int, and use that.
 - Changed GPT struct and member names to be more Linux-like.
-- added -g option to force disk with invalid PMBR to be treated as GPT anyhow.	
-- released v0.4.0
+- added -g option to force disk with invalid PMBR to be treated as GPT anyhow.
+- released v0.4.0-test1
 	
 * Thu Aug 9 2001 Matt Domsch <Matt_Domsch@dell.com>
 - Added some uniqueness to the MBR signature.
