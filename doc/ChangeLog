@@ -1,3 +1,6 @@
+* Thu Aug 26 2004 Matt Domsch <Matt_Domsch@dell.com>
+- v0.5.0-test4 released as v0.5.0 with no code changes
+
 * Wed Jun 07 2004 Matt Domsch <Matt_Domsch@dell.com>
 - Fixed bug where read_boot_order() would wrongly return EFI_NOT_FOUND
   when it needed to create a new BootOrder variable.  Reported by Micah Parrish.
