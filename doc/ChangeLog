@@ -1,0 +1,10 @@
+* Fri May 18 2001 Matt Domsch <Matt_Domsch@dell.com>
+- Padded HARDDRIVE_DEVICE_PATH out to please EFI Boot Manager.
+- Incorporated patches from Andreas Schwab
+  - replace __u{8,16,32,64} with uint{8,16,32,64}_t
+  - use _FILE_OFFSET_BITS
+  - fix a segfault
+- release v0.3.0	
+
+* Tue May 15 2001 Matt Domsch <Matt_Domsch@dell.com>
+- initial external release v0.2.0
