@@ -25,13 +25,6 @@
  * Extensible Firmware Interface
  * Based on 'Extensible Firmware Interface Specification'
  *      version 1.02, 12 December, 2000
- *
- * Copyright (C) 1999 VA Linux Systems
- * Copyright (C) 1999 Walt Drummond <drummond@valinux.com>
- * Copyright (C) 1999 Hewlett-Packard Co.
- * Copyright (C) 1999 David Mosberger-Tang <davidm@hpl.hp.com>
- * Copyright (C) 1999 Stephane Eranian <eranian@hpl.hp.com>
- * Copyright (C) 2001 Matt Domsch <Matt_Domsch@dell.com>
  */
 #include <linux/types.h>
 
