@@ -728,7 +728,7 @@ delete_boot_order()
 static void
 usage()
 {
-	printf("usage: efibootmgr [options] [boot loader options ...]\n");
+	printf("usage: efibootmgr [options]\n");
 	printf("\t-a | --active         sets bootnum active\n");
 	printf("\t-A | --inactive       sets bootnum inactive\n");
 	printf("\t-b | --bootnum XXXX   modify BootXXXX (hex)\n");
