@@ -647,19 +647,16 @@ show_boot_vars()
 			unparse_path(text_path, path, 
 				     load_option->file_path_list_length);
 			/* Print optional data */
-			if (boot->var_data.DataSize > 
-			    load_option->file_path_list_length) {
+			optional_data_len =
+				boot->var_data.DataSize -
+				load_option->file_path_list_length -
+				((char *)path - (char *)load_option);
+			if (optional_data_len) {
 				p = text_path;
 				p += strlen(text_path);
-				
-				optional_data_len =
-					boot->var_data.DataSize -
-					load_option->file_path_list_length -
-					((char *)path - (char *)load_option);
-
-				unparse_raw(p, ((uint8_t *)path) +
-					    load_option->file_path_list_length,
-					    optional_data_len);
+				unparse_raw_text(p, ((uint8_t *)path) +
+						 load_option->file_path_list_length,
+						 optional_data_len);
 			}
 			
 			printf("\t%s", text_path);

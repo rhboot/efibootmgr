@@ -419,8 +419,8 @@ append_extra_args_ascii(void *data, unsigned long maxchars)
 		}
 
 	}
-	
-	return strlen(data);
+	/* Remember the NULL */
+	return strlen(data) + 1;
 }
 
 static unsigned long
@@ -435,17 +435,18 @@ append_extra_args_unicode(void *data, unsigned long maxchars)
 	for (i=opts.optind; i < opts.argc && usedchars < maxchars; i++)	{
 		p += efichar_from_char((efi_char16_t *)p, opts.argv[i],
 				       maxchars-usedchars);
-		usedchars = p - (char *)data; 
+		usedchars = efichar_strsize(data) - sizeof(efi_char16_t);
 
 		/* Put a space between args */
 		if (i < (opts.argc-1)) {
 			p += efichar_from_char((efi_char16_t *)p, " ",
 					       maxchars-usedchars);
-			usedchars = p - (char *)data;
+			usedchars = efichar_strsize(data) -
+				sizeof(efi_char16_t);
 		}
 	}
 	
-	return p - (char *)data;
+	return efichar_strsize( (efi_char16_t *)data );
 }
 
 

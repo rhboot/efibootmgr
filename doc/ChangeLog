@@ -2,6 +2,8 @@
 - Added test for non-zero signature on MBR-style disks,
   and new -w flag to write a unique signature to the disk if so.
 - released v0.3.3-test4	
+- Fixed counting of optional data length (extra args)
+- released v0.3.3-test5	
 
 * Fri Jul 27 2001 Matt Domsch <Matt_Domsch@dell.com>
 - Added test for running as root	

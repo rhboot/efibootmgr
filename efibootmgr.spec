@@ -1,6 +1,6 @@
 Summary: EFI Boot Manager
 Name: efibootmgr
-Version: 0.3.3-test4
+Version: 0.3.3-test5
 Release: 1
 Group: System Environment/Base
 Copyright: GPL
