@@ -8,7 +8,7 @@ Vendor: Dell Computer Corporation www.dell.com
 Packager: Matt Domsch <Matt_Domsch@dell.com>
 
 
-Source0: http://domsch.com/linux/ia64/efibootmgr-%{version}.tar.gz
+Source0: http://domsch.com/linux/ia64/efibootmgr/efibootmgr-%{version}.tar.gz
 
 %description
 efibootmgr displays and allows the user to edit the Intel Extensible
