@@ -33,6 +33,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <sys/utsname.h>
 #include <asm/byteorder.h>
 #include "crc32.h"
 #include "gpt.h"
@@ -113,6 +114,30 @@ get_sector_size(int filedes)
 	return sector_size;
 }
 
+/**
+ * test_kernel_version()
+ * @version - version string from utsname
+ *
+ * Returns: 0 on false, 1 on true
+ * True means kernel is 2.4.x, x>=18, or
+ *                   is 2.5.x, x>4, or
+ *                   is > 2.5
+ */
+
+static int
+_test_kernel_version(char *version)
+{
+        int major, minor, patch, parsed;
+        parsed = sscanf(version, "%d.%d.%d", &major, &minor, &patch);
+        if (parsed < 3) return 0;
+        if (major > 2) return 1;
+        if (major == 2 && minor > 5) return 1;
+        if (major == 2 && minor == 5 && patch >= 4) return 1;
+        if (major == 2 && minor == 4 && patch >= 18) return 1;
+        return 0;
+}
+
+
 /************************************************************
  * _get_num_sectors
  * Requires:
@@ -134,12 +159,18 @@ _get_num_sectors(int filedes)
 	unsigned long sectors=0;
         uint64_t bytes=0;
 	int rc;
+        struct utsname utsname;
 
-#if 0
- 	rc = ioctl(filedes, BLKGETSIZE64, &bytes);
-	if (!rc)
-		return bytes / get_sector_size(filedes);
-#endif
+        memset(&utsname, 0, sizeof(utsname));
+        rc = uname(&utsname);
+        if (!rc) {
+                if (_test_kernel_version(utsname.release)) {
+                        rc = ioctl(filedes, BLKGETSIZE64, &bytes);
+                        if (!rc)
+                                return bytes / get_sector_size(filedes);
+                }
+        }
+
         rc = ioctl(filedes, BLKGETSIZE, &sectors);
         if (rc)
                 return 0;
