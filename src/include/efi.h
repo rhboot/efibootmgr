@@ -333,7 +333,7 @@ typedef struct {
 	uint16_t length;
 } __attribute__((packed)) END_DEVICE_PATH;
 
-	
+
 /* Used for ACPI _HID */
 #define EISAID_PNP0A03 0xa0341d0
 

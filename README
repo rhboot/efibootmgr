@@ -19,6 +19,8 @@ usage: efibootmgr [options]
 	-e | --edd [1|3|-1]   force EDD 1.0 or 3.0 creation variables, or guess
 	-E | --device num     EDD 1.0 device number (defaults to 0x80)
 	-g | --gpt            force disk w/ invalid PMBR to be treated as GPT 
+	-H | --acpi_hid XXXX  set the ACPI HID (used with -i)
+	-i | --iface name     create a netboot entry for the named interface
 	-l | --loader name    (defaults to \elilo.efi)
 	-L | --label label    Boot manager display label (defaults to "Linux")
 	-n | --bootnext XXXX  set BootNext to XXXX (hex)
@@ -27,8 +29,12 @@ usage: efibootmgr [options]
 	-O | --delete-bootorder delete BootOrder
 	-p | --part part       (defaults to 1) containing loader
 	-q | --quiet           be quiet
+	-t | --test filename   don't write to NVRAM, write to filename
+	-u | --unicode | --UCS-2  pass extra args as UCS-2 (default is ASCII)
+	-U | --acpi_uid XXXX    set the ACPI UID (used with -i)
 	-v | --verbose         print additional information
 	-V | --version         return version and exit
+	-w | --write-signature  write unique sig to MBR if needed
 
 
 Typical usage:
@@ -77,6 +83,23 @@ Typical usage:
 5) A system administrator wants to delete the Linux boot option from
    the menu.  'efibootmgr -b 4 -B' deletes entry 4 and removes it
    from BootOrder.
+
+6) A system administrator wants to create a boot option to network
+   boot (PXE).  Unfortunately, this requires knowing a little more
+   information about your system than can be easily found by
+   efibootmgr, so you've got to pass additional information - the ACPI
+   HID and UID values.  These can generally be found by using the EFI
+   Boot Manager (in the EFI environment) to create a network boot
+   entry, then using efibootmgr to print it verbosely.  Here's one example:
+
+     Boot003* Acpi(PNP0A03,0)/PCI(5|0)/Mac(00D0B7F9F510) \
+	ACPI(a0341d0,0)PCI(0,5)MAC(00d0b7f9f510,0)
+
+   In this case, the ACPI HID is "0A0341d0" and the UID is "0".
+   For the zx2000 gigE, the HID is "222F" and the UID is "500".
+   For the rx2000 gigE, the HID is "0002" and the UID is "100".
+   You create the boot entry with:
+   'efibootmgr -c -i eth0 -H 222F -U 500 -L netboot'
 
 Many other uses may be found.
 

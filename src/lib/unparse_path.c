@@ -146,7 +146,7 @@ unparse_hardware_path(char *buffer, EFI_DEVICE_PATH *path)
 	switch (path->subtype) {
 	case 1:
 		return sprintf(buffer, "PCI(%x,%x)",
-			       pci->function, pci->device);
+			       pci->device, pci->function);
 		break;
 	case 2:
 		return sprintf(buffer, "PCCARD(%x)", pccard->socket);

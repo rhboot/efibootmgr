@@ -1,8 +1,8 @@
 /*
   efi.[ch] - Manipulates EFI variables as exported in /proc/efi/vars
- 
-  Copyright (C) 2001 Dell Computer Corporation <Matt_Domsch@dell.com>
- 
+
+  Copyright (C) 2001,2003 Dell Computer Corporation <Matt_Domsch@dell.com>
+
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
@@ -30,6 +30,18 @@
 #include <limits.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/ioctl.h>
+#include <linux/sockios.h>
+#include <net/if.h>
+
+typedef unsigned long long u64; /* hack, so we may include kernel's ethtool.h */
+typedef __uint32_t u32;         /* ditto */
+typedef __uint16_t u16;         /* ditto */
+typedef __uint8_t u8;           /* ditto */
+
+#include <linux/ethtool.h>
 #include "efi.h"
 #include "efichar.h"
 #include "scsi_ioctls.h"
@@ -66,7 +78,7 @@ read_variable(char *name, efi_variable_t *var)
 	int fd;
 	size_t readsize;
 	if (!name || !var) return EFI_INVALID_PARAMETER;
-	
+
 	newnamesize = strlen(PROC_DIR_EFI_VARS) + strlen(name) + 1;
 	newname = malloc(newnamesize);
 	if (!newname) return EFI_OUT_OF_RESOURCES;
@@ -81,7 +93,6 @@ read_variable(char *name, efi_variable_t *var)
 		free(newname);
 		close(fd);
 		return EFI_INVALID_PARAMETER;
-		
 	}
 	close(fd);
 	free(newname);
@@ -112,7 +123,7 @@ write_variable_to_file(efi_variable_t *var)
 /**
  * select_variable_names()
  * @d - dirent to compare against
- * 
+ *
  * This ignores "." and ".." entries, and selects all others.
  */
 
@@ -129,7 +140,7 @@ select_variable_names(const struct dirent *d)
  * find_write_victim()
  * @var - variable to be written
  * @file - name of file to open for writing @var is returned.
- * 
+ *
  * This ignores "." and ".." entries, and selects all others.
  */
 static char *
@@ -138,7 +149,7 @@ find_write_victim(efi_variable_t *var, char file[PATH_MAX])
 	struct dirent **namelist = NULL;
 	int i, n, found=0;
 	char testname[PATH_MAX], *p;
-	
+
 	memset(testname, 0, sizeof(testname));
 	n = scandir(PROC_DIR_EFI_VARS, &namelist,
 		    select_variable_names, alphasort);
@@ -171,7 +182,7 @@ find_write_victim(efi_variable_t *var, char file[PATH_MAX])
 		}
 	}
 	free(namelist);
-		
+
 	if (!found) return NULL;
 	return file;
 }
@@ -207,7 +218,7 @@ write_variable(efi_variable_t *var)
 #endif
 		close(fd);
 		return EFI_INVALID_PARAMETER;
-		
+
 	}
 	close(fd);
 	return EFI_SUCCESS;
@@ -245,7 +256,7 @@ get_edd_version()
 	memset(&var, 0, sizeof(efi_variable_t));
 	efi_guid_unparse(&guid, text_guid);
 	sprintf(name, "blk0-%s", text_guid);
-	
+
 	status = read_variable(name, &var);
 	if (status != EFI_SUCCESS) {
 		return 0;
@@ -295,6 +306,23 @@ make_acpi_device_path(void *buffer, uint32_t _HID, uint32_t _UID)
 	p->length = sizeof(*p);
 	p->_HID = _HID;
 	p->_UID = _UID;
+	return p->length;
+}
+
+static uint16_t
+make_mac_addr_device_path(void *buffer, char *mac, uint8_t iftype)
+{
+        int i;
+	MAC_ADDR_DEVICE_PATH *p = buffer;
+	p->type = 3;
+	p->subtype = 11;
+	p->length = sizeof(*p);
+	printf("\nmac: ");
+	for (i=0; i < 14; i++) {
+	  printf("%x", mac[i]);
+	  p->macaddr[i] = mac[i];
+	}
+	p->iftype = iftype;
 	return p->length;
 }
 
@@ -375,11 +403,118 @@ make_edd30_device_path(int fd, void *buffer)
 	if (rc) return 0;
 	idlun_to_components(&idlun, &host, &channel, &id, &lun);
 
-	
 	p += make_acpi_device_path      (p, EISAID_PNP0A03, bus);
 	p += make_pci_device_path       (p, device, function);
 	p += make_scsi_device_path      (p, id, lun);
 	return ((void *)p - buffer);
+}
+
+/**
+ * make_disk_load_option()
+ * @disk disk
+ *
+ * Returns 0 on error, length of load option created on success.
+ */
+char *make_disk_load_option(char *p, char *disk)
+{
+    int disk_fd=0;
+    char buffer[80];
+    char signature[16];
+    int rc, edd_version=0;
+    uint8_t mbr_type=0, signature_type=0;
+    uint64_t start=0, size=0;
+    efi_char16_t os_loader_path[40];
+
+    memset(signature, 0, sizeof(signature));
+
+    disk_fd = open(opts.disk, O_RDWR);
+    if (disk_fd == -1) {
+        sprintf(buffer, "Could not open disk %s", opts.disk);
+	perror(buffer);
+	return 0;
+    }
+
+    if (opts.edd_version) {
+        edd_version = get_edd_version();
+
+	if (edd_version == 3) {
+	    p += make_edd30_device_path(disk_fd, p);
+	}
+	else if (edd_version == 1) {
+	    p += make_edd10_device_path(p, opts.edd10_devicenum);
+	}
+    }
+
+    rc = disk_get_partition_info (disk_fd, opts.part,
+				  &start, &size, signature,
+				  &mbr_type, &signature_type);
+
+    close(disk_fd);
+
+    if (rc) {
+        fprintf(stderr, "Error: no partition information on disk %s.\n"
+		"       Cowardly refusing to create a boot option.\n",
+		opts.disk);
+	return 0;
+    }
+
+    p += make_harddrive_device_path (p, opts.part,
+				     start, size,
+				     signature,
+				     mbr_type, signature_type);
+
+    efichar_from_char(os_loader_path, opts.loader, sizeof(os_loader_path));
+    p += make_file_path_device_path (p, os_loader_path);
+    p += make_end_device_path       (p);
+
+    return(p);
+}
+
+/**
+ * make_net_load_option()
+ * @data - load option returned
+ *
+ * Returns 0 on error, length of load option created on success.
+ */
+char *make_net_load_option(char *p, char *iface)
+{
+    /* copied pretty much verbatim from the ethtool source */
+    int fd = 0, err;
+    int bus, slot, func;
+    struct ifreq ifr;
+    struct ethtool_drvinfo drvinfo;
+
+    memset(&ifr, 0, sizeof(ifr));
+    strcpy(ifr.ifr_name, iface);
+    drvinfo.cmd = ETHTOOL_GDRVINFO;
+    ifr.ifr_data = (caddr_t)&drvinfo;
+    /* Open control socket */
+    fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (fd < 0) {
+        perror("Cannot get control socket");
+    }
+    err = ioctl(fd, SIOCETHTOOL, &ifr);
+    if (err < 0) {
+        perror("Cannot get driver information");
+    }
+
+    err = sscanf(drvinfo.bus_info, "%2x:%2x.%x", &bus, &slot, &func);
+    if (err == 0) {
+        perror("Couldn't parse device location string.");
+    }
+
+    p += make_acpi_device_path(p, opts.acpi_hid, opts.acpi_uid);
+    p += make_pci_device_path(p, (uint8_t)slot, (uint8_t)func);
+
+    err = ioctl(fd, SIOCGIFHWADDR, &ifr);
+    if (err < 0) {
+        perror("Cannot get hardware address.");
+    }
+
+    p += make_mac_addr_device_path(p, ifr.ifr_ifru.ifru_hwaddr.sa_data, 0);
+    p += make_end_device_path       (p);
+
+    return(p);
 }
 
 /**
@@ -391,20 +526,10 @@ make_edd30_device_path(int fd, void *buffer)
 static unsigned long
 make_linux_load_option(void *data)
 {
-
 	EFI_LOAD_OPTION *load_option = data;
-	char buffer[80];
-	int disk_fd=0;
 	char *p = data, *q;
 	efi_char16_t description[64];
-	efi_char16_t os_loader_path[40];
-	int rc, edd_version=0;
-	uint64_t start=0, size=0;
-	uint8_t mbr_type=0, signature_type=0;
-	char signature[16];
 	unsigned long datasize=0;
-
-	memset(signature, 0, sizeof(signature));
 
 	/* Write Attributes */
 	if (opts.active) load_option->attributes = LOAD_OPTION_ACTIVE;
@@ -417,52 +542,18 @@ make_linux_load_option(void *data)
 	memset(description, 0, sizeof(description));
 	efichar_from_char(description, opts.label, sizeof(description));
 	efichar_strncpy(load_option->description, description, sizeof(description));
-	p += efichar_strsize(load_option->description); 
+	p += efichar_strsize(load_option->description);
 
 	q = p;
 
-
-
-	disk_fd = open(opts.disk, O_RDWR);
-	if (disk_fd == -1) {
-		sprintf(buffer, "Could not open disk %s", opts.disk);
-		perror(buffer);
-		return 0;
+	if (opts.iface) {
+	      p = (char *)make_net_load_option(p, opts.iface);
 	}
 
-	if (opts.edd_version) {
-		edd_version = get_edd_version();
-
-		if (edd_version == 3) {
-			p += make_edd30_device_path(disk_fd, p);
-		}
-		else if (edd_version == 1) {
-			p += make_edd10_device_path(p, opts.edd10_devicenum);
-		}
-	}
-		
-	rc = disk_get_partition_info (disk_fd, opts.part,
-				      &start, &size, signature,
-				      &mbr_type, &signature_type);
-	
-	close(disk_fd);
-	
-	if (rc) {
-		fprintf(stderr, "Error: no partition information on disk %s.\n"
-			"       Cowardly refusing to create a boot option.\n",
-			opts.disk);
-		return 0;
+	else {
+	      p = (char *)make_disk_load_option(p, opts.iface);
 	}
 
- 	p += make_harddrive_device_path (p, opts.part,
-					 start, size,
-					 signature,
-					 mbr_type, signature_type);
-
-	efichar_from_char(os_loader_path, opts.loader, sizeof(os_loader_path));
-	p += make_file_path_device_path (p, os_loader_path);
-	p += make_end_device_path       (p);
-	
 	load_option->file_path_list_length = p - q;
 
 	datasize = (uint8_t *)p - (uint8_t *)data;
@@ -489,11 +580,11 @@ append_extra_args_ascii(void *data, unsigned long maxchars)
 		p += strlen(p);
 		appended=1;
 
-		usedchars = p - (char *)data; 
+		usedchars = p - (char *)data;
 
 		/* Put a space between args */
 		if (i < (opts.argc-1)) {
-			
+
 			p = strncpy(p, " ", maxchars-usedchars-1);
 			p += strlen(p);
 			usedchars = p - (char *)data;
@@ -528,7 +619,7 @@ append_extra_args_unicode(void *data, unsigned long maxchars)
 				sizeof(efi_char16_t);
 		}
 	}
-	
+
 	if (appended) return efichar_strsize( (efi_char16_t *)data );
 	return 0;
 }
@@ -555,10 +646,10 @@ make_linux_efi_variable(efi_variable_t *var,
 	unsigned long load_option_size = 0, opt_data_size=0;
 
 	memset(buffer,    0, sizeof(buffer));
-	
+
 	/* VariableName needs to be BootXXXX */
 	sprintf(buffer, "Boot%04x", free_number);
-	
+
 	efichar_from_char(var->VariableName, buffer, 1024);
 
 	memcpy(&(var->VendorGuid), &guid, sizeof(guid));

@@ -1,8 +1,8 @@
 /*
   efibootmgr.c - Manipulates EFI variables as exported in /proc/efi/vars
- 
+
   Copyright (C) 2001 Dell Computer Corporation <Matt_Domsch@dell.com>
- 
+
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
@@ -27,7 +27,7 @@
     Media Device Path, File Path, length ??
     End of Hardware Device Path, length 4
     Arguments passed to elilo, as UCS-2 characters, length ??
- 
+
 */
 
 #define _GNU_SOURCE
@@ -140,7 +140,7 @@ read_vars(struct dirent **namelist,
 			entry = malloc(sizeof(var_entry_t));
 			if (!entry) return;
 			memset(entry, 0, sizeof(var_entry_t));
-			
+
 			status = read_variable(namelist[i]->d_name,
 					       &entry->var_data);
 			if (status != EFI_SUCCESS) break;
@@ -246,7 +246,6 @@ warn_duplicate_name(list_t *boot_list)
 		}
 	}
 }
-		    
 
 
 static var_entry_t *
@@ -325,10 +324,10 @@ add_to_boot_order(uint16_t num)
 	old_data = (uint16_t *)&(boot_order.Data);
 	new_data_size = boot_order.DataSize + sizeof(uint16_t);
 	new_data = malloc(new_data_size);
-	
+
 	new_data[0] = num;
 	memcpy(new_data+1, old_data, boot_order.DataSize);
-	
+
 	/* Now new_data has what we need */
 	memcpy(&(boot_order.Data), new_data, new_data_size);
 	boot_order.DataSize = new_data_size;
@@ -347,7 +346,7 @@ remove_from_boot_order(uint16_t num)
 
 	status = read_boot_order(&boot_order);
 	if (status != EFI_SUCCESS) return status;
-	
+
 	/* If it's empty, yea! */
 	if (!boot_order.DataSize) return EFI_SUCCESS;
 
@@ -374,7 +373,7 @@ remove_from_boot_order(uint16_t num)
 	memset(&(boot_order.Data), 0, boot_order.DataSize);
 	memcpy(&(boot_order.Data), new_data, new_data_size);
 	boot_order.DataSize = new_data_size;
-	
+
 	return write_variable(&boot_order);
 }
 
@@ -492,7 +491,7 @@ set_var_nums(const char *pattern, list_t *list)
 	list_t *pos;
 	var_entry_t *var;
 	int num=0, rc;
-	
+
 	list_for_each(pos, list) {
 		var = list_entry(pos, var_entry_t, list);
 		rc = sscanf(var->name->d_name, pattern, &num);
@@ -518,8 +517,6 @@ find_pci_scsi_disk_blk(int fd, int bus, int device, int func,
 	if (rc) return NULL;
 
 	rc = disk_get_size(fd, &size);
-	
-	
 
 	idlun_to_components(&idlun, &host, &channel, &id, &lun);
 
@@ -556,7 +553,7 @@ find_disk_blk(char *disk_name, list_t *blk_list)
 	unsigned int controllernum=0, disknum=0;
 	unsigned char part=0;
 
-	fd = open(disk_name, O_RDONLY);
+	fd = open(disk_name, O_RDONLY|O_DIRECT);
 	rc = disk_get_pci(fd, &bus, &device, &func);
 	if (rc) {
 		fprintf(stderr, "disk_get_pci() failed.\n");
@@ -564,7 +561,7 @@ find_disk_blk(char *disk_name, list_t *blk_list)
 	}
 	rc = disk_info_from_fd(fd,
 			       &interface_type,
-			       &controllernum, 
+			       &controllernum,
 			       &disknum,
 			       &part);
 	if (rc) {
@@ -590,7 +587,7 @@ find_disk_blk(char *disk_name, list_t *blk_list)
 	}
 	return NULL;
 }
-#endif	
+#endif
 
 static void
 unparse_boot_order(uint16_t *order, int length)
@@ -636,7 +633,7 @@ set_boot_order()
 	efichar_from_char(var.VariableName, "BootOrder",
 			  1024);
 	memcpy(&var.VendorGuid, &guid, sizeof(guid));
-	var.Attributes = EFI_VARIABLE_NON_VOLATILE 
+	var.Attributes = EFI_VARIABLE_NON_VOLATILE
 		| EFI_VARIABLE_BOOTSERVICE_ACCESS
 		| EFI_VARIABLE_RUNTIME_ACCESS;
 
@@ -668,9 +665,9 @@ show_boot_vars()
 			printf("* ");
 		else    printf("  ");
 		printf("%s", description);
-		
+
 		if (opts.verbose) {
-			unparse_path(text_path, path, 
+			unparse_path(text_path, path,
 				     load_option->file_path_list_length);
 			/* Print optional data */
 			optional_data_len =
@@ -684,7 +681,7 @@ show_boot_vars()
 						 load_option->file_path_list_length,
 						 optional_data_len);
 			}
-			
+
 			printf("\t%s", text_path);
 		}
 		printf("\n");
@@ -706,12 +703,12 @@ show_boot_order()
 		perror("show_boot_order()");
 		return;
 	}
-	
+
 	/* We've now got an array (in boot_order.Data) of the
 	   boot order.  First add our entry, then copy the old array.
 	*/
 	data = (uint16_t *)&(boot_order.Data);
-	if (boot_order.DataSize) 
+	if (boot_order.DataSize)
 		unparse_boot_order(data, boot_order.DataSize / sizeof(uint16_t));
 
 }
@@ -783,6 +780,8 @@ usage()
 	printf("\t-e | --edd [1|3|-1]   force EDD 1.0 or 3.0 creation variables, or guess\n");
 	printf("\t-E | --device num      EDD 1.0 device number (defaults to 0x80)\n");
 	printf("\t-g | --gpt            force disk with invalid PMBR to be treated as GPT\n");
+	printf("\t-H | --acpi_hid XXXX  set the ACPI HID (used with -i)\n");
+	printf("\t-i | --iface name     create a netboot entry for the named interface\n");
 	printf("\t-l | --loader name     (defaults to \\elilo.efi)\n");
 	printf("\t-L | --label label     Boot manager display label (defaults to \"Linux\")\n");
 	printf("\t-n | --bootnext XXXX   set BootNext to XXXX (hex)\n");
@@ -792,10 +791,11 @@ usage()
 	printf("\t-p | --part part        (defaults to 1) containing loader\n");
 	printf("\t-q | --quiet            be quiet\n");
 	printf("\t-t | --test filename    don't write to NVRAM, write to filename.\n");
-	printf("\t-u | --unicode | --UCS-2  pass extra args as UCS-2 (default is ASCII\n");
+	printf("\t-u | --unicode | --UCS-2  pass extra args as UCS-2 (default is ASCII)\n");
+	printf("\t-U | --acpi_uid XXXX    set the ACPI UID (used with -i)\n");
 	printf("\t-v | --verbose          print additional information\n");
 	printf("\t-V | --version          return version and exit\n");
-	printf("\t-w | --write-signature  write unique sig to disk if needed\n");
+	printf("\t-w | --write-signature  write unique sig to MBR if needed\n");
 }
 
 static void
@@ -805,11 +805,14 @@ set_default_opts()
 	opts.bootnum         = -1;   /* auto-detect */
 	opts.bootnext        = -1;   /* Don't set it */
 	opts.active          = -1;   /* Don't set it */
-	opts.edd10_devicenum = 0x80; 
+	opts.edd10_devicenum = 0x80;
 	opts.loader          = "\\elilo.efi";
 	opts.label           = "Linux";
 	opts.disk            = "/dev/sda";
+	opts.iface           = NULL;
 	opts.part            = 1;
+	opts.acpi_hid        = -1;
+	opts.acpi_uid        = -1;
 }
 
 static void
@@ -829,6 +832,8 @@ parse_opts(int argc, char **argv)
 			{"delete-bootnum",         no_argument, 0, 'B'},
 			{"create",                 no_argument, 0, 'c'},
 			{"disk",             required_argument, 0, 'd'},
+			{"iface",            required_argument, 0, 'i'},
+			{"acpi_hid",         required_argument, 0, 'H' },
 			{"edd-device",       required_argument, 0, 'E'},
 			{"edd30",            required_argument, 0, 'e'},
 			{"gpt",                    no_argument, 0, 'g'},
@@ -843,14 +848,15 @@ parse_opts(int argc, char **argv)
 			{"test",             required_argument, 0, 't'},
 			{"unicode",                no_argument, 0, 'u'},
 			{"UCS-2",                  no_argument, 0, 'u'},
+			{"acpi_uid",         required_argument, 0, 'U' },
 			{"verbose",          optional_argument, 0, 'v'},
 			{"version",                no_argument, 0, 'V'},
 			{"write-signature",        no_argument, 0, 'w'},
 			{0, 0, 0, 0}
 		};
-		
+
 		c = getopt_long (argc, argv,
-				 "AaBb:cd:e:E:gl:L:n:No:Op:qt:uv::Vw",
+				 "AaBb:cd:e:E:gH:i:l:L:n:No:Op:qt:uU:v::Vw",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -887,6 +893,13 @@ parse_opts(int argc, char **argv)
 		case 'g':
 			opts.forcegpt = 1;
 			break;
+		case 'H':
+			rc = sscanf(optarg, "%x", &num);
+			if (rc == 1) opts.acpi_hid = num;
+			break;
+		case 'i':
+			opts.iface = optarg;
+			break;
 		case 'l':
 			opts.loader = optarg;
 			break;
@@ -920,6 +933,10 @@ parse_opts(int argc, char **argv)
 			opts.unicode = 1;
 			break;
 
+		case 'U':
+			rc = sscanf(optarg, "%x", &num);
+			if (rc == 1) opts.acpi_uid = num;
+			break;
 		case 'v':
 			opts.verbose = 1;
 			if (optarg) {
@@ -951,7 +968,7 @@ parse_opts(int argc, char **argv)
 }
 
 
-int 
+int
 main(int argc, char **argv)
 {
 	struct dirent  **boot_names = NULL;
@@ -965,38 +982,42 @@ main(int argc, char **argv)
 		return 0;
 	}
 
-	
+	if (opts.iface && opts.acpi_hid == -1 && opts.acpi_uid == -1) {
+		fprintf(stderr, "\nYou must specify the ACPI HID and UID when using -i.\n\n");
+		return 1;
+	}
+
 	if (!opts.testfile) {
 		num_boot_names = read_boot_var_names(&boot_names);
 		read_vars(boot_names, num_boot_names, &boot_entry_list);
 		set_var_nums("Boot%04x-%*s", &boot_entry_list);
-		
+
 		if (opts.delete_boot) {
 			if (opts.bootnum == -1)
 				fprintf(stderr, "\nYou must specify a boot entry to delete (see the -b option).\n\n");
 			else
 				delete_boot_var(opts.bootnum);
 		}
-		
+
 		if (opts.active >= 0) {
 			set_active_state();
 		}
 	}
-		
+
 	if (opts.create) {
 		warn_duplicate_name(&boot_entry_list);
 		new_boot = make_boot_var(&boot_entry_list);
 		/* Put this boot var in the right BootOrder */
-		if (!opts.testfile && new_boot) 
+		if (!opts.testfile && new_boot)
 			add_to_boot_order(new_boot->num);
 	}
 
 	if (!opts.testfile) {
-		
+
 		if (opts.delete_bootorder) {
 			delete_boot_order();
 		}
-		
+
 		if (opts.bootorder) {
 			set_boot_order();
 		}
@@ -1025,5 +1046,5 @@ main(int argc, char **argv)
 	}
 	free_dirents(boot_names, num_boot_names);
 	return 0;
-} 
+}
 

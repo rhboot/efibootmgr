@@ -11,3 +11,5 @@ Richard Hirst <rhirst@linuxcare.com>
 dann frazier <dannf@debian.org>
 - docbook of manpage
 - Patches to efibootmgr.c
+- network boot entry creation in efi.c
+

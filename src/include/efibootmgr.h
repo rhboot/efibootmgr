@@ -26,6 +26,7 @@ typedef struct {
 	char **argv;
 	int optind;
 	char *disk;
+	char *iface;
 	char *loader;
 	char *label;
 	char *bootorder;
@@ -37,6 +38,8 @@ typedef struct {
 	int bootnext;
 	int verbose;
 	int active;
+	uint32_t acpi_hid;
+	uint32_t acpi_uid;
 	unsigned int delete_boot:1;
 	unsigned int delete_bootorder:1;
 	unsigned int delete_bootnext:1;

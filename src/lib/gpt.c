@@ -36,6 +36,7 @@
 #include <sys/utsname.h>
 #include <asm/byteorder.h>
 #include "crc32.h"
+#include "disk.h"
 #include "gpt.h"
 #include "efibootmgr.h"
 
@@ -92,26 +93,6 @@ is_pmbr_valid(legacy_mbr *mbr)
 		}
 	}
 	return (signature && found);
-}
-
-
-/************************************************************
- * get_sector_size
- * Requires:
- *  - filedes is an open file descriptor, suitable for reading
- * Modifies: nothing
- * Returns:
- *  sector size, or 512.
- ************************************************************/
-static int
-get_sector_size(int filedes)
-{
-	int rc, sector_size = 512;
-
-	rc = ioctl(filedes, BLKSSZGET, &sector_size);
-	if (rc)
-		sector_size = 512;
-	return sector_size;
 }
 
 /**
@@ -239,9 +220,22 @@ read_lba(int fd, uint64_t lba, void *buffer, size_t bytes)
 	int sector_size = get_sector_size(fd);
 	off_t offset = lba * sector_size;
         ssize_t bytesread;
+        void *aligned;
+        void *unaligned;
+
+        if (bytes % sector_size)
+                return EINVAL;
+
+	unaligned = malloc(bytes+sector_size-1);
+	aligned = (void *)
+		(((unsigned long)unaligned + sector_size - 1) &
+		 ~(unsigned long)(sector_size-1));
+	memset(aligned, 0, bytes);
+
 
 	lseek(fd, offset, SEEK_SET);
-	bytesread = read(fd, buffer, bytes);
+	bytesread = read(fd, aligned, bytes);
+        memcpy(buffer, aligned, bytesread);
 
         /* Kludge.  This is necessary to read/write the last
            block of an odd-sized disk, until Linux 2.5.x kernel fixes.

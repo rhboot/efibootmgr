@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <stdint.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -32,6 +32,8 @@
 #include "scsi_ioctls.h"
 #include "gpt.h"
 #include "efibootmgr.h"
+
+#define BLKSSZGET  _IO(0x12,104)	/* get block device sector size */
 
 int
 disk_info_from_fd(int fd, 
@@ -401,6 +403,25 @@ msdos_disk_get_partition_info (int fd, legacy_mbr *mbr,
 	return 0;
 }
 
+/************************************************************
+ * get_sector_size
+ * Requires:
+ *  - filedes is an open file descriptor, suitable for reading
+ * Modifies: nothing
+ * Returns:
+ *  sector size, or 512.
+ ************************************************************/
+int
+get_sector_size(int filedes)
+{
+	int rc, sector_size = 512;
+
+	rc = ioctl(filedes, BLKSSZGET, &sector_size);
+	if (rc)
+		sector_size = 512;
+	return sector_size;
+}
+
 /**
  * disk_get_partition_info()
  *  @fd - open file descriptor to disk
@@ -422,31 +443,46 @@ disk_get_partition_info (int fd,
 			 char *signature,
 			 uint8_t *mbr_type, uint8_t *signature_type)
 {
-	legacy_mbr mbr;
+	legacy_mbr *mbr;
+	void *mbr_unaligned;
 	off_t offset;
 	int this_bytes_read = 0;
 	int gpt_invalid=0, mbr_invalid=0;
+	int rc=0;
+	int sector_size = get_sector_size(fd);
 
-	memset(&mbr, 0, sizeof(mbr));
+	if (sizeof(*mbr) != sector_size)
+		return 1;
+	mbr_unaligned = malloc(sizeof(*mbr)+sector_size-1);
+	mbr = (legacy_mbr *)
+		(((unsigned long)mbr_unaligned + sector_size - 1) &
+		 ~(unsigned long)(sector_size-1));
+	memset(mbr, 0, sizeof(*mbr));
 	offset = lseek(fd, 0, SEEK_SET);
-	this_bytes_read = read(fd, &mbr, sizeof(mbr));
-	if (this_bytes_read < sizeof(mbr)) return 1;
-	
+	this_bytes_read = read(fd, mbr, sizeof(*mbr));
+	if (this_bytes_read < sizeof(*mbr)) {
+		rc=1;
+		goto error_free_mbr;
+	}
 	gpt_invalid = gpt_disk_get_partition_info(fd, num,
 						  start, size,
 						  signature,
 						  mbr_type,
 						  signature_type);
 	if (gpt_invalid) {
-		mbr_invalid = msdos_disk_get_partition_info(fd, &mbr, num,
+		mbr_invalid = msdos_disk_get_partition_info(fd, mbr, num,
 							    start, size,
 							    signature,
 							    mbr_type,
 							    signature_type);
-		if (mbr_invalid)
-			return 1;
+		if (mbr_invalid) {
+			rc=1;
+			goto error_free_mbr;
+		}
 	}
-	return 0;
+ error_free_mbr:
+	free(mbr_unaligned);
+	return rc;
 }
 
 #ifdef DISK_EXE
@@ -456,7 +492,7 @@ main (int argc, char *argv[])
 	int fd, rc;
 	unsigned char bus=0,device=0,func=0;
 	if (argc <= 1) return 1;
-	fd = open(argv[1], O_RDONLY);
+	fd = open(argv[1], O_RDONLY|O_DIRECT);
 	rc = disk_get_pci(fd, &bus, &device, &func);
 	if (!rc) {
 		printf("PCI %02x:%02x.%02x\n", bus, device, func);

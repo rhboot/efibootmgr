@@ -1,10 +1,10 @@
   default: all
 
-  RELEASE_DATE := "22-Oct-2002"	
+  RELEASE_DATE := "31-Jul-2003"
   RELEASE_MAJOR := 0
   RELEASE_MINOR := 4
-  RELEASE_SUBLEVEL := 1
-  RELEASE_EXTRALEVEL :=
+  RELEASE_SUBLEVEL := 2
+  RELEASE_EXTRALEVEL :=-test1
   RELEASE_NAME := efibootmgr
   RELEASE_STRING := $(RELEASE_NAME)-$(RELEASE_MAJOR).$(RELEASE_MINOR).$(RELEASE_SUBLEVEL)$(RELEASE_EXTRALEVEL)
 
@@ -15,7 +15,7 @@
   BINDIR := /usr/sbin
 
 #--------------------------------------------
-# Generic Makefile stuff is below. You 
+# Generic Makefile stuff is below. You
 #  should not have to modify any of the stuff
 #  below.
 #--------------------------------------------

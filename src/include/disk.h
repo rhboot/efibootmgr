@@ -84,6 +84,7 @@ int disk_get_partition_info (int fd,
 
 
 int disk_get_size(int fd, long *size);
+int get_sector_size(int fd);
 
 
 #endif
