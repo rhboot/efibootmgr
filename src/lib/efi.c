@@ -109,28 +109,54 @@ write_variable_to_file(efi_variable_t *var)
 	close(fd);
 	return EFI_SUCCESS;
 }
+/**
+ * select_variable_names()
+ * @d - dirent to compare against
+ * 
+ * This ignores "." and ".." entries, and selects all others.
+ */
 
+static int
+select_variable_names(const struct dirent *d)
+{
+	if (!strcmp(d->d_name, ".") ||
+	    !strcmp(d->d_name, ".."))
+		return 0;
+	return 1;
+}
+
+/**
+ * find_write_victim()
+ * @var - variable to be written
+ * @file - name of file to open for writing @var is returned.
+ * 
+ * This ignores "." and ".." entries, and selects all others.
+ */
 static char *
-find_write_victim(efi_variable_t *var, char name[80])
+find_write_victim(efi_variable_t *var, char file[PATH_MAX])
 {
 	struct dirent **namelist = NULL;
 	int i, n, found=0;
-	char *p;
-
-	n = scandir(PROC_DIR_EFI_VARS, &namelist, NULL, alphasort);
+	char testname[PATH_MAX], *p;
+	
+	memset(testname, 0, sizeof(testname));
+	n = scandir(PROC_DIR_EFI_VARS, &namelist,
+		    select_variable_names, alphasort);
 	if (n < 0) {
 		perror("scandir " PROC_DIR_EFI_VARS);
 		fprintf(stderr, "You must 'modprobe efivars' first.\n");
 	}
 
+	p = testname;
+	efichar_to_char(p, var->VariableName, PATH_MAX);
+	p += strlen(p);
+	p += sprintf(p, "-");
+	efi_guid_unparse(&var->VendorGuid, p);
+
 	for (i=0; namelist[i]; i++) {
-		p = name;
-		efichar_to_char(p, var->VariableName, 80);
-		p += strlen(p);
-		p += sprintf(p, "-");
-		efi_guid_unparse(&var->VendorGuid, p);
-		if (strncmp(name, namelist[i]->d_name, sizeof(name))) {
+		if (strncmp(testname, namelist[i]->d_name, sizeof(testname))) {
 			found++;
+			sprintf(file, "%s%s", PROC_DIR_EFI_VARS, namelist[i]->d_name);
 			break;
 		}
 	}
@@ -142,7 +168,7 @@ find_write_victim(efi_variable_t *var, char name[80])
 	free(namelist);
 		
 	if (!found) return NULL;
-	return name;
+	return file;
 }
 
 
