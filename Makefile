@@ -1,5 +1,5 @@
-# hi
   default: all
+#  CFLAGS += -Wall
 
   RELEASE_MAJOR := 0
   RELEASE_MINOR := 2

@@ -34,10 +34,13 @@ idlun_to_components (Scsi_Idlun *idlun,
 		     unsigned char *id,
 		     unsigned char *lun)
 {
+	if (!idlun || !host || !channel || !id || !lun) return 1;
+	
 	*host    = (idlun->dev_id >> 24) & 0xFF;
 	*channel = (idlun->dev_id >> 16) & 0xFF;
 	*id      = (idlun->dev_id      ) & 0xFF;
 	*lun     = (idlun->dev_id >>  8) & 0xFF;
+	return 0;
 }
 
 

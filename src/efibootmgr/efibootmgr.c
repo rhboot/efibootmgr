@@ -78,13 +78,14 @@ select_boot_var_names(const struct dirent *d)
 	return rc;
 }
 
+#if 0
 static int
 select_blk_var_names(const struct dirent *d)
 {
 	int num;
 	return sscanf(d->d_name, "blk%x-%*s", &num);
 }
-
+#endif
 
 static int
 read_boot_var_names(struct dirent ***namelist)
@@ -96,6 +97,7 @@ read_boot_var_names(struct dirent ***namelist)
 	return n;
 }
 
+#if 0
 static int
 read_blk_var_names(struct dirent ***namelist)
 {
@@ -110,10 +112,11 @@ static int
 dirent_list_length(struct dirent **namelist)
 {
 	int i;
-	if (!namelist) return;
+	if (!namelist) return 0;
 	for (i=0; namelist[i]; i++);
 	return i;
 }
+#endif
 
 static void
 read_vars(struct dirent **namelist,
@@ -121,7 +124,7 @@ read_vars(struct dirent **namelist,
 {
 	efi_status_t status;
 	var_entry_t *entry;
-	int i, assigned;
+	int i;
 
 	if (!namelist) return;
 
@@ -218,7 +221,6 @@ find_free_boot_var(struct list_head *boot_list)
 static var_entry_t *
 make_boot_var(struct list_head *boot_list)
 {
-	struct list_head *boot_pos;
 	var_entry_t *boot;
 	int free_number;
 
@@ -281,7 +283,6 @@ add_to_boot_order(__u16 num)
 	efi_variable_t boot_order;
 	__u64 new_data_size;
 	__u16 *new_data, *old_data;
-	int old_i,new_i;
 
 
 	status = read_boot_order(&boot_order);
@@ -570,7 +571,7 @@ unparse_boot_order(__u16 *order, int length)
 	for (i=0; i<length; i++) {
 		printf("%04x", order[i]);
 		if (i < (length-1))
-		printf(",", order[i]);
+			printf(",");
 	}
 	printf("\n");
 }
@@ -617,10 +618,6 @@ set_boot_order()
 static void
 show_boot_vars()
 {
-	efi_status_t status;
-	efi_variable_t *var;
-	__u16 *data;
-	int i, j;
 	struct list_head *pos;
 	var_entry_t *boot;
 	char description[80];
@@ -659,13 +656,6 @@ show_boot_order()
 	efi_status_t status;
 	efi_variable_t boot_order;
 	__u16 *data;
-	int i, j;
-	struct list_head *pos;
-	var_entry_t *boot;
-	char description[80];
-	EFI_LOAD_OPTION *load_option;
-	EFI_DEVICE_PATH *path;
-	char text_path[1024];
 
 	status = read_boot_order(&boot_order);
 	if (status != EFI_SUCCESS) return;
@@ -682,8 +672,6 @@ show_boot_order()
 static efi_status_t
 set_active_state()
 {
-	efi_status_t status;
-	efi_variable_t *var;
 	struct list_head *pos;
 	var_entry_t *boot;
 	EFI_LOAD_OPTION *load_option;
@@ -891,7 +879,7 @@ main(int argc, char **argv)
 {
 	struct dirent  **boot_names = NULL;
 	var_entry_t *new_boot = NULL;
-	int rc, num;
+	int num;
 	
 	set_default_opts();
 	parse_opts(argc, argv);

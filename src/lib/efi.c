@@ -26,11 +26,15 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <linux/limits.h>
+#include <unistd.h>
 #include "efi.h"
 #include "efichar.h"
 #include "scsi_ioctls.h"
 #include "disk.h"
 #include "efibootmgr.h"
+
+#define __USE_LARGEFILE64
+#define __USE_FILEOFFSET64
 
 EFI_DEVICE_PATH *
 load_option_path(EFI_LOAD_OPTION *option)
@@ -59,7 +63,6 @@ read_variable(char *name, efi_variable_t *var)
 	char *newname;
 	int fd;
 	size_t readsize;
-	char buffer[80];
 	if (!name || !var) return EFI_INVALID_PARAMETER;
 	
 	newnamesize = strlen(PROC_DIR_EFI) + strlen(name) + 1;
@@ -68,22 +71,17 @@ read_variable(char *name, efi_variable_t *var)
 	sprintf(newname, "%s%s", PROC_DIR_EFI,name);
 	fd = open(newname, O_RDONLY);
 	if (fd == -1) {
-//		sprintf(buffer, "read_variable():open(%s)", newname);
-//		perror(buffer);
 		free(newname);
 		return EFI_NOT_FOUND;
 	}
 	readsize = read(fd, var, sizeof(*var));
 	if (readsize != sizeof(*var)) {
-		perror("read_variable():read()");
 		free(newname);
 		close(fd);
 		return EFI_INVALID_PARAMETER;
 		
 	}
-	if (close(fd) == -1) {
-		perror("read_variable():close()");
-	}
+	close(fd);
 	free(newname);
 	return var->Status;
 }
@@ -91,7 +89,6 @@ read_variable(char *name, efi_variable_t *var)
 efi_status_t
 write_variable(efi_variable_t *var)
 {
-	int newnamesize;
 	char *newname;
 	int fd;
 	size_t writesize;
@@ -330,7 +327,7 @@ make_linux_load_option(void *data)
 
 
 
-	disk_fd = open64(opts.disk, O_RDONLY);
+	disk_fd = open(opts.disk, O_RDONLY);
 	if (disk_fd == -1) {
 		sprintf(buffer, "Could not open disk %s", opts.disk);
 		perror(buffer);

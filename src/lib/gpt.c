@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <sys/types.h>
+#include <linux/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
@@ -282,7 +282,7 @@ IsGuidPartitionTableValid(int fd, __u64 lba,
 	int rc = 0;		/* default to not valid */
 	__u32 crc, origcrc;
         
-        if (!gpt || !ptes) return;
+        if (!gpt || !ptes) return rc;
 
         // printf("IsGuidPartitionTableValid(%llx)\n", lba);
 	if (!(*gpt = ReadGuidPartitionTableHeader(fd, lba)))

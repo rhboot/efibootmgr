@@ -23,9 +23,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <string.h>
 
 #include "efi.h"
 #include "unparse_path.h"
+#include "efichar.h"
 
 
 
@@ -35,7 +37,7 @@ dump_raw_data(void *data, __u64 length)
 {
 	char buffer1[80], buffer2[80], *b1, *b2, c;
 	unsigned char *p = data;
-	unsigned long column=0, row=0;
+	unsigned long column=0;
 	__u64 length_printed = 0;
 	const char maxcolumn = 16;
 	while (length_printed < length) {
@@ -81,7 +83,6 @@ unparse_raw(char *buffer, __u8 *p, __u64 length)
 static int
 unparse_acpi_path(char *buffer, EFI_DEVICE_PATH *path)
 {
-	__u8 *p = ((void *)path) + OFFSET_OF(EFI_DEVICE_PATH, data);
 	ACPI_DEVICE_PATH *acpi = (ACPI_DEVICE_PATH *)path;
 
 	switch (path->subtype) {
@@ -144,7 +145,6 @@ unparse_hardware_path(char *buffer, EFI_DEVICE_PATH *path)
 static int
 unparse_messaging_path(char *buffer, EFI_DEVICE_PATH *path)
 {
-	__u8 *p = ((void *)path) + OFFSET_OF(EFI_DEVICE_PATH, data);
 	ATAPI_DEVICE_PATH *atapi = (ATAPI_DEVICE_PATH *)path;
 	SCSI_DEVICE_PATH *scsi = (SCSI_DEVICE_PATH *)path;
 	FIBRE_CHANNEL_DEVICE_PATH *fc = (FIBRE_CHANNEL_DEVICE_PATH *)path;
@@ -210,7 +210,7 @@ unparse_media_path(char *buffer, EFI_DEVICE_PATH *path)
 	CDROM_DEVICE_PATH *cdrom = (CDROM_DEVICE_PATH *)path;
 	MEDIA_PROTOCOL_DEVICE_PATH *media = (MEDIA_PROTOCOL_DEVICE_PATH *)path;
 	FILE_PATH_DEVICE_PATH *file = (FILE_PATH_DEVICE_PATH *)path;
-	char text_guid[40], *p = buffer, *q = (__u8 *)path + 20;
+	char text_guid[40], *p = buffer;
 	char file_name[80];
 	memset(file_name, 0, sizeof(file_name));
 
@@ -296,7 +296,7 @@ unparse_path(char *buffer, EFI_DEVICE_PATH *path, __u16 pathsize)
 }
 
 
-
+#if 0
 static void
 unparse_var(efi_variable_t *var)
 {
@@ -307,7 +307,6 @@ unparse_var(efi_variable_t *var)
 	printf("%s\n", buffer);
 }
 
-#if 0
 static int
 compare_hardware_path_pci(EFI_DEVICE_PATH *path,
 			  int device, int func)

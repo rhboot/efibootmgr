@@ -127,7 +127,7 @@ disk_get_scsi_pci(int fd,
 	     unsigned char *device,
 	     unsigned char *function)
 {
-	int rc, nodefd, usefd=fd;
+	int rc, usefd=fd;
 	struct stat buf;
 	char slot_name[8];
 	unsigned int b=0,d=0,f=0;
@@ -190,9 +190,11 @@ disk_get_ide_pci(int fd,
 	char procname[80], infoline[80];
 	size_t read_count;
 	int interface_type;
+	int rc;
 	
-	disk_info_from_fd(fd, &interface_type, &controllernum,
-			  &disknum, &part);
+	rc = disk_info_from_fd(fd, &interface_type, &controllernum,
+			       &disknum, &part);
+	if (rc) return rc;
 
 
 	sprintf(procname, "/proc/ide/ide%d/config", controllernum);
@@ -214,17 +216,19 @@ disk_get_ide_pci(int fd,
 		*device   = PCI_SLOT(d);
 		*function = PCI_FUNC(d);
 	}
-
+	return 0;
 }
 
 
 
+#if 0
 /* this is a list of devices */
 static int
 disk_get_md_parts(int fd)
 {
-
+	return 0;
 }
+#endif
 
 int
 disk_get_pci(int fd,
@@ -359,7 +363,7 @@ disk_get_partition_info (int fd,
 {
 	LegacyMBR_t mbr;
 	off_t offset;
-	int bytes_read = 0, this_bytes_read = 0;
+	int this_bytes_read = 0;
 	int i, is_gpt=0;
 
 	memset(&mbr, 0, sizeof(mbr));

@@ -25,6 +25,7 @@
 */
 
 #include <stdlib.h>
+#include <string.h>
 #include "efi.h"
 #include "efichar.h"
 
@@ -48,7 +49,7 @@ efichar_char_strcmp(const char *s1, const efi_char16_t *s2)
 int
 efichar_strcmp(const efi_char16_t *s1, const efi_char16_t *s2)
 {
-	int i, rc=0;
+	int i;
 	int s1_len = efichar_strlen(s1, -1);
 	int s2_len = efichar_strlen(s2, -1);
 	
