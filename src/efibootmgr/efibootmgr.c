@@ -125,6 +125,7 @@ dirent_list_length(struct dirent **namelist)
 
 static void
 read_vars(struct dirent **namelist,
+	  int num_boot_names,
 	  struct list_head *head)
 {
 	efi_status_t status;
@@ -133,17 +134,19 @@ read_vars(struct dirent **namelist,
 
 	if (!namelist) return;
 
-	for (i=0; namelist[i]; i++)
+	for (i=0; i < num_boot_names; i++)
 	{
-		entry = malloc(sizeof(var_entry_t));
-		if (!entry) return;
-		memset(entry, 0, sizeof(var_entry_t));
-		
-		status = read_variable(namelist[i]->d_name, &entry->var_data);
-		if (status != EFI_SUCCESS) break;
-//		printf("Reading %s\n", namelist[i]->d_name);
-		entry->name = namelist[i];
-		list_add_tail(&entry->list, head);
+		if (namelist[i]) {
+			entry = malloc(sizeof(var_entry_t));
+			if (!entry) return;
+			memset(entry, 0, sizeof(var_entry_t));
+			
+			status = read_variable(namelist[i]->d_name,
+					       &entry->var_data);
+			if (status != EFI_SUCCESS) break;
+			entry->name = namelist[i];
+			list_add_tail(&entry->list, head);
+		}
 	}
 	return;
 }
@@ -153,13 +156,15 @@ read_vars(struct dirent **namelist,
 
 
 static void
-free_dirents(struct dirent **ptr)
+free_dirents(struct dirent **ptr, int num_dirents)
 {
 	int i;
 	if (!ptr) return;
-	for (i=0; ptr[i]; i++) {
-		free(ptr[i]);
-		ptr[i] = NULL;
+	for (i=0; i < num_dirents; i++) {
+		if (ptr[i]) {
+			free(ptr[i]);
+			ptr[i] = NULL;
+		}
 	}
 	free(ptr);
 }
@@ -946,7 +951,7 @@ main(int argc, char **argv)
 {
 	struct dirent  **boot_names = NULL;
 	var_entry_t *new_boot = NULL;
-	int num;
+	int num, num_boot_names=0;
 
 	if (getuid() != 0) {
 		printf("efibootmgr must be run as root.\n");
@@ -962,8 +967,8 @@ main(int argc, char **argv)
 
 	
 	if (!opts.testfile) {
-		read_boot_var_names(&boot_names);
-		read_vars(boot_names, &boot_entry_list);
+		num_boot_names = read_boot_var_names(&boot_names);
+		read_vars(boot_names, num_boot_names, &boot_entry_list);
 		set_var_nums("Boot%04x-%*s", &boot_entry_list);
 		
 		if (opts.delete_boot) {
@@ -1015,7 +1020,7 @@ main(int argc, char **argv)
 			show_boot_vars();
 		}
 	}
-	free_dirents(boot_names);
+	free_dirents(boot_names, num_boot_names);
 	return 0;
 } 
 

@@ -154,17 +154,21 @@ find_write_victim(efi_variable_t *var, char file[PATH_MAX])
 	p += sprintf(p, "-");
 	efi_guid_unparse(&var->VendorGuid, p);
 
-	for (i=0; i<n && namelist[i]; i++) {
-		if (strncmp(testname, namelist[i]->d_name, sizeof(testname))) {
+	for (i=0; i<n; i++) {
+		if (namelist[i] &&
+		    strncmp(testname, namelist[i]->d_name, sizeof(testname))) {
 			found++;
-			sprintf(file, "%s%s", PROC_DIR_EFI_VARS, namelist[i]->d_name);
+			sprintf(file, "%s%s", PROC_DIR_EFI_VARS,
+				namelist[i]->d_name);
 			break;
 		}
 	}
 
 	while (n--) {
-		free(namelist[n]);
-		namelist[n] = NULL;
+		if (namelist[n]) {
+			free(namelist[n]);
+			namelist[n] = NULL;
+		}
 	}
 	free(namelist);
 		
