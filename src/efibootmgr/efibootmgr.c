@@ -319,7 +319,7 @@ remove_from_boot_order(uint16_t num)
 	uint16_t *new_data, *old_data;
 	int old_i,new_i;
 
-	read_boot_order(&boot_order);
+	status = read_boot_order(&boot_order);
 	if (status != EFI_SUCCESS) return status;
 	
 	/* If it's empty, yea! */

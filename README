@@ -9,7 +9,7 @@ Specification, v1.02 or above, available from http://developer.intel.com.
 Note: efibootmgr requires that the kernel module efivars be loaded
 prior to use.  'modprobe efivars' should do the trick.
 
-usage: efibootmgr [options] [boot loader options ...]
+usage: efibootmgr [options]
 	-a | --active         sets bootnum active
 	-A | --inactive       sets bootnum inactive
 	-b | --bootnum XXXX   modify BootXXXX (hex)
