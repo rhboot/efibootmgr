@@ -1,3 +1,11 @@
+* Thu Jan 3 2002 Matt Domsch <Matt_Domsch@dell.com>
+- added back in read last sector IOCTL hack, but only after read() fails.
+- released v0.4.0-test4
+
+* Thu Jan 3 2002 Matt Domsch <Matt_Domsch@dell.com>
+- more cleanups
+- released v0.4.0-test3
+	
 * Wed Jan 2 2002 Matt Domsch <Matt_Domsch@dell.com>
 - Changed PROC_DIR_EFI to PROC_DIR_EFI_VARS
 - write_variable() now searches /proc/efi/vars for a variable that's not
