@@ -333,8 +333,8 @@ msdos_disk_get_partition_info (int fd, legacy_mbr *mbr,
 	struct stat stat;
 	struct timeval tv;
 	
-	mbr_valid = is_mbr_valid(mbr);
 	if (!mbr) return 1;
+	if (!is_mbr_valid(mbr)) return 1;
 
 	*mbr_type = 0x01;
 	*signature_type = 0x01;

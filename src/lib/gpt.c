@@ -546,7 +546,7 @@ gpt_disk_get_partition_info(int fd,
 	gpt_entry *ptes = NULL, *p;
 
 	if (!FindValidGPT(fd, &pgpt, &agpt, &ptes))
-		return -1;
+		return 1;
 
 	if (pgpt)
 		gpt = pgpt;
