@@ -1,5 +1,2 @@
 * MS-DOS style extended partitions
-* Allow Unicode or ASCII options to pass to the boot loader
-* Convert from on-disk little endian to CPU format when reading
-  partition info.
-
+* docbook-to-man the man page provided

@@ -1,3 +1,22 @@
+* Tue Apr 02 2002 Matt Domsch <Matt_Domsch@dell.com>
+- finished conversion to GPT code
+	
+* Sat Mar 30 2002 Matt Domsch <Matt_Domsch@dell.com>
+- began conversion to GPT code in post-2.4.18 and post-2.5.7 kernels.
+- added manpage contributed by dannf@fc.hp.com
+
+* Mon Feb 11 2002 Matt Domsch <Matt_Domsch@dell.com>
+- BLKGETSIZE64 is fixed in 2.4.18-pre8 and 2.5.4-pre3.  Wait a bit longer
+before using though.
+- added list_for_each_safe() routine.  It's needed in the boot
+var deletion routine, though it was already breaking out once found.
+- changed struct list_head to list_t	
+- released v0.4.0-test4
+	
+* Fri Jan 18 2002 Matt Domsch <Matt_Domsch@dell.com>
+- commented out BLKGETSIZE64 ioctl use for now.  Kernels 2.4.15-2.4.18 and
+  2.5.0-2.5.3 don't return the right value.
+
 * Thu Jan 3 2002 Matt Domsch <Matt_Domsch@dell.com>
 - added back in read last sector IOCTL hack, but only after read() fails.
 - released v0.4.0-test4
