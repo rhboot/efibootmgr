@@ -312,43 +312,44 @@ msdos_disk_get_partition_info (int fd, LegacyMBR_t *mbr,
 			       char *signature,
 			       uint8_t *mbr_type, uint8_t *signature_type)
 {	
-
-	int randfd, readbytes=0;
+	int rc;
 	uint32_t new_sig=0;
 	long disk_size=0;
+	struct stat stat;
 
 	*mbr_type = 0x01;
 	*signature_type = 0x01;
 
-	if (!mbr->UniqueMBRSignature) {
-		if (opts.write_signature) {
-
-			/* MBR Signatures must be unique for the 
-			   EFI Boot Manager
-			   to find the right disk to boot from */
-			randfd = open("/dev/random", O_RDONLY);
-			if (randfd == -1) {
-				perror("Opening /dev/random");
-			}
-			while (!readbytes) {
-				readbytes = read (randfd, &new_sig, sizeof(new_sig));
-			}
-			close(randfd);
-			mbr->UniqueMBRSignature = new_sig;
+	if (!mbr->UniqueMBRSignature && !opts.write_signature) {
+		
+		printf("\n\n******************************************************\n");
+		printf("Warning! This MBR disk does not have a unique signature.\n");
+		printf("If this is not the first disk found by EFI, you may not be able\n");
+		printf("to boot from it without a unique signature.\n");
+		printf("Run efibootmgr with the -w flag to write a unique signature\n");
+		printf("to the disk.\n");
+		printf("******************************************************\n\n");
+		
+	}
+	else if (opts.write_signature) {
+		
+		/* MBR Signatures must be unique for the 
+		   EFI Boot Manager
+		   to find the right disk to boot from */
+		
+		rc = fstat(fd, &stat);
+		if (rc == -1) {
+			perror("stat disk");
+		}
+		else {
+		
+			/* Write the device type to the signature.
+			   This will be unique per disk per system */
+			mbr->UniqueMBRSignature = stat.st_rdev;
 			
 			/* Write it to the disk */
 			lseek(fd, 0, SEEK_SET);
 			write(fd, mbr, sizeof(*mbr));
-		}
-		else {
-			printf("\n\n******************************************************\n");
-			printf("Warning! This MBR disk does not have a unique signature.\n");
-			printf("If this is not the first disk found by EFI, you may not be able\n");
-			printf("to boot from it without a unique signature.\n");
-			printf("Run efibootmgr with the -w flag to write a unique signature\n");
-			printf("to the disk.\n");
-			printf("******************************************************\n\n");
-
 		}
 	}
 	*(uint32_t *)signature = mbr->UniqueMBRSignature;
