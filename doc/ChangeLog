@@ -1,3 +1,20 @@
+* Tue Oct 22 2002 Matt Domsch <Matt_Domsch@dell.com>
+- ran docbook2man on the man page Dann Frazier created
+- Added man page to spec file
+- Added patches from Dann Frazier
+  - Removes the requirement to be root to run efibootmgr.  This lets
+    mortal users run efibootmgr to check the version, and see the
+    --help output. It should also allow efibootmgr to work under
+    security systems without the strict root/non-root dichotomy.
+    - Checks to see if a boot option was specified when a boot option
+    deletion was requested.
+- Released version 0.4.1
+	
+* Sun Jul 21 2002 Matt Domsch <Matt_Domsch@dell.com>
+- Added kernel_has_blkgetsize64() test, now uses BLKGETSIZE64 if on a
+  known-good kernel.  This is important when the Large Block Device (64-bit
+  block address) patch gets merged into the 2.5 kernel. 
+	
 * Wed May 1 2002 Matt Domsch <Matt_Domsch@dell.com>
 - Released version 0.4.0
 	

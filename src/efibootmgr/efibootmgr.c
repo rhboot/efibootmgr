@@ -300,6 +300,7 @@ read_boot_order(efi_variable_t *boot_order)
 		boot_order->Attributes = EFI_VARIABLE_NON_VOLATILE 
 			| EFI_VARIABLE_BOOTSERVICE_ACCESS
 			| EFI_VARIABLE_RUNTIME_ACCESS;
+		return status;
 	}
 	return EFI_SUCCESS;
 }
@@ -700,7 +701,11 @@ show_boot_order()
 	uint16_t *data;
 
 	status = read_boot_order(&boot_order);
-	if (status != EFI_SUCCESS) return;
+
+	if (status != EFI_SUCCESS) {
+		perror("show_boot_order()");
+		return;
+	}
 	
 	/* We've now got an array (in boot_order.Data) of the
 	   boot order.  First add our entry, then copy the old array.
@@ -953,11 +958,6 @@ main(int argc, char **argv)
 	var_entry_t *new_boot = NULL;
 	int num, num_boot_names=0;
 
-	if (getuid() != 0) {
-		printf("efibootmgr must be run as root.\n");
-		exit(1);
-	}
-	
 	set_default_opts();
 	parse_opts(argc, argv);
 	if (opts.showversion) {
@@ -972,7 +972,10 @@ main(int argc, char **argv)
 		set_var_nums("Boot%04x-%*s", &boot_entry_list);
 		
 		if (opts.delete_boot) {
-			delete_boot_var(opts.bootnum);
+			if (opts.bootnum == -1)
+				fprintf(stderr, "\nYou must specify a boot entry to delete (see the -b option).\n\n");
+			else
+				delete_boot_var(opts.bootnum);
 		}
 		
 		if (opts.active >= 0) {
