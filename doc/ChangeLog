@@ -2,6 +2,12 @@
 - Applied patch from Andreas Schwab.  remove_from_boot_order() called
   read_boot_order() without checking the return status.
 - Changed README to remove os loader args comment
+- Changed efi_status_t to be unsigned long (not uint64_t) as per EFI
+  spec.  This allows efibootmgr to be recompiled as a 32-bit or 64-bit app
+  depending on its running on 32-bit or 64-bit Linux.  Note:  this changes
+  the size of the structure returned in /proc/efi/vars to match the kernel
+  implementation.  32-bit efibootmgr won't work on 64-bit Linux and vice versa.
+- release v0.3.2	
 
 	
 * Fri May 18 2001 Matt Domsch <Matt_Domsch@dell.com>

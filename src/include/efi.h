@@ -28,7 +28,9 @@
  */
 #include <stdint.h>
 
-#define EFI_ERROR(x) ((x) | (1L << 63))
+#define BITS_PER_LONG (sizeof(unsigned long) * 8)
+
+#define EFI_ERROR(x) ((x) | (1L << (BITS_PER_LONG - 1)))
 
 #define EFI_SUCCESS		0
 #define EFI_LOAD_ERROR          EFI_ERROR(1)
@@ -70,7 +72,7 @@
 
 
 
-typedef uint64_t efi_status_t;
+typedef unsigned long efi_status_t;
 typedef uint8_t  efi_bool_t;
 typedef uint16_t efi_char16_t;		/* UNICODE character */
 
