@@ -9,7 +9,7 @@
      <email>csmall@debian.org</email>.
 
      The content was mostly taken from the efibootmgr README file in the
-     Debian package, which appears to have been written by Matt Domsch
+     Debian package, which was written by Matt Domsch
      <email>Matt_Domsch@dell.com</email>.
   -->
 
@@ -17,7 +17,7 @@
   <!ENTITY manfirstname "<firstname>dann</firstname>">
   <!ENTITY mansurname   "<surname>frazier</surname>">
   <!-- Please adjust the date whenever revising the manpage. -->
-  <!ENTITY mandate      "<date>2002-03-29</date>">
+  <!ENTITY mandate      "<date>2002-04-05</date>">
   <!-- SECTION should be 1-8, maybe with subsection. Other parameters are
        allowed: see man(7), man(1). -->
   <!ENTITY mansection   "<manvolnum>8</manvolnum>">

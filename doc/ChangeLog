@@ -1,3 +1,8 @@
+* Fri Apr 05 2002 Matt Domsch <Matt_Domsch@dell.com>
+- Added syncs to make tarball target so NFS is current and CVS dirs get
+deleted before the tarball is made.
+- Added a few __leXX_to_cpu() calls in code currently commented out in gpt.c
+	
 * Tue Apr 02 2002 Matt Domsch <Matt_Domsch@dell.com>
 - finished conversion to GPT code
 	
