@@ -1,5 +1,5 @@
 /*
-  efi.[ch] - Manipulates EFI variables as exported in /proc/efi/vars
+  efivars_proc.[ch] - Manipulates EFI variables as exported in /proc/efi/vars
 
   Copyright (C) 2001,2003 Dell Computer Corporation <Matt_Domsch@dell.com>
 
@@ -47,6 +47,10 @@ typedef __uint8_t u8;           /* ditto */
 #include "scsi_ioctls.h"
 #include "disk.h"
 #include "efibootmgr.h"
+#include "efivars_procfs.h"
+#include "efivars_sysfs.h"
+
+static struct efivar_kernel_calls *fs_kernel_calls;
 
 EFI_DEVICE_PATH *
 load_option_path(EFI_LOAD_OPTION *option)
@@ -69,35 +73,32 @@ efi_guid_unparse(efi_guid_t *guid, char *out)
         return out;
 }
 
-
-efi_status_t
-read_variable(char *name, efi_variable_t *var)
+void
+set_fs_kernel_calls()
 {
-	int newnamesize;
-	char *newname;
-	int fd;
-	size_t readsize;
-	if (!name || !var) return EFI_INVALID_PARAMETER;
+	char name[PATH_MAX];
+	DIR *dir;
+	snprintf(name, PATH_MAX, "%s", SYSFS_DIR_EFI_VARS);
+	dir = opendir(name);
+	if (dir) {
+		closedir(dir);
+		fs_kernel_calls = &sysfs_kernel_calls;
+		return;
+	}
 
-	newnamesize = strlen(PROC_DIR_EFI_VARS) + strlen(name) + 1;
-	newname = malloc(newnamesize);
-	if (!newname) return EFI_OUT_OF_RESOURCES;
-	sprintf(newname, "%s%s", PROC_DIR_EFI_VARS,name);
-	fd = open(newname, O_RDONLY);
-	if (fd == -1) {
-		free(newname);
-		return EFI_NOT_FOUND;
+	snprintf(name, PATH_MAX, "%s", PROCFS_DIR_EFI_VARS);
+	dir = opendir(name);
+	if (dir) {
+		closedir(dir);
+		fs_kernel_calls = &procfs_kernel_calls;
+		return;
 	}
-	readsize = read(fd, var, sizeof(*var));
-	if (readsize != sizeof(*var)) {
-		free(newname);
-		close(fd);
-		return EFI_INVALID_PARAMETER;
-	}
-	close(fd);
-	free(newname);
-	return var->Status;
+	fprintf(stderr, "Fatal: Couldn't open either sysfs or procfs directories for accessing EFI variables.\n");
+	fprintf(stderr, "Try 'modprobe efivars' as root.\n");
+	exit(1);
 }
+
+
 
 static efi_status_t
 write_variable_to_file(efi_variable_t *var)
@@ -120,108 +121,69 @@ write_variable_to_file(efi_variable_t *var)
 	close(fd);
 	return EFI_SUCCESS;
 }
-/**
- * select_variable_names()
- * @d - dirent to compare against
- *
- * This ignores "." and ".." entries, and selects all others.
- */
 
-static int
-select_variable_names(const struct dirent *d)
+efi_status_t
+read_variable(const char *name, efi_variable_t *var)
 {
-	if (!strcmp(d->d_name, ".") ||
-	    !strcmp(d->d_name, ".."))
-		return 0;
-	return 1;
+	if (!name || !var) return EFI_INVALID_PARAMETER;
+	return fs_kernel_calls->read(name, var);
 }
 
-/**
- * find_write_victim()
- * @var - variable to be written
- * @file - name of file to open for writing @var is returned.
- *
- * This ignores "." and ".." entries, and selects all others.
- */
-static char *
-find_write_victim(efi_variable_t *var, char file[PATH_MAX])
+efi_status_t
+create_variable(efi_variable_t *var)
 {
-	struct dirent **namelist = NULL;
-	int i, n, found=0;
-	char testname[PATH_MAX], *p;
+	if (!var) return EFI_INVALID_PARAMETER;
+	if (opts.testfile) return write_variable_to_file(var);
+	return fs_kernel_calls->create(var);
+}
 
-	memset(testname, 0, sizeof(testname));
-	n = scandir(PROC_DIR_EFI_VARS, &namelist,
-		    select_variable_names, alphasort);
-	if (n < 0) {
-		perror("scandir " PROC_DIR_EFI_VARS);
-		fprintf(stderr, "You must 'modprobe efivars' first.\n");
-		return NULL;
-	}
-
-	p = testname;
-	efichar_to_char(p, var->VariableName, PATH_MAX);
-	p += strlen(p);
-	p += sprintf(p, "-");
-	efi_guid_unparse(&var->VendorGuid, p);
-
-	for (i=0; i<n; i++) {
-		if (namelist[i] &&
-		    strncmp(testname, namelist[i]->d_name, sizeof(testname))) {
-			found++;
-			sprintf(file, "%s%s", PROC_DIR_EFI_VARS,
-				namelist[i]->d_name);
-			break;
-		}
-	}
-
-	while (n--) {
-		if (namelist[n]) {
-			free(namelist[n]);
-			namelist[n] = NULL;
-		}
-	}
-	free(namelist);
-
-	if (!found) return NULL;
-	return file;
+efi_status_t
+delete_variable(efi_variable_t *var)
+{
+	if (!var) return EFI_INVALID_PARAMETER;
+	if (opts.testfile) return write_variable_to_file(var);
+	return fs_kernel_calls->delete(var);
 }
 
 
 efi_status_t
-write_variable(efi_variable_t *var)
+edit_variable(efi_variable_t *var)
 {
-	int fd;
-	size_t writesize;
-	char buffer[PATH_MAX], name[PATH_MAX], *p = NULL;
+	char name[PATH_MAX];
 
 	if (!var) return EFI_INVALID_PARAMETER;
 	if (opts.testfile) return write_variable_to_file(var);
-	memset(buffer, 0, sizeof(buffer));
-	memset(name, 0, sizeof(name));
 
-	p = find_write_victim(var, name);
-	if (!p) return EFI_INVALID_PARAMETER;
+	variable_to_name(var, name);
+	return fs_kernel_calls->edit(name, var);
+}
 
-	fd = open(name, O_WRONLY);
-	if (fd == -1) {
-		sprintf(buffer, "write_variable():open(%s)", name);
-		perror(buffer);
-		return EFI_INVALID_PARAMETER;
-	}
-	writesize = write(fd, var, sizeof(*var));
-	if (writesize != sizeof(*var)) {
-#if 0
-		sprintf(buffer, "write_variable():write(%s)", name);
-		perror(buffer);
-		dump_raw_data(var, sizeof(*var));
-#endif
-		close(fd);
-		return EFI_INVALID_PARAMETER;
+efi_status_t
+create_or_edit_variable(const char *name, efi_variable_t *var)
+{
+	efi_variable_t testvar;
+	memcpy(&testvar, var, sizeof(*var));
+	if (read_variable(name, &testvar))
+		return edit_variable(var);
+	else
+		return create_variable(var);
+}
 
-	}
-	close(fd);
-	return EFI_SUCCESS;
+static int
+select_boot_var_names(const struct dirent *d)
+{
+	int num, rc;
+	rc = sscanf(d->d_name, "Boot0%03x-%*s", &num);
+	return rc;
+}
+
+int
+read_boot_var_names(struct dirent ***namelist)
+{
+	if (!fs_kernel_calls || !namelist) return -1;
+	return scandir(fs_kernel_calls->path,
+		       namelist, select_boot_var_names,
+		       alphasort);
 }
 
 
@@ -689,4 +651,16 @@ make_linux_efi_variable(efi_variable_t *var,
 				  sizeof(var->Data) - load_option_size);
 	var->DataSize = load_option_size + opt_data_size;
 	return var->DataSize;
+}
+
+
+int
+variable_to_name(efi_variable_t *var, char *name)
+{
+	char *p = name;
+	efichar_to_char(p, var->VariableName, PATH_MAX);
+	p += strlen(p);
+	p += sprintf(p, "-");
+	efi_guid_unparse(&var->VendorGuid, p);
+	return strlen(name);
 }

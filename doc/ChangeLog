@@ -1,3 +1,11 @@
+* Thu Sep 04 2003 Matt Domsch <Matt_Domsch@dell.com>
+- Seperated access to variables through /proc into efivars_procfs.[ch]
+- Added efivars_sysfs.h to access variables through sysfs.
+- Moved around some functions, cleaned up some duplication.
+
+* Thu Sep 04 2003 Matt Domsch <Matt_Domsch@dell.com>
+- released v0.4.2-test2 as v0.4.2 without additional changes.
+
 * Mon Aug 11 2003 Matt Domsch <Matt_Domsch@dell.com>
 - fixed unaligned access errors
 - removed extraneous printing of mac addr when creating netboot entries

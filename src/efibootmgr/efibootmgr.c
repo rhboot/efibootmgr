@@ -49,6 +49,7 @@
 #include "disk.h"
 #include "efibootmgr.h"
 
+
 #ifndef EFIBOOTMGR_VERSION
 #define EFIBOOTMGR_VERSION "unknown (fix Makefile!)"
 #endif
@@ -73,55 +74,27 @@ var_num_from_name(const char *pattern, char *name, uint16_t *num)
 	sscanf(name, pattern, num);
 }
 
-static int
-select_boot_var_names(const struct dirent *d)
+static void
+fill_bootvar_name(char *dest, size_t len, const char *name)
 {
-	int num, rc;
-	rc = sscanf(d->d_name, "Boot0%03x-%*s", &num);
-	return rc;
+	efi_guid_t guid = EFI_GLOBAL_VARIABLE;
+	char text_uuid[40];
+	efi_guid_unparse(&guid, text_uuid);
+	snprintf(dest, len, "%s-%s", name, text_uuid);
 }
 
-#if 0
-static int
-select_blk_var_names(const struct dirent *d)
+static void
+fill_var(efi_variable_t *var, const char *name)
 {
-	int num;
-	return sscanf(d->d_name, "blk%x-%*s", &num);
-}
-#endif
+	efi_guid_t guid = EFI_GLOBAL_VARIABLE;
 
-static int
-read_boot_var_names(struct dirent ***namelist)
-{
-	int n;
-	n = scandir(PROC_DIR_EFI_VARS, namelist, select_boot_var_names, alphasort);
-	if (n < 0) {
-		perror("scandir " PROC_DIR_EFI_VARS);
-		fprintf(stderr, "You must 'modprobe efivars' before running efibootmgr.\n");
-	}
-	return n;
+	efichar_from_char(var->VariableName, name, 1024);
+	memcpy(&var->VendorGuid, &guid, sizeof(guid));
+	var->Attributes = EFI_VARIABLE_NON_VOLATILE
+		| EFI_VARIABLE_BOOTSERVICE_ACCESS
+		| EFI_VARIABLE_RUNTIME_ACCESS;
 }
 
-#if 0
-static int
-read_blk_var_names(struct dirent ***namelist)
-{
-	int n;
-	n = scandir(PROC_DIR_EFI_VARS, namelist, select_blk_var_names, alphasort);
-	if (n < 0)
-		perror("scandir");
-	return n;
-}
-
-static int
-dirent_list_length(struct dirent **namelist)
-{
-	int i;
-	if (!namelist) return 0;
-	for (i=0; namelist[i]; i++);
-	return i;
-}
-#endif
 
 static void
 read_vars(struct dirent **namelist,
@@ -273,40 +246,38 @@ make_boot_var(list_t *boot_list)
 		free(boot);
 		return NULL;
 	}
-	write_variable(&boot->var_data);
+	create_variable(&boot->var_data);
 	list_add_tail(&boot->list, boot_list);
 	return boot;
+}
+
+
+
+static efi_status_t
+read_boot(efi_variable_t *var, const char *name)
+{
+	char name_guid[PATH_MAX];
+
+	memset(var, 0, sizeof(*var));
+	fill_bootvar_name(name_guid, sizeof(name_guid), name);
+	return read_variable(name_guid, var);
 }
 
 static efi_status_t
 read_boot_order(efi_variable_t *boot_order)
 {
 	efi_status_t status;
-	efi_guid_t guid = EFI_GLOBAL_VARIABLE;
-	char boot_order_name[80], text_uuid[40];
-	efi_guid_unparse(&guid, text_uuid);
 
-	memset(boot_order, 0, sizeof(*boot_order));
-	sprintf(boot_order_name, "BootOrder-%s", text_uuid);
-
-	status = read_variable(boot_order_name, boot_order);
+	status = read_boot(boot_order, "BootOrder");
 	if (status != EFI_SUCCESS && status != EFI_NOT_FOUND)
 		return status;
 
 	if (status == EFI_NOT_FOUND) {
-		/* Create it */
-		efichar_from_char(boot_order->VariableName, "BootOrder",
-				  1024);
-		memcpy(&boot_order->VendorGuid, &guid, sizeof(guid));
-		boot_order->Attributes = EFI_VARIABLE_NON_VOLATILE 
-			| EFI_VARIABLE_BOOTSERVICE_ACCESS
-			| EFI_VARIABLE_RUNTIME_ACCESS;
+		fill_var(boot_order, "BootOrder");
 		return status;
 	}
 	return EFI_SUCCESS;
 }
-
-
 
 
 static efi_status_t
@@ -316,6 +287,7 @@ add_to_boot_order(uint16_t num)
 	efi_variable_t boot_order;
 	uint64_t new_data_size;
 	uint16_t *new_data, *old_data;
+	char name[PATH_MAX];
 
 	status = read_boot_order(&boot_order);
 	if (status != EFI_SUCCESS) return status;
@@ -333,7 +305,8 @@ add_to_boot_order(uint16_t num)
 	/* Now new_data has what we need */
 	memcpy(&(boot_order.Data), new_data, new_data_size);
 	boot_order.DataSize = new_data_size;
-	return write_variable(&boot_order);
+	variable_to_name(&boot_order, name);
+	return create_or_edit_variable(name, &boot_order);
 }
 
 
@@ -345,12 +318,15 @@ remove_from_boot_order(uint16_t num)
 	uint64_t new_data_size;
 	uint16_t *new_data, *old_data;
 	int old_i,new_i;
+	char boot_order_name[PATH_MAX];
 
 	status = read_boot_order(&boot_order);
 	if (status != EFI_SUCCESS) return status;
-
 	/* If it's empty, yea! */
 	if (!boot_order.DataSize) return EFI_SUCCESS;
+
+	fill_bootvar_name(boot_order_name, sizeof(boot_order_name),
+			  "BootOrder");
 
 	/* We've now got an array (in boot_order.Data) of the
 	   boot order.  Simply copy the array, skipping the
@@ -376,46 +352,34 @@ remove_from_boot_order(uint16_t num)
 	memcpy(&(boot_order.Data), new_data, new_data_size);
 	boot_order.DataSize = new_data_size;
 
-	return write_variable(&boot_order);
+	return edit_variable(&boot_order);
 }
 
 static int
 read_boot_current()
 {
 	efi_status_t status;
-	efi_variable_t boot_next;
-	efi_guid_t guid = EFI_GLOBAL_VARIABLE;
-	char boot_next_name[80], text_uuid[40];
-	uint16_t *n = (uint16_t *)(boot_next.Data);
+	efi_variable_t boot_current;
+	uint16_t *n = (uint16_t *)(boot_current.Data);
 
-	efi_guid_unparse(&guid, text_uuid);
-
-	memset(&boot_next, 0, sizeof(boot_next));
-	sprintf(boot_next_name, "BootCurrent-%s", text_uuid);
-
-	status = read_variable(boot_next_name, &boot_next);
+	memset(&boot_current, 0, sizeof(boot_current));
+	status = read_boot(&boot_current, "BootCurrent");
 	if (status) return -1;
-
 	return *n;
 }
+
+
 
 static int
 read_boot_next()
 {
 	efi_status_t status;
 	efi_variable_t boot_next;
-	efi_guid_t guid = EFI_GLOBAL_VARIABLE;
-	char boot_next_name[80], text_uuid[40];
 	uint16_t *n = (uint16_t *)(boot_next.Data);
 
-	efi_guid_unparse(&guid, text_uuid);
-
 	memset(&boot_next, 0, sizeof(boot_next));
-	sprintf(boot_next_name, "BootNext-%s", text_uuid);
-
-	status = read_variable(boot_next_name, &boot_next);
+	status = read_boot(&boot_next, "BootNext");
 	if (status) return -1;
-
 	return *n;
 }
 
@@ -423,21 +387,25 @@ read_boot_next()
 static efi_status_t
 set_boot_next(uint16_t num)
 {
-	efi_variable_t var;
+	efi_variable_t boot_next;
+	uint16_t *n = (uint16_t *)boot_next.Data;
 	efi_guid_t guid = EFI_GLOBAL_VARIABLE;
-	uint16_t *n = (uint16_t *)var.Data;
+	char boot_next_name[PATH_MAX];
 
-	memset(&var, 0, sizeof(var));
+	fill_bootvar_name(boot_next_name, sizeof(boot_next_name),
+			  "BootNext");
 
-	efichar_from_char(var.VariableName, "BootNext",
+	memset(&boot_next, 0, sizeof(boot_next));
+
+	efichar_from_char(boot_next.VariableName, "BootNext",
 			  1024);
-	memcpy(&var.VendorGuid, &guid, sizeof(guid));
+	memcpy(&boot_next.VendorGuid, &guid, sizeof(guid));
 	*n = num;
-	var.DataSize = sizeof(uint16_t);
-	var.Attributes = EFI_VARIABLE_NON_VOLATILE 
+	boot_next.DataSize = sizeof(uint16_t);
+	boot_next.Attributes = EFI_VARIABLE_NON_VOLATILE
 		| EFI_VARIABLE_BOOTSERVICE_ACCESS
 		| EFI_VARIABLE_RUNTIME_ACCESS;
-	return write_variable(&var);
+	return create_or_edit_variable(boot_next_name, &boot_next);
 }
 
 static efi_status_t
@@ -451,7 +419,7 @@ delete_boot_next()
 	efichar_from_char(var.VariableName, "BootNext",
 			  1024);
 	memcpy(&var.VendorGuid, &guid, sizeof(guid));
-	return write_variable(&var);
+	return delete_variable(&var);
 }
 
 
@@ -461,16 +429,16 @@ delete_boot_var(uint16_t num)
 	efi_status_t status;
 	efi_variable_t var;
 	efi_guid_t guid = EFI_GLOBAL_VARIABLE;
-	char name[80];
+	char name[PATH_MAX];
 	list_t *pos, *n;
 	var_entry_t *boot;
-	sprintf(name, "Boot%04x", num);
+	snprintf(name, sizeof(name), "Boot%04x", num);
 
 	memset(&var, 0, sizeof(var));
 
 	efichar_from_char(var.VariableName, name, 1024);
 	memcpy(&var.VendorGuid, &guid, sizeof(guid));
-	status = write_variable(&var);
+	status = delete_variable(&var);
 
 	if (status) return status;
 
@@ -624,23 +592,20 @@ parse_boot_order(char *buffer, uint16_t *order, int length)
 static efi_status_t
 set_boot_order()
 {
-	efi_variable_t var;
-	efi_guid_t guid = EFI_GLOBAL_VARIABLE;
-	uint16_t *n = (uint16_t *)var.Data;
+	efi_variable_t boot_order;
+	uint16_t *n = (uint16_t *)boot_order.Data;
+	char boot_order_name[PATH_MAX];
+
+	fill_bootvar_name(boot_order_name, sizeof(boot_order_name),
+			  "BootOrder");
 
 	if (!opts.bootorder) return EFI_SUCCESS;
 
-	memset(&var, 0, sizeof(var));
+	memset(&boot_order, 0, sizeof(boot_order));
+	fill_var(&boot_order, "BootOrder");
 
-	efichar_from_char(var.VariableName, "BootOrder",
-			  1024);
-	memcpy(&var.VendorGuid, &guid, sizeof(guid));
-	var.Attributes = EFI_VARIABLE_NON_VOLATILE
-		| EFI_VARIABLE_BOOTSERVICE_ACCESS
-		| EFI_VARIABLE_RUNTIME_ACCESS;
-
-	var.DataSize = parse_boot_order(opts.bootorder, n, 1024/sizeof(uint16_t)) * sizeof(uint16_t);
-	return write_variable(&var);
+	boot_order.DataSize = parse_boot_order(opts.bootorder, n, 1024/sizeof(uint16_t)) * sizeof(uint16_t);
+	return create_or_edit_variable(boot_order_name, &boot_order);
 }
 
 static void
@@ -733,7 +698,7 @@ set_active_state()
 				else {
 					load_option->attributes
 						|= LOAD_OPTION_ACTIVE;
-					return write_variable(&boot->var_data);
+					return edit_variable(&boot->var_data);
 				}
 			}
 			else if (opts.active == 0) {
@@ -743,7 +708,7 @@ set_active_state()
 				else {
 					load_option->attributes
 						&= ~LOAD_OPTION_ACTIVE;
-					return write_variable(&boot->var_data);
+					return edit_variable(&boot->var_data);
 				}
 			}
 		}
@@ -757,14 +722,10 @@ static efi_status_t
 delete_boot_order()
 {
 	efi_variable_t var;
-	efi_guid_t guid = EFI_GLOBAL_VARIABLE;
 
 	memset(&var, 0, sizeof(var));
-
-	efichar_from_char(var.VariableName, "BootOrder",
-			  1024);
-	memcpy(&var.VendorGuid, &guid, sizeof(guid));
-	return write_variable(&var);
+	fill_var(&var, "BootOrder");
+	return delete_variable(&var);
 }
 
 
@@ -988,6 +949,9 @@ main(int argc, char **argv)
 		fprintf(stderr, "\nYou must specify the ACPI HID and UID when using -i.\n\n");
 		return 1;
 	}
+
+	if (!opts.testfile)
+		set_fs_kernel_calls();
 
 	if (!opts.testfile) {
 		num_boot_names = read_boot_var_names(&boot_names);

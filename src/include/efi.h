@@ -1,8 +1,8 @@
 /*
-  efi.[ch] - Manipulates EFI variables as exported in /proc/efi/vars
- 
-  Copyright (C) 2001 Dell Computer Corporation <Matt_Domsch@dell.com>
- 
+  efi.[ch] - Extensible Firmware Interface definitions
+
+  Copyright (C) 2001, 2003 Dell Computer Corporation <Matt_Domsch@dell.com>
+
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
@@ -27,6 +27,7 @@
  *      version 1.02, 12 December, 2000
  */
 #include <stdint.h>
+#include <dirent.h>
 
 #define BITS_PER_LONG (sizeof(unsigned long) * 8)
 
@@ -336,24 +337,34 @@ typedef struct {
 } __attribute__((packed)) END_DEVICE_PATH;
 
 
+struct efivar_kernel_calls {
+        efi_status_t (*read)(const char *name, efi_variable_t *var);
+        efi_status_t (*edit)(const char *name, efi_variable_t *var);
+        efi_status_t (*create)(efi_variable_t *var);
+        efi_status_t (*delete)(efi_variable_t *var);
+        char *path;
+};
+
+
 /* Used for ACPI _HID */
 #define EISAID_PNP0A03 0xa0341d0
 
-#define PROC_DIR_EFI_VARS "/proc/efi/vars/"
-
-
-
 /* Exported functions */
 
-efi_status_t read_variable(char *name, efi_variable_t *var);
-efi_status_t write_variable(efi_variable_t *var);
-int make_linux_efi_variable(efi_variable_t *var,
+extern int make_linux_efi_variable(efi_variable_t *var,
 			    unsigned int free_number);
-char * efi_guid_unparse(efi_guid_t *guid, char *out);
-EFI_DEVICE_PATH *load_option_path(EFI_LOAD_OPTION *option);
+extern char * efi_guid_unparse(efi_guid_t *guid, char *out);
+extern EFI_DEVICE_PATH *load_option_path(EFI_LOAD_OPTION *option);
 
+extern efi_status_t read_variable(const char *name, efi_variable_t *var);
+extern efi_status_t edit_variable(efi_variable_t *var);
+extern efi_status_t create_variable(efi_variable_t *var);
+extern efi_status_t delete_variable(efi_variable_t *var);
+extern efi_status_t create_or_edit_variable(const char *name, efi_variable_t *var);
 
+extern void set_fs_kernel_calls();
+extern int read_boot_var_names(struct dirent ***namelist);
+extern int variable_to_name(efi_variable_t *var, char *name);
+extern int var_name_to_path(const char *name, char *path);
 
-
-
-#endif /* _ASM_IA64_EFI_H */
+#endif /* EFI_H */
