@@ -360,7 +360,7 @@ extern efi_status_t read_variable(const char *name, efi_variable_t *var);
 extern efi_status_t edit_variable(efi_variable_t *var);
 extern efi_status_t create_variable(efi_variable_t *var);
 extern efi_status_t delete_variable(efi_variable_t *var);
-extern efi_status_t create_or_edit_variable(const char *name, efi_variable_t *var);
+extern efi_status_t create_or_edit_variable(efi_variable_t *var);
 
 extern void set_fs_kernel_calls();
 extern int read_boot_var_names(struct dirent ***namelist);

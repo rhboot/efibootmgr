@@ -39,29 +39,22 @@
 static efi_status_t
 procfs_read_variable(const char *name, efi_variable_t *var)
 {
-	int newnamesize;
-	char *newname;
+	char filename[PATH_MAX];
 	int fd;
 	size_t readsize;
 	if (!name || !var) return EFI_INVALID_PARAMETER;
 
-	newnamesize = strlen(PROCFS_DIR_EFI_VARS) + strlen(name) + 2;
-	newname = malloc(newnamesize);
-	if (!newname) return EFI_OUT_OF_RESOURCES;
-	sprintf(newname, "%s/%s", PROCFS_DIR_EFI_VARS,name);
-	fd = open(newname, O_RDONLY);
+	snprintf(filename, PATH_MAX-1, "%s/%s", PROCFS_DIR_EFI_VARS,name);
+	fd = open(filename, O_RDONLY);
 	if (fd == -1) {
-		free(newname);
 		return EFI_NOT_FOUND;
 	}
 	readsize = read(fd, var, sizeof(*var));
 	if (readsize != sizeof(*var)) {
-		free(newname);
 		close(fd);
 		return EFI_INVALID_PARAMETER;
 	}
 	close(fd);
-	free(newname);
 	return var->Status;
 }
 

@@ -1,3 +1,6 @@
+* Tue Sep 09 2003 Matt Domsch <Matt_Domsch@dell.com>
+- Released v0.5.0-test1
+
 * Thu Sep 04 2003 Matt Domsch <Matt_Domsch@dell.com>
 - Seperated access to variables through /proc into efivars_procfs.[ch]
 - Added efivars_sysfs.h to access variables through sysfs.

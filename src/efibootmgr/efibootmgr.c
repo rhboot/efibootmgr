@@ -287,7 +287,6 @@ add_to_boot_order(uint16_t num)
 	efi_variable_t boot_order;
 	uint64_t new_data_size;
 	uint16_t *new_data, *old_data;
-	char name[PATH_MAX];
 
 	status = read_boot_order(&boot_order);
 	if (status != EFI_SUCCESS) return status;
@@ -305,8 +304,7 @@ add_to_boot_order(uint16_t num)
 	/* Now new_data has what we need */
 	memcpy(&(boot_order.Data), new_data, new_data_size);
 	boot_order.DataSize = new_data_size;
-	variable_to_name(&boot_order, name);
-	return create_or_edit_variable(name, &boot_order);
+	return create_or_edit_variable(&boot_order);
 }
 
 
@@ -389,36 +387,22 @@ set_boot_next(uint16_t num)
 {
 	efi_variable_t boot_next;
 	uint16_t *n = (uint16_t *)boot_next.Data;
-	efi_guid_t guid = EFI_GLOBAL_VARIABLE;
-	char boot_next_name[PATH_MAX];
-
-	fill_bootvar_name(boot_next_name, sizeof(boot_next_name),
-			  "BootNext");
 
 	memset(&boot_next, 0, sizeof(boot_next));
 
-	efichar_from_char(boot_next.VariableName, "BootNext",
-			  1024);
-	memcpy(&boot_next.VendorGuid, &guid, sizeof(guid));
+	fill_var(&boot_next, "BootNext");
 	*n = num;
 	boot_next.DataSize = sizeof(uint16_t);
-	boot_next.Attributes = EFI_VARIABLE_NON_VOLATILE
-		| EFI_VARIABLE_BOOTSERVICE_ACCESS
-		| EFI_VARIABLE_RUNTIME_ACCESS;
-	return create_or_edit_variable(boot_next_name, &boot_next);
+	return create_or_edit_variable(&boot_next);
 }
 
 static efi_status_t
 delete_boot_next()
 {
 	efi_variable_t var;
-	efi_guid_t guid = EFI_GLOBAL_VARIABLE;
 
 	memset(&var, 0, sizeof(var));
-
-	efichar_from_char(var.VariableName, "BootNext",
-			  1024);
-	memcpy(&var.VendorGuid, &guid, sizeof(guid));
+	fill_var(&var, "BootNext");
 	return delete_variable(&var);
 }
 
@@ -428,16 +412,13 @@ delete_boot_var(uint16_t num)
 {
 	efi_status_t status;
 	efi_variable_t var;
-	efi_guid_t guid = EFI_GLOBAL_VARIABLE;
-	char name[PATH_MAX];
+	char name[16];
 	list_t *pos, *n;
 	var_entry_t *boot;
+
 	snprintf(name, sizeof(name), "Boot%04x", num);
-
 	memset(&var, 0, sizeof(var));
-
-	efichar_from_char(var.VariableName, name, 1024);
-	memcpy(&var.VendorGuid, &guid, sizeof(guid));
+	fill_var(&var, name);
 	status = delete_variable(&var);
 
 	if (status) return status;
@@ -594,10 +575,6 @@ set_boot_order()
 {
 	efi_variable_t boot_order;
 	uint16_t *n = (uint16_t *)boot_order.Data;
-	char boot_order_name[PATH_MAX];
-
-	fill_bootvar_name(boot_order_name, sizeof(boot_order_name),
-			  "BootOrder");
 
 	if (!opts.bootorder) return EFI_SUCCESS;
 
@@ -605,7 +582,7 @@ set_boot_order()
 	fill_var(&boot_order, "BootOrder");
 
 	boot_order.DataSize = parse_boot_order(opts.bootorder, n, 1024/sizeof(uint16_t)) * sizeof(uint16_t);
-	return create_or_edit_variable(boot_order_name, &boot_order);
+	return create_or_edit_variable(&boot_order);
 }
 
 static void

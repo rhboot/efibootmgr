@@ -39,45 +39,42 @@
 static efi_status_t
 sysfs_read_variable(const char *name, efi_variable_t *var)
 {
-	int newnamesize;
-	char *newname;
+	char filename[PATH_MAX];
 	int fd;
 	size_t readsize;
+	char buffer[PATH_MAX+40];
 	if (!name || !var) return EFI_INVALID_PARAMETER;
+	memset(buffer, 0, sizeof(buffer));
 
-	newnamesize = strlen(SYSFS_DIR_EFI_VARS) + strlen(name) + 2;
-	newname = malloc(newnamesize);
-	if (!newname) return EFI_OUT_OF_RESOURCES;
-	sprintf(newname, "%s/%s", SYSFS_DIR_EFI_VARS,name);
-	fd = open(newname, O_RDONLY);
+	snprintf(filename, PATH_MAX-1, "%s/%s/raw_var", SYSFS_DIR_EFI_VARS,name);
+	fd = open(filename, O_RDONLY);
 	if (fd == -1) {
-		free(newname);
+		sprintf(buffer, "sysfs_read_variable():open(%s)", filename);
+		perror(buffer);
 		return EFI_NOT_FOUND;
 	}
 	readsize = read(fd, var, sizeof(*var));
 	if (readsize != sizeof(*var)) {
-		free(newname);
 		close(fd);
 		return EFI_INVALID_PARAMETER;
 	}
 	close(fd);
-	free(newname);
 	return var->Status;
 }
 
 static efi_status_t
-sysfs_write_variable(const char *name, efi_variable_t *var)
+sysfs_write_variable(const char *filename, efi_variable_t *var)
 {
 	int fd;
 	size_t writesize;
 	char buffer[PATH_MAX+40];
 
-	if (!name || !var) return EFI_INVALID_PARAMETER;
+	if (!filename || !var) return EFI_INVALID_PARAMETER;
 	memset(buffer, 0, sizeof(buffer));
 
-	fd = open(name, O_WRONLY);
+	fd = open(filename, O_WRONLY);
 	if (fd == -1) {
-		sprintf(buffer, "sysfs_write_variable():open(%s)", name);
+		sprintf(buffer, "sysfs_write_variable():open(%s)", filename);
 		perror(buffer);
 		return EFI_INVALID_PARAMETER;
 	}
@@ -85,7 +82,6 @@ sysfs_write_variable(const char *name, efi_variable_t *var)
 	if (writesize != sizeof(*var)) {
 		close(fd);
 		return EFI_INVALID_PARAMETER;
-
 	}
 	close(fd);
 	return EFI_SUCCESS;
@@ -95,58 +91,29 @@ sysfs_write_variable(const char *name, efi_variable_t *var)
 static efi_status_t
 sysfs_edit_variable(const char *name, efi_variable_t *var)
 {
-	int newnamesize;
-	char *newname;
-	efi_status_t status;
-	if (!name || !var) return EFI_INVALID_PARAMETER;
-
-	newnamesize = strlen(SYSFS_DIR_EFI_VARS) + strlen(name) + 2;
-	newname = malloc(newnamesize);
-	if (!newname) return EFI_OUT_OF_RESOURCES;
-	sprintf(newname, "%s/%s", SYSFS_DIR_EFI_VARS,name);
-
-	status = sysfs_write_variable(newname, var);
-	free(newname);
-	return status;
+	char filename[PATH_MAX];
+	if (!var) return EFI_INVALID_PARAMETER;
+	snprintf(filename, PATH_MAX-1, "%s/%s/raw_var", SYSFS_DIR_EFI_VARS,name);
+	return sysfs_write_variable(filename, var);
 }
 
 static efi_status_t
 sysfs_create_variable(efi_variable_t *var)
 {
-	int newnamesize;
-	char *newname;
-	efi_status_t status;
+	char filename[PATH_MAX];
 	if (!var) return EFI_INVALID_PARAMETER;
-
-	newnamesize = strlen(SYSFS_DIR_EFI_VARS) + strlen("new_var") + 2;
-	newname = malloc(newnamesize);
-	if (!newname) return EFI_OUT_OF_RESOURCES;
-	sprintf(newname, "%s/%s", SYSFS_DIR_EFI_VARS,"new_var");
-
-	status = sysfs_write_variable(newname, var);
-	free(newname);
-	return status;
+	snprintf(filename, PATH_MAX-1, "%s/%s", SYSFS_DIR_EFI_VARS,"new_var");
+	return sysfs_write_variable(filename, var);
 }
 
 static efi_status_t
 sysfs_delete_variable(efi_variable_t *var)
 {
-	int newnamesize;
-	char *newname;
-	efi_status_t status;
+	char filename[PATH_MAX];
 	if (!var) return EFI_INVALID_PARAMETER;
-
-	newnamesize = strlen(SYSFS_DIR_EFI_VARS) + strlen("del_var") + 2;
-	newname = malloc(newnamesize);
-	if (!newname) return EFI_OUT_OF_RESOURCES;
-	sprintf(newname, "%s/%s", SYSFS_DIR_EFI_VARS,"del_var");
-
-	status = sysfs_write_variable(newname, var);
-	free(newname);
-	return status;
+	snprintf(filename, PATH_MAX-1, "%s/%s", SYSFS_DIR_EFI_VARS,"del_var");
+	return sysfs_write_variable(filename, var);
 }
-
-
 
 struct efivar_kernel_calls sysfs_kernel_calls = {
 	.read = sysfs_read_variable,

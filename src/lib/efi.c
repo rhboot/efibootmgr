@@ -150,7 +150,6 @@ efi_status_t
 edit_variable(efi_variable_t *var)
 {
 	char name[PATH_MAX];
-
 	if (!var) return EFI_INVALID_PARAMETER;
 	if (opts.testfile) return write_variable_to_file(var);
 
@@ -159,10 +158,14 @@ edit_variable(efi_variable_t *var)
 }
 
 efi_status_t
-create_or_edit_variable(const char *name, efi_variable_t *var)
+create_or_edit_variable(efi_variable_t *var)
 {
 	efi_variable_t testvar;
+	char name[PATH_MAX];
+
 	memcpy(&testvar, var, sizeof(*var));
+	variable_to_name(var, name);
+
 	if (read_variable(name, &testvar))
 		return edit_variable(var);
 	else
