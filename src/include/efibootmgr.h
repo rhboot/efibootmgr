@@ -44,6 +44,7 @@ typedef struct {
 	unsigned int showversion:1;
 	unsigned int create:1;
 	unsigned int unicode:1;
+	unsigned int write_signature:1;
 } efibootmgr_opt_t;
 
 

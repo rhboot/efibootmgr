@@ -1,3 +1,7 @@
+* Mon Jul 30 2001 Matt Domsch <Matt_Domsch@dell.com>
+- Added test for non-zero signature on MBR-style disks,
+  and new -w flag to write a random signature to the disk if so.
+
 * Fri Jul 27 2001 Matt Domsch <Matt_Domsch@dell.com>
 - Added test for running as root	
 - released v0.3.3-test3

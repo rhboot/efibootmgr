@@ -348,7 +348,7 @@ make_linux_load_option(void *data)
 
 
 
-	disk_fd = open(opts.disk, O_RDONLY);
+	disk_fd = open(opts.disk, O_RDWR);
 	if (disk_fd == -1) {
 		sprintf(buffer, "Could not open disk %s", opts.disk);
 		perror(buffer);

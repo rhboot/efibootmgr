@@ -766,6 +766,7 @@ usage()
 	printf("\t-u | --unicode | --UCS-2  pass extra args as UCS-2 (default is ASCII\n");
 	printf("\t-v | --verbose          print additional information\n");
 	printf("\t-V | --version          return version and exit\n");
+	printf("\t-w | --write-signature  write unique sig to disk if needed\n");
 }
 
 static void
@@ -814,11 +815,12 @@ parse_opts(int argc, char **argv)
 			{"UCS-2",                  no_argument, 0, 'u'},
 			{"verbose",          optional_argument, 0, 'v'},
 			{"version",                no_argument, 0, 'V'},
+			{"write-signature",        no_argument, 0, 'w'},
 			{0, 0, 0, 0}
 		};
 		
 		c = getopt_long (argc, argv,
-				 "AaBb:cd:e:E:l:L:n:No:Op:qt:uv::V",
+				 "AaBb:cd:e:E:l:L:n:No:Op:qt:uv::Vw",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -896,6 +898,10 @@ parse_opts(int argc, char **argv)
 			break;
 		case 'V':
 			opts.showversion = 1;
+			break;
+
+		case 'w':
+			opts.write_signature = 1;
 			break;
 
 		default:
