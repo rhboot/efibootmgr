@@ -274,7 +274,6 @@ read_boot_order(efi_variable_t *boot_order)
 
 	if (status == EFI_NOT_FOUND) {
 		fill_var(boot_order, "BootOrder");
-		return status;
 	}
 	return EFI_SUCCESS;
 }
