@@ -352,7 +352,7 @@ msdos_disk_get_partition_info (int fd, LegacyMBR_t *mbr,
 		/* Write the device type to the signature.
 		   This should be unique per disk per system */
 		mbr->UniqueMBRSignature =  tv.tv_usec << 16;
-		mbr->UniqueMBRSignature |= stat.st_rdev & 0xFFF;
+		mbr->UniqueMBRSignature |= stat.st_rdev & 0xFFFF;
 			
 		/* Write it to the disk */
 		lseek(fd, 0, SEEK_SET);
