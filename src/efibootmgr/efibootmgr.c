@@ -310,11 +310,9 @@ add_to_boot_order(uint16_t num)
 	uint64_t new_data_size;
 	uint16_t *new_data, *old_data;
 
-
 	status = read_boot_order(&boot_order);
 	if (status != EFI_SUCCESS) return status;
 
-	
 	/* We've now got an array (in boot_order.Data) of the
 	   boot order.  First add our entry, then copy the old array.
 	*/
@@ -328,7 +326,6 @@ add_to_boot_order(uint16_t num)
 	/* Now new_data has what we need */
 	memcpy(&(boot_order.Data), new_data, new_data_size);
 	boot_order.DataSize = new_data_size;
-	
 	return write_variable(&boot_order);
 }
 
@@ -765,6 +762,7 @@ delete_boot_order()
 static void
 usage()
 {
+	printf("efibootmgr version %s\n", EFIBOOTMGR_VERSION);
 	printf("usage: efibootmgr [options]\n");
 	printf("\t-a | --active         sets bootnum active\n");
 	printf("\t-A | --inactive       sets bootnum inactive\n");

@@ -399,18 +399,20 @@ msdos_disk_get_partition_info (int fd, legacy_mbr *mbr,
 	return 0;
 }
 
-/************************************************************
+/**
  * disk_get_partition_info()
- * Requires:
- *  - open file descriptor fd
- *  - start, size, signature, mbr_type, signature_type
- * Modifies: all these
- * Returns:
- *  0 on success
- *  non-zero on failure
- *  0 on success
- *  non-zero on failure
- ************************************************************/
+ *  @fd - open file descriptor to disk
+ *  @num   - partition number (1 is first partition on the disk)
+ *  @start - partition starting sector returned
+ *  @size  - partition size (in sectors) returned
+ *  @signature - partition signature returned
+ *  @mbr_type  - partition type returned
+ *  @signature_type - signature type returned
+ * 
+ *  Description: Finds partition table info for given partition on given disk.
+ *               Both GPT and MSDOS partition tables are tested for.
+ *  Returns 0 on success, non-zero on failure
+ */
 int
 disk_get_partition_info (int fd, 
 			 uint32_t num,

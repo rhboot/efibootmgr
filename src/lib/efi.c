@@ -145,6 +145,7 @@ find_write_victim(efi_variable_t *var, char file[PATH_MAX])
 	if (n < 0) {
 		perror("scandir " PROC_DIR_EFI_VARS);
 		fprintf(stderr, "You must 'modprobe efivars' first.\n");
+		return NULL;
 	}
 
 	p = testname;
@@ -153,7 +154,7 @@ find_write_victim(efi_variable_t *var, char file[PATH_MAX])
 	p += sprintf(p, "-");
 	efi_guid_unparse(&var->VendorGuid, p);
 
-	for (i=0; namelist[i]; i++) {
+	for (i=0; i<n && namelist[i]; i++) {
 		if (strncmp(testname, namelist[i]->d_name, sizeof(testname))) {
 			found++;
 			sprintf(file, "%s%s", PROC_DIR_EFI_VARS, namelist[i]->d_name);
@@ -161,9 +162,9 @@ find_write_victim(efi_variable_t *var, char file[PATH_MAX])
 		}
 	}
 
-	for (i=0; namelist[i]; i++) {
-		free(namelist[i]);
-		namelist[i] = NULL;
+	while (n--) {
+		free(namelist[n]);
+		namelist[n] = NULL;
 	}
 	free(namelist);
 		
@@ -181,11 +182,12 @@ write_variable(efi_variable_t *var)
 
 	if (!var) return EFI_INVALID_PARAMETER;
 	if (opts.testfile) return write_variable_to_file(var);
+	memset(buffer, 0, sizeof(buffer));
 	memset(name, 0, sizeof(name));
 
 	p = find_write_victim(var, name);
 	if (!p) return EFI_INVALID_PARAMETER;
-	
+
 	fd = open(name, O_WRONLY);
 	if (fd == -1) {
 		sprintf(buffer, "write_variable():open(%s)", name);
@@ -379,6 +381,12 @@ make_edd30_device_path(int fd, void *buffer)
 	return ((void *)p - buffer);
 }
 
+/**
+ * make_linux_load_option()
+ * @data - load option returned
+ *
+ * Returns 0 on error, length of load option created on success.
+ */
 static unsigned long
 make_linux_load_option(void *data)
 {
@@ -438,7 +446,12 @@ make_linux_load_option(void *data)
 	
 	close(disk_fd);
 	
-	if (rc) return 0;
+	if (rc) {
+		fprintf(stderr, "Error: no partition information on disk %s.\n"
+			"       Cowardly refusing to create a boot option.\n",
+			opts.disk);
+		return 0;
+	}
 
  	p += make_harddrive_device_path (p, opts.part,
 					 start, size,
