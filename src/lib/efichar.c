@@ -1,8 +1,8 @@
 /*
   efichar.[ch]
- 
+
   Copyright (C) 2001 Dell Computer Corporation <Matt_Domsch@dell.com>
- 
+
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
@@ -21,7 +21,7 @@
   but are encoded in little-endian UCS-2
         http://www.cl.cam.ac.uk/~mgk25/unicode.html.
   libunicode expects characters to be encoded in UTF-8, so I can't use that.
-  Therefore, we need a UCS-2 library.  
+  Therefore, we need a UCS-2 library.
 */
 
 #include <stdlib.h>
@@ -35,9 +35,11 @@ efichar_char_strcmp(const char *s1, const efi_char16_t *s2)
 	int i, rc;
 	char *buffer;
 	int s2_len = efichar_strlen(s2, -1);
-	
+
 	buffer = malloc(s2_len+1);
 	if (!buffer) return -1;
+	memset(buffer, 0, s2_len+1);
+
 	for (i=0; i<(s2_len); i++) {
 		buffer[i] = s2[i] & 0xFF;
 	}
@@ -53,12 +55,12 @@ efichar_strcmp(const efi_char16_t *s1, const efi_char16_t *s2)
 	int i;
 	int s1_len = efichar_strlen(s1, -1);
 	int s2_len = efichar_strlen(s2, -1);
-	
+
 
 	for (i=0; i < s1_len && i < s2_len; i++) {
 		if (s1[i] < s2[i]) return -1;
 		if (s1[i] > s2[i]) return 1;
-		
+
 	}
 	/* Hit the end of one string */
 	if (i == s1_len && i != s2_len) return -1;
@@ -93,7 +95,7 @@ efichar_strlen(const efi_char16_t *p, int max)
 {
 	int len=0;
 	const efi_char16_t *start = p;
-	
+
 	if (!p || !*p)   return 0;
 
 	while ((max < 0 || p - start < max) && *(p+len))
@@ -112,7 +114,7 @@ efichar_strncpy(efi_char16_t *dest, const efi_char16_t *src, int max)
 {
 	int i;
 	int src_len = efichar_strlen(src, max);
-	
+
 	for (i=0; i < MIN(max,src_len); i++)
 	{
 		dest[i] = src[i];

@@ -1,3 +1,9 @@
+* Mon Aug 11 2003 Matt Domsch <Matt_Domsch@dell.com>
+- fixed unaligned access errors
+- removed extraneous printing of mac addr when creating netboot entries
+- sync docbook to README
+- whitespace cleanups
+
 * Thu Jul 31 2003 Matt Domsch <Matt_Domsch@dell.com>
 - Applied patch from Dann Frazier to enable creating netboot entries.
 - update AUTHORS with Dann's netboot contribution.

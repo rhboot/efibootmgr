@@ -3,12 +3,12 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "EFIBOOTMGR" "8" "22 October 2002" "" ""
+.TH "EFIBOOTMGR" "8" "11 August 2003" "" ""
 .SH NAME
 efibootmgr \- manipulate the EFI Boot Manager
 .SH SYNOPSIS
 
-\fBefibootmgr\fR [ \fB-a\fR ] [ \fB-A\fR ] [ \fB-b \fIXXXX\fB\fR ] [ \fB-B \fIXXXX\fB\fR ] [ \fB-c\fR ] [ \fB-d \fIDISK\fB\fR ] [ \fB-e \fI1|3|-1\fB\fR ] [ \fB-E \fINUM\fB\fR ] [ \fB-l \fINAME\fB\fR ] [ \fB-L \fILABEL\fB\fR ] [ \fB-n \fIXXXX\fB\fR ] [ \fB-N\fR ] [ \fB-o \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR\fI ...\fR ] [ \fB-O\fR ] [ \fB-p \fIPART\fB\fR ] [ \fB-q\fR ] [ \fB-v\fR ] [ \fB-V\fR ]
+\fBefibootmgr\fR [ \fB-a\fR]  [ \fB-A\fR]  [ \fB-b \fIXXXX\fB\fR]  [ \fB-B \fIXXXX\fB\fR]  [ \fB-c\fR]  [ \fB-d \fIDISK\fB\fR]  [ \fB-e \fI1|3|-1\fB\fR]  [ \fB-E \fINUM\fB\fR]  [ \fB-g\fR]  [ \fB-H \fIXXXX\fB\fR]  [ \fB-i \fINAME\fB\fR]  [ \fB-l \fINAME\fB\fR]  [ \fB-L \fILABEL\fB\fR]  [ \fB-n \fIXXXX\fB\fR]  [ \fB-N\fR]  [ \fB-o \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR\fI ...\fR]  [ \fB-O\fR]  [ \fB-p \fIPART\fB\fR]  [ \fB-q\fR]  [ \fB-t\fR]  [ \fB-u\fR]  [ \fB-U \fIXXXX\fB\fR]  [ \fB-v\fR]  [ \fB-V\fR]  [ \fB-w\fR] 
 
 .SH "DESCRIPTION"
 .PP
@@ -23,8 +23,9 @@ Specification, v1.02 or later, available from:
 .sp
 .RS
 .B "Note:"
-efibootmgr requires that the kernel module efivars be loaded 
-prior to use.  \fB'modprobe efivars'\fR should do the trick.
+efibootmgr requires that the kernel support access to EFI
+non-volatile variables (through \fI/proc/efi/vars\fR).
+\fBmodprobe efivars\fR should do the trick.
 .RE
 .SH "OPTIONS"
 .PP
@@ -55,6 +56,15 @@ Force EDD 1.0 or 3.0 creation variables, or guess.
 \fB-E | --device \fINUM\fB\fR
 EDD 1.0 device number (defaults to 0x80)
 .TP
+\fB-g | --gpt\fR
+Force disk with invalid PMBR to be treated as GPT
+.TP
+\fB-H | --acpi_hid \fIXXXX\fB\fR
+set the ACPI HID (used with \fB-i\fR)
+.TP
+\fB-i | --iface \fINAME\fB\fR
+create a netboot entry for the named interface
+.TP
 \fB-l | --loader \fINAME\fB\fR
 Specify a loader (defaults to \fI\\\\elilo.efi\fR)
 .TP
@@ -79,14 +89,26 @@ Partition number containing the bootloader (defaults to 1)
 \fB-q | --quiet\fR
 Quiet mode - supresses output.
 .TP
+\fB-t | --test \fIfilename\fB\fR
+Don't write to NVRAM, write to \fIfilename\fR.
+.TP
+\fB-u | --unicode | --UCS-2 \fR
+pass extra command line arguments as UCS-2 (default is
+ASCII)
+.TP
+\fB-U | --acpi_uid \fIXXXX\fB\fR
+set the ACPI UID (used with \fB-i\fR)
+.TP
 \fB-v | --verbose\fR
 Verbose mode - prints additional information
 .TP
 \fB-V | --version\fR
 Just print version string and exit.
+.TP
+\fB-w | --write-signature\fR
+write unique signature to the MBR if needed
 .SH "EXAMPLES"
-.TP 3
-1. 
+.TP 1. 
 .SS "DISPLAYING THE CURRENT SETTINGS (MUST BE ROOT)."
 .PP
 [root@localhost ~]# efibootmgr
@@ -121,8 +143,7 @@ to change the next boot behavior without changing BootOrder.
 Five boot entries (0000 - 0004), along with the active/inactive
 flag (* means active) and the name displayed on the screen.
 .RE
-.TP 3
-2. 
+.TP 2. 
 .SS "CREATING A NEW BOOT OPTION"
 .PP
 An OS installer would call \fBefibootmgr -c\fR.
@@ -131,27 +152,41 @@ Partition, and is mounted at \fI/dev/sda1\fR.  This
 creates a new boot option, called "Linux", and puts it at the top of
 the boot order list.  Options may be passed to modify the default
 behavior.  The default OS Loader is \fIelilo.efi\fR.
-.TP 3
-3. 
+.TP 3. 
 .SS "CHANGING THE BOOT ORDER"
 .PP
 Assuming the configuration in Example #1, 
 \fBefibootmgr -o 3,4\fR could be called to specify
 PXE boot first, then Linux boot.
-.TP 3
-4. 
+.TP 4. 
 .SS "CHANGING THE BOOT ORDER FOR THE NEXT BOOT ONLY"
 .PP
 Assuming the configuration in Example #1, 
 \fBefibootmgr -n 4\fR could be called to specify
 that the Linux entry be taken on next boot.
-.TP 3
-5. 
+.TP 5. 
 .SS "DELETING A BOOT OPTION"
 .PP
 Assuming the configuration in Example #1, 
 \fBefibootmgr -b 4 -B\fR could be called to delete
 entry 4 and remove it from the BootOrder.
+.TP 6. 
+.SS "CREATING NETWORK BOOT ENTRIES"
+.PP
+A system administrator wants to create a boot option to network
+boot (PXE).  Unfortunately, this requires knowing a little more
+information about your system than can be easily found by
+efibootmgr, so you've got to pass additional information - the ACPI
+HID and UID values.  These can generally be found by using the EFI
+Boot Manager (in the EFI environment) to create a network boot
+entry, then using efibootmgr to print it verbosely.  Here's one example:
+Boot003* Acpi(PNP0A03,0)/PCI(5|0)/Mac(00D0B7F9F510) \\
+ACPI(a0341d0,0)PCI(0,5)MAC(00d0b7f9f510,0)
+In this case, the ACPI HID is "0A0341d0" and the UID is "0".
+For the zx2000 gigE, the HID is "222F" and the UID is "500".
+For the rx2000 gigE, the HID is "0002" and the UID is "100".
+You create the boot entry with:
+\fBefibootmgr -c -i eth0 -H 222F -U 500 -L netboot\fR
 .SH "BUGS"
 .PP
 Please direct any bugs, features, patches, etc. to Matt Domsch

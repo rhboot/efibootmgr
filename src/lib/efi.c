@@ -271,114 +271,133 @@ get_edd_version()
   This needs to know what EFI device has the boot device.
 */
 static uint16_t
-make_edd10_device_path(void *buffer, uint32_t hardware_device)
+make_edd10_device_path(void *dest, uint32_t hardware_device)
 {
-	VENDOR_DEVICE_PATH *hw = buffer;
+	VENDOR_DEVICE_PATH *hw;
+	char buffer[EDD10_HARDWARE_VENDOR_PATH_LENGTH];
 	efi_guid_t guid = EDD10_HARDWARE_VENDOR_PATH_GUID;
-	uint32_t *data = (uint32_t *)hw->data;
+	uint32_t *data;
+	memset(buffer, 0, sizeof(buffer));
+	hw = (VENDOR_DEVICE_PATH *)buffer;
+	data = (uint32_t *)hw->data;
 	hw->type = 0x01; /* Hardware Device Path */
 	hw->subtype = 0x04; /* Vendor */
-	hw->length = 24;
+	hw->length = EDD10_HARDWARE_VENDOR_PATH_LENGTH;
 	memcpy(&(hw->vendor_guid), &guid, sizeof(guid));
 	*data = hardware_device;
+	memcpy(dest, buffer, hw->length);
 	return hw->length;
 }
 
-
-
 static uint16_t
-make_end_device_path(void *buffer)
+make_end_device_path(void *dest)
 {
-	END_DEVICE_PATH *p = buffer;
-	p->type = 0x7F; /* End of Hardware Device Path */
-	p->subtype = 0xFF; /* End Entire Device Path */
-	p->length = sizeof(*p);
-	return p->length;
-}
-
-
-static uint16_t
-make_acpi_device_path(void *buffer, uint32_t _HID, uint32_t _UID)
-{
-	ACPI_DEVICE_PATH *p = buffer;
-	p->type = 2;
-	p->subtype = 1;
-	p->length = sizeof(*p);
-	p->_HID = _HID;
-	p->_UID = _UID;
-	return p->length;
+	END_DEVICE_PATH p;
+	memset(&p, 0, sizeof(p));
+	p.type = 0x7F; /* End of Hardware Device Path */
+	p.subtype = 0xFF; /* End Entire Device Path */
+	p.length = sizeof(p);
+	memcpy(dest, &p, p.length);
+	return p.length;
 }
 
 static uint16_t
-make_mac_addr_device_path(void *buffer, char *mac, uint8_t iftype)
+make_acpi_device_path(void *dest, uint32_t _HID, uint32_t _UID)
 {
+	ACPI_DEVICE_PATH p;
+	memset(&p, 0, sizeof(p));
+	p.type = 2;
+	p.subtype = 1;
+	p.length = sizeof(p);
+	p._HID = _HID;
+	p._UID = _UID;
+	memcpy(dest, &p, p.length);
+	return p.length;
+}
+
+static uint16_t
+make_mac_addr_device_path(void *dest, char *mac, uint8_t iftype)
+{
+
         int i;
-	MAC_ADDR_DEVICE_PATH *p = buffer;
-	p->type = 3;
-	p->subtype = 11;
-	p->length = sizeof(*p);
-	printf("\nmac: ");
+	MAC_ADDR_DEVICE_PATH p;
+	memset(&p, 0, sizeof(p));
+	p.type = 3;
+	p.subtype = 11;
+	p.length = sizeof(p);
 	for (i=0; i < 14; i++) {
-	  printf("%x", mac[i]);
-	  p->macaddr[i] = mac[i];
+		p.macaddr[i] = mac[i];
 	}
-	p->iftype = iftype;
-	return p->length;
+	p.iftype = iftype;
+	memcpy(dest, &p, p.length);
+	return p.length;
 }
 
 static uint16_t
-make_pci_device_path(void *buffer, uint8_t device, uint8_t function)
+make_pci_device_path(void *dest, uint8_t device, uint8_t function)
 {
-	PCI_DEVICE_PATH *p = buffer;
-	p->type = 1;
-	p->subtype = 1;
-	p->length   = sizeof(*p);
-	p->device   = device;
-	p->function = function;
-	return p->length;
+	PCI_DEVICE_PATH p;
+	memset(&p, 0, sizeof(p));
+	p.type = 1;
+	p.subtype = 1;
+	p.length   = sizeof(p);
+	p.device   = device;
+	p.function = function;
+	memcpy(dest, &p, p.length);
+	return p.length;
 }
 
 static uint16_t
-make_scsi_device_path(void *buffer, uint16_t id, uint16_t lun)
+make_scsi_device_path(void *dest, uint16_t id, uint16_t lun)
 {
-	SCSI_DEVICE_PATH *p = buffer;
-	p->type = 3;
-	p->subtype = 2;
-	p->length   = sizeof(*p);
-	p->id       = id;
-	p->lun      = lun;
-	return p->length;
+	SCSI_DEVICE_PATH p;
+	memset(&p, 0, sizeof(p));
+	p.type = 3;
+	p.subtype = 2;
+	p.length   = sizeof(p);
+	p.id       = id;
+	p.lun      = lun;
+	memcpy(dest, &p, p.length);
+	return p.length;
 }
 
 static uint16_t
-make_harddrive_device_path(void *buffer, uint32_t num, uint64_t start, uint64_t size,
+make_harddrive_device_path(void *dest, uint32_t num, uint64_t start, uint64_t size,
 			   uint8_t *signature,
 			   uint8_t mbr_type, uint8_t signature_type)
 {
-	HARDDRIVE_DEVICE_PATH *p = buffer;
-	p->type = 4;
-	p->subtype = 1;
-	p->length   = sizeof(*p);
-	p->part_num = num;
-	p->start = start;
-	p->size = size;
-	if (signature) memcpy(p->signature, signature, 16);
-	p->mbr_type = mbr_type;
-	p->signature_type = signature_type;
-	return p->length;
+	HARDDRIVE_DEVICE_PATH p;
+	memset(&p, 0, sizeof(p));
+	p.type = 4;
+	p.subtype = 1;
+	p.length   = sizeof(p);
+	p.part_num = num;
+	p.start = start;
+	p.size = size;
+	if (signature) memcpy(p.signature, signature, 16);
+	p.mbr_type = mbr_type;
+	p.signature_type = signature_type;
+	memcpy(dest, &p, p.length);
+	return p.length;
 }
 
 static uint16_t
-make_file_path_device_path(void *buffer, efi_char16_t *name)
+make_file_path_device_path(void *dest, efi_char16_t *name)
 {
-	FILE_PATH_DEVICE_PATH *p = buffer;
+	FILE_PATH_DEVICE_PATH *p;
+	char buffer[1024];
 	int namelen  = efichar_strlen(name, -1);
 	int namesize = efichar_strsize(name);
+
+	memset(buffer, 0, sizeof(buffer));
+	p = (FILE_PATH_DEVICE_PATH *)buffer;
 	p->type      = 4;
 	p->subtype   = 4;
 	p->length    = 4 + namesize;
 	efichar_strncpy(p->path_name,
 			name, namelen);
+
+	memcpy(dest, buffer, p->length);
 	return p->length;
 
 }

@@ -17,7 +17,7 @@
   <!ENTITY manfirstname "<firstname>dann</firstname>">
   <!ENTITY mansurname   "<surname>frazier</surname>">
   <!-- Please adjust the date whenever revising the manpage. -->
-  <!ENTITY mandate      "<date>2002-04-05</date>">
+  <!ENTITY mandate      "<date>2003-08-11</date>">
   <!-- SECTION should be 1-8, maybe with subsection. Other parameters are
        allowed: see man(7), man(1). -->
   <!ENTITY mansection   "<manvolnum>8</manvolnum>">
@@ -37,7 +37,7 @@
       &mansurname;
     </author>
     <copyright>
-      <year>2002</year>
+      <year>2002, 2003</year>
       <holder>&manusername;</holder>
     </copyright>
     &mandate;
@@ -64,6 +64,9 @@
         <arg>-d <replaceable>DISK</replaceable></arg>
         <arg>-e <replaceable>1|3|-1</replaceable></arg>
         <arg>-E <replaceable>NUM</replaceable></arg>
+        <arg>-g</arg>
+        <arg>-H <replaceable>XXXX</replaceable></arg>
+        <arg>-i <replaceable>NAME</replaceable></arg>
         <arg>-l <replaceable>NAME</replaceable></arg>
         <arg>-L <replaceable>LABEL</replaceable></arg>
         <arg>-n <replaceable>XXXX</replaceable></arg>
@@ -72,8 +75,12 @@
         <arg>-O</arg>
         <arg>-p <replaceable>PART</replaceable></arg>
         <arg>-q</arg>
+        <arg>-t</arg>
+        <arg>-u</arg>
+        <arg>-U <replaceable>XXXX</replaceable></arg>
         <arg>-v</arg>
         <arg>-V</arg>
+        <arg>-w</arg>
     </cmdsynopsis>
   </refsynopsisdiv>
   <refsect1>
@@ -92,11 +99,11 @@
     
     <note>
       <para>
-        &manpackage; requires that the kernel module efivars be loaded 
-        prior to use.  <command>'modprobe efivars'</command> should do the trick.
+        &manpackage; requires that the kernel support access to EFI
+        non-volatile variables (through <filename>/proc/efi/vars</filename>).
+        <command>modprobe efivars</command> should do the trick.
       </para>
     </note>
-
   </refsect1>
   <refsect1>
     <title>OPTIONS</title>
@@ -154,6 +161,24 @@
         </listitem>
       </varlistentry>
       <varlistentry>
+        <term><option>-g</option> | <option>--gpt</option></term>
+        <listitem>
+          <para>Force disk with invalid PMBR to be treated as GPT</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-H</option> | <option>--acpi_hid</option> <replaceable>XXXX</replaceable></term>
+        <listitem>
+          <para>set the ACPI HID (used with <option>-i</option>)</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-i</option> | <option>--iface</option> <replaceable>NAME</replaceable></term>
+        <listitem>
+          <para>create a netboot entry for the named interface</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
         <term><option>-l</option> | <option>--loader</option> <replaceable>NAME</replaceable></term>
         <listitem>
           <para>Specify a loader (defaults to <filename>\\elilo.efi</filename>)
@@ -203,6 +228,25 @@
         </listitem>
       </varlistentry>
       <varlistentry>
+        <term><option>-t</option> | <option>--test</option> <replaceable>filename</replaceable></term>
+        <listitem>
+          <para>Don't write to NVRAM, write to <replaceable>filename</replaceable>.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-u</option> | <option>--unicode</option> | <option>--UCS-2</option> </term>
+        <listitem>
+          <para>pass extra command line arguments as UCS-2 (default is
+          ASCII)</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-U</option> | <option>--acpi_uid</option> <replaceable>XXXX</replaceable></term>
+        <listitem>
+          <para>set the ACPI UID (used with <option>-i</option>)</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
         <term><option>-v</option> | <option>--verbose</option></term>
         <listitem>
           <para>Verbose mode - prints additional information</para>
@@ -212,6 +256,12 @@
         <term><option>-V</option> | <option>--version</option></term>
         <listitem>
           <para>Just print version string and exit.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-w</option> | <option>--write-signature</option></term>
+        <listitem>
+          <para>write unique signature to the MBR if needed</para>
         </listitem>
       </varlistentry>
     </variablelist>
@@ -307,6 +357,30 @@
           Assuming the configuration in Example #1, 
           <command>&manpackage; -b 4 -B</command> could be called to delete
           entry 4 and remove it from the BootOrder.
+        </para>
+      </example>
+    </listitem>
+    <listitem>
+      <example>
+        <title>Creating network boot entries</title>
+        <para>
+   A system administrator wants to create a boot option to network
+   boot (PXE).  Unfortunately, this requires knowing a little more
+   information about your system than can be easily found by
+   efibootmgr, so you've got to pass additional information - the ACPI
+   HID and UID values.  These can generally be found by using the EFI
+   Boot Manager (in the EFI environment) to create a network boot
+   entry, then using efibootmgr to print it verbosely.  Here's one example:
+   <computeroutput>
+     Boot003* Acpi(PNP0A03,0)/PCI(5|0)/Mac(00D0B7F9F510) \
+	ACPI(a0341d0,0)PCI(0,5)MAC(00d0b7f9f510,0)
+
+   In this case, the ACPI HID is "0A0341d0" and the UID is "0".
+   For the zx2000 gigE, the HID is "222F" and the UID is "500".
+   For the rx2000 gigE, the HID is "0002" and the UID is "100".
+   </computeroutput>
+   You create the boot entry with:
+   <command>efibootmgr -c -i eth0 -H 222F -U 500 -L netboot</command>
         </para>
       </example>
     </listitem>

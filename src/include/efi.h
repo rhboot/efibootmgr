@@ -135,6 +135,8 @@ typedef struct {
 	uint8_t data[1];
 } __attribute__((packed)) VENDOR_DEVICE_PATH;
 
+#define EDD10_HARDWARE_VENDOR_PATH_LENGTH 24
+
 typedef struct {
 	uint8_t type;
 	uint8_t subtype;

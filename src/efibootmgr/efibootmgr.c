@@ -175,7 +175,9 @@ static int
 compare(const void *a, const void *b)
 {
 	int rc = -1;
-	uint32_t n1=*(uint32_t *)a, n2=*(uint32_t *)b;
+	uint32_t n1, n2;
+	memcpy(&n1, a, sizeof(n1));
+	memcpy(&n2, b, sizeof(n2));
 	if (n1 < n2) rc = -1;
 	if (n1 == n2) rc = 0;
 	if (n2 > n2) rc = 1;
