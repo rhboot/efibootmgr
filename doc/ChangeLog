@@ -1,3 +1,8 @@
+* Fri Aug 3 2001 Matt Domsch <Matt_Domsch@dell.com>
+- By request, warn when creating a new boot entry with the same name
+  as another boot entry.
+- released v0.3.3
+	
 * Mon Jul 30 2001 Matt Domsch <Matt_Domsch@dell.com>
 - Added test for non-zero signature on MBR-style disks,
   and new -w flag to write a unique signature to the disk if so.

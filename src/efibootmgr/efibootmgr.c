@@ -222,6 +222,27 @@ find_free_boot_var(struct list_head *boot_list)
 }
 
 
+static void
+warn_duplicate_name(struct list_head *boot_list)
+{
+	struct list_head *pos;
+	var_entry_t *boot;
+	EFI_LOAD_OPTION *load_option;
+
+	list_for_each(pos, boot_list) {
+		boot = list_entry(pos, var_entry_t, list);
+		load_option = (EFI_LOAD_OPTION *)
+			boot->var_data.Data;
+		if (!efichar_char_strcmp(opts.label,
+					 load_option->description)) {
+			fprintf(stderr, "** Warning ** : Boot%04x has same label %s\n",
+			       boot->num,
+			       opts.label);
+		}
+	}
+}
+		    
+
 
 static var_entry_t *
 make_boot_var(struct list_head *boot_list)
@@ -950,6 +971,7 @@ main(int argc, char **argv)
 	}
 		
 	if (opts.create) {
+		warn_duplicate_name(&boot_entry_list);
 		new_boot = make_boot_var(&boot_entry_list);
 		/* Put this boot var in the right BootOrder */
 		if (!opts.testfile) 
