@@ -17,7 +17,7 @@
   <!ENTITY manfirstname "<firstname>dann</firstname>">
   <!ENTITY mansurname   "<surname>frazier</surname>">
   <!-- Please adjust the date whenever revising the manpage. -->
-  <!ENTITY mandate      "<date>2003-08-11</date>">
+  <!ENTITY mandate      "<date>2004-02-05</date>">
   <!-- SECTION should be 1-8, maybe with subsection. Other parameters are
        allowed: see man(7), man(1). -->
   <!ENTITY mansection   "<manvolnum>8</manvolnum>">
@@ -37,7 +37,7 @@
       &mansurname;
     </author>
     <copyright>
-      <year>2002, 2003</year>
+      <year>2002, 2003, 2004</year>
       <holder>&manusername;</holder>
     </copyright>
     &mandate;
@@ -75,7 +75,8 @@
         <arg>-O</arg>
         <arg>-p <replaceable>PART</replaceable></arg>
         <arg>-q</arg>
-        <arg>-t</arg>
+        <arg>-t <replaceable>seconds</replaceable></arg>
+        <arg>-T</arg>
         <arg>-u</arg>
         <arg>-U <replaceable>XXXX</replaceable></arg>
         <arg>-v</arg>
@@ -100,7 +101,9 @@
     <note>
       <para>
         &manpackage; requires that the kernel support access to EFI
-        non-volatile variables (through <filename>/proc/efi/vars</filename>).
+        non-volatile variables (through
+        <filename>/proc/efi/vars</filename> on 2.4 kernels,
+        <filename>/sys/firmware/efi/vars</filename> on 2.6 kernels).
         <command>modprobe efivars</command> should do the trick.
       </para>
     </note>
@@ -228,9 +231,21 @@
         </listitem>
       </varlistentry>
       <varlistentry>
-        <term><option>-t</option> | <option>--test</option> <replaceable>filename</replaceable></term>
+        <term><option>--test</option> <replaceable>filename</replaceable></term>
         <listitem>
           <para>Don't write to NVRAM, write to <replaceable>filename</replaceable>.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-t</option> | <option>--timeout</option> <replaceable>seconds</replaceable></term>
+        <listitem>
+          <para>Boot Manager timeout, in <replaceable>seconds</replaceable>.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-T</option> | <option>--delete-timeout</option></term>
+        <listitem>
+          <para>Delete Timeout variable.</para>
         </listitem>
       </varlistentry>
       <varlistentry>
@@ -280,6 +295,7 @@
   BootCurrent: 0004
   BootNext: 0003
   BootOrder: 0004,0000,0001,0002,0003
+  Timeout: 30 seconds
   Boot0000* Diskette Drive(device:0)
   Boot0001* CD-ROM Drive(device:FF) 
   Boot0002* Hard Drive(Device:80)/HD(Part1,Sig00112233)   
@@ -306,6 +322,14 @@
                 boot.  This supercedes BootOrder for one boot only, and is
                 deleted by the boot manager after first use.  This allows you
                 to change the next boot behavior without changing BootOrder.
+              </para>
+            </listitem>
+            <listitem>
+              <para>
+		Timeout - the time in seconds between when the boot
+		manager appears on the screen until when it
+		automatically chooses the startup value from BootNext
+		or BootOrder.
               </para>
             </listitem>
             <listitem>

@@ -3,12 +3,13 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "EFIBOOTMGR" "8" "11 August 2003" "" ""
+.TH "EFIBOOTMGR" "8" "06 February 2004" "" ""
+
 .SH NAME
 efibootmgr \- manipulate the EFI Boot Manager
 .SH SYNOPSIS
 
-\fBefibootmgr\fR [ \fB-a\fR]  [ \fB-A\fR]  [ \fB-b \fIXXXX\fB\fR]  [ \fB-B \fIXXXX\fB\fR]  [ \fB-c\fR]  [ \fB-d \fIDISK\fB\fR]  [ \fB-e \fI1|3|-1\fB\fR]  [ \fB-E \fINUM\fB\fR]  [ \fB-g\fR]  [ \fB-H \fIXXXX\fB\fR]  [ \fB-i \fINAME\fB\fR]  [ \fB-l \fINAME\fB\fR]  [ \fB-L \fILABEL\fB\fR]  [ \fB-n \fIXXXX\fB\fR]  [ \fB-N\fR]  [ \fB-o \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR\fI ...\fR]  [ \fB-O\fR]  [ \fB-p \fIPART\fB\fR]  [ \fB-q\fR]  [ \fB-t\fR]  [ \fB-u\fR]  [ \fB-U \fIXXXX\fB\fR]  [ \fB-v\fR]  [ \fB-V\fR]  [ \fB-w\fR] 
+\fBefibootmgr\fR [ \fB-a\fR ] [ \fB-A\fR ] [ \fB-b \fIXXXX\fB\fR ] [ \fB-B \fIXXXX\fB\fR ] [ \fB-c\fR ] [ \fB-d \fIDISK\fB\fR ] [ \fB-e \fI1|3|-1\fB\fR ] [ \fB-E \fINUM\fB\fR ] [ \fB-g\fR ] [ \fB-H \fIXXXX\fB\fR ] [ \fB-i \fINAME\fB\fR ] [ \fB-l \fINAME\fB\fR ] [ \fB-L \fILABEL\fB\fR ] [ \fB-n \fIXXXX\fB\fR ] [ \fB-N\fR ] [ \fB-o \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR\fI ...\fR ] [ \fB-O\fR ] [ \fB-p \fIPART\fB\fR ] [ \fB-q\fR ] [ \fB-t \fIseconds\fB\fR ] [ \fB-T\fR ] [ \fB-u\fR ] [ \fB-U \fIXXXX\fB\fR ] [ \fB-v\fR ] [ \fB-V\fR ] [ \fB-w\fR ]
 
 .SH "DESCRIPTION"
 .PP
@@ -24,7 +25,9 @@ Specification, v1.02 or later, available from:
 .RS
 .B "Note:"
 efibootmgr requires that the kernel support access to EFI
-non-volatile variables (through \fI/proc/efi/vars\fR).
+non-volatile variables (through
+\fI/proc/efi/vars\fR on 2.4 kernels,
+\fI/sys/firmware/efi/vars\fR on 2.6 kernels).
 \fBmodprobe efivars\fR should do the trick.
 .RE
 .SH "OPTIONS"
@@ -89,8 +92,14 @@ Partition number containing the bootloader (defaults to 1)
 \fB-q | --quiet\fR
 Quiet mode - supresses output.
 .TP
-\fB-t | --test \fIfilename\fB\fR
+\fB--test \fIfilename\fB\fR
 Don't write to NVRAM, write to \fIfilename\fR.
+.TP
+\fB-t | --timeout \fIseconds\fB\fR
+Boot Manager timeout, in \fIseconds\fR.
+.TP
+\fB-T | --delete-timeout\fR
+Delete Timeout variable.
 .TP
 \fB-u | --unicode | --UCS-2 \fR
 pass extra command line arguments as UCS-2 (default is
@@ -108,13 +117,15 @@ Just print version string and exit.
 \fB-w | --write-signature\fR
 write unique signature to the MBR if needed
 .SH "EXAMPLES"
-.TP 1. 
+.TP 3
+1. 
 .SS "DISPLAYING THE CURRENT SETTINGS (MUST BE ROOT)."
 .PP
 [root@localhost ~]# efibootmgr
 BootCurrent: 0004
 BootNext: 0003
 BootOrder: 0004,0000,0001,0002,0003
+Timeout: 30 seconds
 Boot0000* Diskette Drive(device:0)
 Boot0001* CD-ROM Drive(device:FF) 
 Boot0002* Hard Drive(Device:80)/HD(Part1,Sig00112233)   
@@ -140,10 +151,17 @@ deleted by the boot manager after first use.  This allows you
 to change the next boot behavior without changing BootOrder.
 .TP 0.2i
 \(bu
+Timeout - the time in seconds between when the boot
+manager appears on the screen until when it
+automatically chooses the startup value from BootNext
+or BootOrder.
+.TP 0.2i
+\(bu
 Five boot entries (0000 - 0004), along with the active/inactive
 flag (* means active) and the name displayed on the screen.
 .RE
-.TP 2. 
+.TP 3
+2. 
 .SS "CREATING A NEW BOOT OPTION"
 .PP
 An OS installer would call \fBefibootmgr -c\fR.
@@ -152,25 +170,29 @@ Partition, and is mounted at \fI/dev/sda1\fR.  This
 creates a new boot option, called "Linux", and puts it at the top of
 the boot order list.  Options may be passed to modify the default
 behavior.  The default OS Loader is \fIelilo.efi\fR.
-.TP 3. 
+.TP 3
+3. 
 .SS "CHANGING THE BOOT ORDER"
 .PP
 Assuming the configuration in Example #1, 
 \fBefibootmgr -o 3,4\fR could be called to specify
 PXE boot first, then Linux boot.
-.TP 4. 
+.TP 3
+4. 
 .SS "CHANGING THE BOOT ORDER FOR THE NEXT BOOT ONLY"
 .PP
 Assuming the configuration in Example #1, 
 \fBefibootmgr -n 4\fR could be called to specify
 that the Linux entry be taken on next boot.
-.TP 5. 
+.TP 3
+5. 
 .SS "DELETING A BOOT OPTION"
 .PP
 Assuming the configuration in Example #1, 
 \fBefibootmgr -b 4 -B\fR could be called to delete
 entry 4 and remove it from the BootOrder.
-.TP 6. 
+.TP 3
+6. 
 .SS "CREATING NETWORK BOOT ENTRIES"
 .PP
 A system administrator wants to create a boot option to network

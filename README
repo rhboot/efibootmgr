@@ -29,7 +29,9 @@ usage: efibootmgr [options]
 	-O | --delete-bootorder delete BootOrder
 	-p | --part part       (defaults to 1) containing loader
 	-q | --quiet           be quiet
-	-t | --test filename   don't write to NVRAM, write to filename
+	--test filename   don't write to NVRAM, write to filename
+	-t | --timeout seconds   Boot manager timeout
+	-T | --delete-timeout    delete Timeout value
 	-u | --unicode | --UCS-2  pass extra args as UCS-2 (default is ASCII)
 	-U | --acpi_uid XXXX    set the ACPI UID (used with -i)
 	-v | --verbose         print additional information
@@ -43,6 +45,7 @@ Typical usage:
   BootCurrent: 0004
   BootNext: 0003
   BootOrder: 0004,0000,0001,0002,0003
+  Timeout: 30 seconds
   Boot0000* Diskette Drive(device:0)
   Boot0001* CD-ROM Drive(device:FF) 
   Boot0002* Hard Drive(Device:80)/HD(Part1,Sig00112233)   
@@ -61,6 +64,10 @@ Typical usage:
   This superceeds BootOrder for one boot only, and is deleted by the
   boot manager after first use.  This allows you to change the next boot
   behavior without changing BootOrder.
+
+  Timeout - the time in seconds between when the boot manager appears
+  on the screen until when it automatically chooses the startup value
+  from BootNext or BootOrder.
 
   Five boot entries (0000 - 0004), the active/inactive flag (* means
   active), and the name displayed on the screen.

@@ -1,3 +1,9 @@
+* Thu Feb 04 2004 Matt Domsch <Matt_Domsch@dell.com>
+- removed -t short option for --test
+- added -t <timeout> and -T delete timeout options
+- updated man page and README about the timeout options
+- Released v0.5.0-test2
+
 * Tue Sep 09 2003 Matt Domsch <Matt_Domsch@dell.com>
 - Released v0.5.0-test1
 

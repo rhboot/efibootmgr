@@ -1,7 +1,7 @@
 /*
   efibootmgr.c - Manipulates EFI variables as exported in /proc/efi/vars
 
-  Copyright (C) 2001 Dell Computer Corporation <Matt_Domsch@dell.com>
+  Copyright (C) 2001-2004 Dell, Inc. <Matt_Domsch@dell.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -353,59 +353,42 @@ remove_from_boot_order(uint16_t num)
 	return edit_variable(&boot_order);
 }
 
-static int
-read_boot_current()
-{
-	efi_status_t status;
-	efi_variable_t boot_current;
-	uint16_t *n = (uint16_t *)(boot_current.Data);
-
-	memset(&boot_current, 0, sizeof(boot_current));
-	status = read_boot(&boot_current, "BootCurrent");
-	if (status) return -1;
-	return *n;
-}
-
-
-
-static int
-read_boot_next()
-{
-	efi_status_t status;
-	efi_variable_t boot_next;
-	uint16_t *n = (uint16_t *)(boot_next.Data);
-
-	memset(&boot_next, 0, sizeof(boot_next));
-	status = read_boot(&boot_next, "BootNext");
-	if (status) return -1;
-	return *n;
-}
-
-
 static efi_status_t
-set_boot_next(uint16_t num)
-{
-	efi_variable_t boot_next;
-	uint16_t *n = (uint16_t *)boot_next.Data;
-
-	memset(&boot_next, 0, sizeof(boot_next));
-
-	fill_var(&boot_next, "BootNext");
-	*n = num;
-	boot_next.DataSize = sizeof(uint16_t);
-	return create_or_edit_variable(&boot_next);
-}
-
-static efi_status_t
-delete_boot_next()
+delete_var(const char *name)
 {
 	efi_variable_t var;
 
 	memset(&var, 0, sizeof(var));
-	fill_var(&var, "BootNext");
+	fill_var(&var, name);
 	return delete_variable(&var);
 }
 
+static int
+read_boot_u16(const char *name)
+{
+	efi_status_t status;
+	efi_variable_t var;
+	uint16_t *n = (uint16_t *)(var.Data);
+
+	memset(&var, 0, sizeof(var));
+	status = read_boot(&var, name);
+	if (status) return -1;
+	return *n;
+}
+
+static efi_status_t
+set_boot_u16(const char *name, uint16_t num)
+{
+	efi_variable_t var;
+	uint16_t *n = (uint16_t *)var.Data;
+
+	memset(&var, 0, sizeof(var));
+
+	fill_var(&var, name);
+	*n = num;
+	var.DataSize = sizeof(uint16_t);
+	return create_or_edit_variable(&var);
+}
 
 static efi_status_t
 delete_boot_var(uint16_t num)
@@ -695,16 +678,6 @@ set_active_state()
 
 
 
-static efi_status_t
-delete_boot_order()
-{
-	efi_variable_t var;
-
-	memset(&var, 0, sizeof(var));
-	fill_var(&var, "BootOrder");
-	return delete_variable(&var);
-}
-
 
 static void
 usage()
@@ -730,7 +703,9 @@ usage()
 	printf("\t-O | --delete-bootorder delete BootOrder\n");
 	printf("\t-p | --part part        (defaults to 1) containing loader\n");
 	printf("\t-q | --quiet            be quiet\n");
-	printf("\t-t | --test filename    don't write to NVRAM, write to filename.\n");
+	printf("\t   | --test filename    don't write to NVRAM, write to filename.\n");
+	printf("\t-t | --timeout seconds  set boot manager timeout waiting for user input.\n");
+	printf("\t-T | --delete-timeout   delete Timeout.\n");
 	printf("\t-u | --unicode | --UCS-2  pass extra args as UCS-2 (default is ASCII)\n");
 	printf("\t-U | --acpi_uid XXXX    set the ACPI UID (used with -i)\n");
 	printf("\t-v | --verbose          print additional information\n");
@@ -745,6 +720,7 @@ set_default_opts()
 	opts.bootnum         = -1;   /* auto-detect */
 	opts.bootnext        = -1;   /* Don't set it */
 	opts.active          = -1;   /* Don't set it */
+	opts.timeout         = -1;   /* Don't set it */
 	opts.edd10_devicenum = 0x80;
 	opts.loader          = "\\elilo.efi";
 	opts.label           = "Linux";
@@ -773,7 +749,7 @@ parse_opts(int argc, char **argv)
 			{"create",                 no_argument, 0, 'c'},
 			{"disk",             required_argument, 0, 'd'},
 			{"iface",            required_argument, 0, 'i'},
-			{"acpi_hid",         required_argument, 0, 'H' },
+			{"acpi_hid",         required_argument, 0, 'H'},
 			{"edd-device",       required_argument, 0, 'E'},
 			{"edd30",            required_argument, 0, 'e'},
 			{"gpt",                    no_argument, 0, 'g'},
@@ -785,10 +761,12 @@ parse_opts(int argc, char **argv)
 			{"delete-bootorder",       no_argument, 0, 'O'},
 			{"part",             required_argument, 0, 'p'},
 			{"quiet",                  no_argument, 0, 'q'},
-			{"test",             required_argument, 0, 't'},
+			{"test",             required_argument, 0,   1},
+			{"timeout",          required_argument, 0, 't'},
+			{"delete-timeout",         no_argument, 0, 'T'},
 			{"unicode",                no_argument, 0, 'u'},
 			{"UCS-2",                  no_argument, 0, 'u'},
-			{"acpi_uid",         required_argument, 0, 'U' },
+			{"acpi_uid",         required_argument, 0, 'U'},
 			{"verbose",          optional_argument, 0, 'v'},
 			{"version",                no_argument, 0, 'V'},
 			{"write-signature",        no_argument, 0, 'w'},
@@ -796,7 +774,7 @@ parse_opts(int argc, char **argv)
 		};
 
 		c = getopt_long (argc, argv,
-				 "AaBb:cd:e:E:gH:i:l:L:n:No:Op:qt:uU:v::Vw",
+				 "AaBb:cd:e:E:gH:i:l:L:n:No:Op:qt:TuU:v::Vw",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -866,8 +844,18 @@ parse_opts(int argc, char **argv)
 		case 'q':
 			opts.quiet = 1;
 			break;
-		case 't':
+		case 1:
 			opts.testfile = optarg;
+			break;
+		case 't':
+			rc = sscanf(optarg, "%u", &num);
+			if (rc == 1) {
+				opts.timeout = num;
+				opts.set_timeout = 1;
+			}
+			break;
+		case 'T':
+			opts.delete_timeout = 1;
 			break;
 		case 'u':
 			opts.unicode = 1;
@@ -958,7 +946,7 @@ main(int argc, char **argv)
 	if (!opts.testfile) {
 
 		if (opts.delete_bootorder) {
-			delete_boot_order();
+			delete_var("BootOrder");
 		}
 
 		if (opts.bootorder) {
@@ -967,21 +955,33 @@ main(int argc, char **argv)
 
 
 		if (opts.delete_bootnext) {
-			delete_boot_next();
+			delete_var("BootNext");
+		}
+
+		if (opts.delete_timeout) {
+			delete_var("Timeout");
 		}
 
 		if (opts.bootnext >= 0) {
-			set_boot_next(opts.bootnext & 0xFFFF);
+			set_boot_u16("BootNext", opts.bootnext & 0xFFFF);
+		}
+
+		if (opts.set_timeout) {
+			set_boot_u16("Timeout", opts.timeout);
 		}
 
 		if (!opts.quiet) {
-			num = read_boot_next();
+			num = read_boot_u16("BootNext");
 			if (num != -1 ) {
 				printf("BootNext: %04x\n", num);
 			}
-			num = read_boot_current();
+			num = read_boot_u16("BootCurrent");
 			if (num != -1) {
 				printf("BootCurrent: %04x\n", num);
+			}
+			num = read_boot_u16("Timeout");
+			if (num != -1) {
+				printf("Timeout: %u seconds\n", num);
 			}
 			show_boot_order();
 			show_boot_vars();
