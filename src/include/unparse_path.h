@@ -29,6 +29,6 @@
 
 uint64_t unparse_path(char *buffer, EFI_DEVICE_PATH *path, uint16_t pathsize);
 void dump_raw_data(void *data, uint64_t length);
-
+unsigned long unparse_raw(char *buffer, uint8_t *p, uint64_t length);
 
 #endif

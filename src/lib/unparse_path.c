@@ -67,7 +67,7 @@ dump_raw_data(void *data, uint64_t length)
 
 
 
-static int
+unsigned long
 unparse_raw(char *buffer, uint8_t *p, uint64_t length)
 {
 	uint64_t i; unsigned char c;

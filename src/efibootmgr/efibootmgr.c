@@ -626,7 +626,8 @@ show_boot_vars()
 	char description[80];
 	EFI_LOAD_OPTION *load_option;
 	EFI_DEVICE_PATH *path;
-	char text_path[1024];
+	char text_path[1024], *p;
+	unsigned long optional_data_len=0;
 
 	list_for_each(pos, &boot_entry_list) {
 		boot = list_entry(pos, var_entry_t, list);
@@ -645,6 +646,22 @@ show_boot_vars()
 		if (opts.verbose) {
 			unparse_path(text_path, path, 
 				     load_option->file_path_list_length);
+			/* Print optional data */
+			if (boot->var_data.DataSize > 
+			    load_option->file_path_list_length) {
+				p = text_path;
+				p += strlen(text_path);
+				
+				optional_data_len =
+					boot->var_data.DataSize -
+					load_option->file_path_list_length -
+					((char *)path - (char *)load_option);
+
+				unparse_raw(p, ((uint8_t *)path) +
+					    load_option->file_path_list_length,
+					    optional_data_len);
+			}
+			
 			printf("\t%s", text_path);
 		}
 		printf("\n");
