@@ -166,7 +166,7 @@ create_or_edit_variable(efi_variable_t *var)
 	memcpy(&testvar, var, sizeof(*var));
 	variable_to_name(var, name);
 
-	if (read_variable(name, &testvar))
+	if (read_variable(name, &testvar) == EFI_SUCCESS)
 		return edit_variable(var);
 	else
 		return create_variable(var);

@@ -49,8 +49,6 @@ sysfs_read_variable(const char *name, efi_variable_t *var)
 	snprintf(filename, PATH_MAX-1, "%s/%s/raw_var", SYSFS_DIR_EFI_VARS,name);
 	fd = open(filename, O_RDONLY);
 	if (fd == -1) {
-		sprintf(buffer, "sysfs_read_variable():open(%s)", filename);
-		perror(buffer);
 		return EFI_NOT_FOUND;
 	}
 	readsize = read(fd, var, sizeof(*var));
@@ -74,8 +72,6 @@ sysfs_write_variable(const char *filename, efi_variable_t *var)
 
 	fd = open(filename, O_WRONLY);
 	if (fd == -1) {
-		sprintf(buffer, "sysfs_write_variable():open(%s)", filename);
-		perror(buffer);
 		return EFI_INVALID_PARAMETER;
 	}
 	writesize = write(fd, var, sizeof(*var));

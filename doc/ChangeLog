@@ -1,3 +1,9 @@
+* Sat Apr 24 2004 Matt Domsch <Matt_Domsch@dell.com>
+- Fixed reversed logic of create_or_edit_variable which prevented object
+  creation or editing on sysfs.
+- Removed debug printfs in sysfs read/write commands.
+- Released v0.5.0-test3
+
 * Thu Feb 04 2004 Matt Domsch <Matt_Domsch@dell.com>
 - removed -t short option for --test
 - added -t <timeout> and -T delete timeout options
