@@ -1,5 +1,12 @@
+* Wed May 1 2002 Matt Domsch <Matt_Domsch@dell.com>
+- Released version 0.4.0
+	
+* Tue Apr 30 2002 Matt Domsch <Matt_Domsch@dell.com>
+- Added some printfs to compare_gpts().
+	
 * Mon Apr 08 2002 Matt Domsch <Matt_Domsch@dell.com>
 - Make sure partition number arg is in the GPT disk.
+- Added a few more _FILE_OFFSET_BITS defines where needed
 	
 * Fri Apr 05 2002 Matt Domsch <Matt_Domsch@dell.com>
 - Added syncs to make tarball target so NFS is current and CVS dirs get
