@@ -1,7 +1,7 @@
 Summary: EFI Boot Manager
 Name: efibootmgr
 Version: 0.4.0
-Release: test6
+Release: -0
 Group: System Environment/Base
 Copyright: GPL
 Vendor: Dell Computer Corporation www.dell.com
