@@ -115,20 +115,25 @@ get_sector_size(int filedes)
 }
 
 /**
- * test_kernel_version()
- * @version - version string from utsname
+ * kernel_has_blkgetsize64()
  *
  * Returns: 0 on false, 1 on true
  * True means kernel is 2.4.x, x>=18, or
  *                   is 2.5.x, x>4, or
  *                   is > 2.5
  */
-
 static int
-_test_kernel_version(char *version)
+kernel_has_blkgetsize64(void)
 {
-        int major, minor, patch, parsed;
-        parsed = sscanf(version, "%d.%d.%d", &major, &minor, &patch);
+        int major=0, minor=0, patch=0, parsed;
+        int rc;
+        struct utsname u;
+
+        memset(&u, 0, sizeof(u));
+        rc = uname(&u);
+        if (rc) return 0;
+
+        parsed = sscanf(u.release, "%d.%d.%d", &major, &minor, &patch);
         if (parsed < 3) return 0;
         if (major > 2) return 1;
         if (major == 2 && minor > 5) return 1;
@@ -159,16 +164,10 @@ _get_num_sectors(int filedes)
 	unsigned long sectors=0;
         uint64_t bytes=0;
 	int rc;
-        struct utsname utsname;
-
-        memset(&utsname, 0, sizeof(utsname));
-        rc = uname(&utsname);
-        if (!rc) {
-                if (_test_kernel_version(utsname.release)) {
-                        rc = ioctl(filedes, BLKGETSIZE64, &bytes);
-                        if (!rc)
-                                return bytes / get_sector_size(filedes);
-                }
+        if (kernel_has_blkgetsize64()) {
+                rc = ioctl(filedes, BLKGETSIZE64, &bytes);
+                if (!rc)
+                        return bytes / get_sector_size(filedes);
         }
 
         rc = ioctl(filedes, BLKGETSIZE, &sectors);
