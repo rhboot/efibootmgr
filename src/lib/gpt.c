@@ -109,21 +109,26 @@ get_sector_size(int filedes)
  *
  * Try getting BLKGETSIZE64 and BLKSSZGET first,
  * then BLKGETSIZE if necessary.
+ *  Kernels 2.4.15-2.4.18 and 2.5.0-2.5.3 have a broken BLKGETSIZE64
+ *  which returns the number of 512-byte sectors, not the size of
+ *  the disk in bytes.  Until that's all fixed, don't use it.
  ************************************************************/
 static uint64_t
 _get_num_sectors(int filedes)
 {
-	uint64_t sectors, size_in_bytes = 0;
+	unsigned long sectors=0;
+        uint64_t bytes=0;
 	int rc;
 
-	rc = ioctl(filedes, BLKGETSIZE64, &size_in_bytes);
+#if 0
+ 	rc = ioctl(filedes, BLKGETSIZE64, &bytes);
 	if (!rc)
-		return size_in_bytes / get_sector_size(filedes);
-	else {
-		rc = ioctl(filedes, BLKGETSIZE, &sectors);
-		if (rc)
-			return 0;
-	}
+		return bytes / get_sector_size(filedes);
+#endif
+        rc = ioctl(filedes, BLKGETSIZE, &sectors);
+        if (rc)
+                return 0;
+        
 	return sectors;
 }
 
