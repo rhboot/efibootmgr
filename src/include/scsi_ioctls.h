@@ -21,6 +21,7 @@
 #ifndef _SCSI_IOCTLS_H
 #define _SCSI_IOCTLS_H 
 
+#include <stdint.h>
 
 
 /* Snagged from linux/include/scsi/scsi.h */
@@ -28,8 +29,8 @@
 #define SCSI_IOCTL_GET_PCI   0x5387
 
 typedef struct scsi_idlun {
-	__u32 dev_id;
-	__u32 host_unique_id;
+	uint32_t dev_id;
+	uint32_t host_unique_id;
 } Scsi_Idlun;
 
 

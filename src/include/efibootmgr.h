@@ -26,7 +26,7 @@ typedef struct {
 	char *loader;
 	char *label;
 	char *bootorder;
-	__u32 part;
+	uint32_t part;
 	int edd_version;
 	int edd10_devicenum;
 	int bootnum;

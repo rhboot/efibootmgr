@@ -18,14 +18,16 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#define _FILE_OFFSET_BITS 64
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <sys/types.h>
+#include <stdint.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <linux/limits.h>
+#include <limits.h>
 #include <unistd.h>
 #include "efi.h"
 #include "efichar.h"
@@ -33,16 +35,13 @@
 #include "disk.h"
 #include "efibootmgr.h"
 
-#define __USE_LARGEFILE64
-#define __USE_FILEOFFSET64
-
 EFI_DEVICE_PATH *
 load_option_path(EFI_LOAD_OPTION *option)
 {
 	char *p = (char *) option;
 	return (EFI_DEVICE_PATH *)
-		(p + sizeof(__u32) /* Attributes */
-		 + sizeof(__u16)   /* FilePathListLength*/
+		(p + sizeof(uint32_t) /* Attributes */
+		 + sizeof(uint16_t)   /* FilePathListLength*/
 		 + efichar_strsize(option->description)); /* Description */
 }
 
@@ -89,7 +88,6 @@ read_variable(char *name, efi_variable_t *var)
 efi_status_t
 write_variable(efi_variable_t *var)
 {
-	char *newname;
 	int fd;
 	size_t writesize;
 	char buffer[PATH_MAX];
@@ -100,7 +98,6 @@ write_variable(efi_variable_t *var)
 	if (fd == -1) {
 		sprintf(buffer, "write_variable():open(%s)", name);
 		perror(buffer);
-		free(newname);
 		return EFI_INVALID_PARAMETER;
 	}
 	writesize = write(fd, var, sizeof(*var));
@@ -109,7 +106,6 @@ write_variable(efi_variable_t *var)
 		sprintf(buffer, "write_variable():write(%s)", name);
 		perror(buffer);
 		dump_raw_data(var, sizeof(*var));
-		free(newname);
 #endif
 		close(fd);
 		return EFI_INVALID_PARAMETER;
@@ -168,12 +164,12 @@ get_edd_version()
   EFI_DEVICE_PATH, 0x01 (Hardware), 0x04 (Vendor), length 0x0018
   This needs to know what EFI device has the boot device.
 */
-static __u16
-make_edd10_device_path(void *buffer, __u32 hardware_device)
+static uint16_t
+make_edd10_device_path(void *buffer, uint32_t hardware_device)
 {
 	VENDOR_DEVICE_PATH *hw = buffer;
 	efi_guid_t guid = EDD10_HARDWARE_VENDOR_PATH_GUID;
-	__u32 *data = (__u32 *)hw->data;
+	uint32_t *data = (uint32_t *)hw->data;
 	hw->type = 0x01; /* Hardware Device Path */
 	hw->subtype = 0x04; /* Vendor */
 	hw->length = 24;
@@ -184,7 +180,7 @@ make_edd10_device_path(void *buffer, __u32 hardware_device)
 
 
 
-static __u16
+static uint16_t
 make_end_device_path(void *buffer)
 {
 	END_DEVICE_PATH *p = buffer;
@@ -195,8 +191,8 @@ make_end_device_path(void *buffer)
 }
 
 
-static __u16
-make_acpi_device_path(void *buffer, __u32 _HID, __u32 _UID)
+static uint16_t
+make_acpi_device_path(void *buffer, uint32_t _HID, uint32_t _UID)
 {
 	ACPI_DEVICE_PATH *p = buffer;
 	p->type = 2;
@@ -207,8 +203,8 @@ make_acpi_device_path(void *buffer, __u32 _HID, __u32 _UID)
 	return p->length;
 }
 
-static __u16
-make_pci_device_path(void *buffer, __u8 device, __u8 function)
+static uint16_t
+make_pci_device_path(void *buffer, uint8_t device, uint8_t function)
 {
 	PCI_DEVICE_PATH *p = buffer;
 	p->type = 1;
@@ -219,8 +215,8 @@ make_pci_device_path(void *buffer, __u8 device, __u8 function)
 	return p->length;
 }
 
-static __u16
-make_scsi_device_path(void *buffer, __u16 id, __u16 lun)
+static uint16_t
+make_scsi_device_path(void *buffer, uint16_t id, uint16_t lun)
 {
 	SCSI_DEVICE_PATH *p = buffer;
 	p->type = 3;
@@ -231,10 +227,10 @@ make_scsi_device_path(void *buffer, __u16 id, __u16 lun)
 	return p->length;
 }
 
-static __u16
-make_harddrive_device_path(void *buffer, __u32 num, __u64 start, __u64 size,
-			   __u8 *signature,
-			   __u8 mbr_type, __u8 signature_type)
+static uint16_t
+make_harddrive_device_path(void *buffer, uint32_t num, uint64_t start, uint64_t size,
+			   uint8_t *signature,
+			   uint8_t mbr_type, uint8_t signature_type)
 {
 	HARDDRIVE_DEVICE_PATH *p = buffer;
 	p->type = 4;
@@ -249,7 +245,7 @@ make_harddrive_device_path(void *buffer, __u32 num, __u64 start, __u64 size,
 	return p->length;
 }
 
-static __u16
+static uint16_t
 make_file_path_device_path(void *buffer, efi_char16_t *name)
 {
 	FILE_PATH_DEVICE_PATH *p = buffer;
@@ -303,8 +299,8 @@ make_linux_load_option(void *data)
 	efi_char16_t description[40];
 	efi_char16_t os_loader_path[40];
 	int rc, edd_version=0;
-	__u64 start=0, size=0;
-	__u8 mbr_type=0, signature_type=0;
+	uint64_t start=0, size=0;
+	uint8_t mbr_type=0, signature_type=0;
 	char signature[16];
 	long datasize=0;
 
@@ -314,9 +310,9 @@ make_linux_load_option(void *data)
 	if (opts.active) load_option->attributes = LOAD_OPTION_ACTIVE;
 	else             load_option->attributes = 0;
 
-	p += sizeof(__u32);
+	p += sizeof(uint32_t);
 	/* skip writing file_path_list_length */
-	p += sizeof(__u16);
+	p += sizeof(uint16_t);
 	/* Write description.  This is the text that appears on the screen for the load option. */
 	memset(description, 0, sizeof(description));
 	efichar_from_char(description, opts.label, sizeof(description));
@@ -334,10 +330,8 @@ make_linux_load_option(void *data)
 		return 0;
 	}
 
-	printf("opts.edd_version=%d\n", opts.edd_version);
 	if (opts.edd_version) {
 		edd_version = get_edd_version();
-		printf("edd_version=%d\n", edd_version);
 
 		if (edd_version == 3) {
 			p += make_edd30_device_path(disk_fd, p);
@@ -366,7 +360,7 @@ make_linux_load_option(void *data)
 
 	load_option->file_path_list_length = p - q;
 
-	datasize = (__u8 *)p - (__u8 *)data;
+	datasize = (uint8_t *)p - (uint8_t *)data;
 	return datasize;
 }
 
@@ -379,7 +373,6 @@ make_linux_efi_variable(efi_variable_t *var,
 
 	memset(buffer,    0, sizeof(buffer));
 	
-	// printf("in make_linux_efi_variable(%p,%x)\n", var, free_number);
 	/* VariableName needs to be BootXXXX */
 	sprintf(buffer, "Boot%04x", free_number);
 	
@@ -392,5 +385,7 @@ make_linux_efi_variable(efi_variable_t *var,
 		EFI_VARIABLE_RUNTIME_ACCESS;
 
 	/* Set Data[] and DataSize */
-	var->DataSize = make_linux_load_option(var->Data);
+
+	var->DataSize =  make_linux_load_option(var->Data);
+	return;
 }

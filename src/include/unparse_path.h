@@ -21,14 +21,14 @@
 #ifndef _UNPARSE_PATH_H
 #define _UNPARSE_PATH_H
 
-#include <linux/types.h>
+#include <stdint.h>
 #include "efi.h"
 
 #define OFFSET_OF(struct_type, member)    \
     ((unsigned long) ((char *) &((struct_type*) 0)->member))
 
-__u64 unparse_path(char *buffer, EFI_DEVICE_PATH *path, __u16 pathsize);
-void dump_raw_data(void *data, __u64 length);
+uint64_t unparse_path(char *buffer, EFI_DEVICE_PATH *path, uint16_t pathsize);
+void dump_raw_data(void *data, uint64_t length);
 
 
 #endif

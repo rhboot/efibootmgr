@@ -65,7 +65,7 @@ efichar_strcmp(const efi_char16_t *s1, const efi_char16_t *s2)
 	return 0;
 }
 
-void
+unsigned long
 efichar_from_char(efi_char16_t *dest, const char *src, size_t dest_len)
 {
 	int i, src_len = strlen(src);
@@ -73,9 +73,10 @@ efichar_from_char(efi_char16_t *dest, const char *src, size_t dest_len)
 		dest[i] = src[i];
 	}
 	dest[i] = 0;
+	return i * sizeof(*dest);
 }
 
-void
+unsigned long
 efichar_to_char(char *dest, const efi_char16_t *src, size_t dest_len)
 {
 	int i, src_len = efichar_strlen(src, -1);
@@ -83,6 +84,7 @@ efichar_to_char(char *dest, const efi_char16_t *src, size_t dest_len)
 		dest[i] = src[i];
 	}
 	dest[i] = 0;
+	return i;
 }
 
 int

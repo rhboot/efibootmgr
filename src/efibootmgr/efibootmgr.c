@@ -30,6 +30,8 @@
  
 */
 
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,7 +41,6 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <unistd.h>
-#define _GNU_SOURCE
 #include <getopt.h>
 #include "list.h"
 #include "efi.h"
@@ -48,12 +49,14 @@
 #include "disk.h"
 #include "efibootmgr.h"
 
-#define EFIBOOTMGR_VERSION "0.2.0 15-May-2001"
+#ifndef EFIBOOTMGR_VERSION
+#define EFIBOOTMGR_VERSION "unknown (fix Makefile!)"
+#endif
 
 
 typedef struct _var_entry {
 	struct dirent   *name;
-	__u16            num;
+	uint16_t            num;
 	efi_variable_t   var_data;
 	struct list_head list;
 } var_entry_t;
@@ -65,7 +68,7 @@ static	LIST_HEAD(blk_list);
 efibootmgr_opt_t opts;
 
 static inline void
-var_num_from_name(const char *pattern, char *name, __u16 *num)
+var_num_from_name(const char *pattern, char *name, uint16_t *num)
 {
 	sscanf(name, pattern, num);
 }
@@ -92,8 +95,10 @@ read_boot_var_names(struct dirent ***namelist)
 {
 	int n;
 	n = scandir(PROC_DIR_EFI, namelist, select_boot_var_names, alphasort);
-	if (n < 0)
-		perror("scandir");
+	if (n < 0) {
+		perror("scandir " PROC_DIR_EFI);
+		fprintf(stderr, "You must 'modprobe efivars' before running efibootmgr.\n");
+	}
 	return n;
 }
 
@@ -165,7 +170,7 @@ static int
 compare(const void *a, const void *b)
 {
 	int rc = -1;
-	__u32 n1=*(__u32 *)a, n2=*(__u32 *)b;
+	uint32_t n1=*(uint32_t *)a, n2=*(uint32_t *)b;
 	if (n1 < n2) rc = -1;
 	if (n1 == n2) rc = 0;
 	if (n2 > n2) rc = 1;
@@ -181,22 +186,22 @@ static int
 find_free_boot_var(struct list_head *boot_list)
 {
 	int num_vars=0, i=0, found;
-	__u16 *vars, free_number;
+	uint16_t *vars, free_number;
 	struct list_head *pos;
 	var_entry_t *boot;
 	list_for_each(pos, boot_list) {
 		num_vars++;
 	}
-	vars = malloc(sizeof(__u16) * num_vars);
+	vars = malloc(sizeof(uint16_t) * num_vars);
 	if (!vars) return -1;
-	memset(vars, 0, sizeof(__u16) * num_vars);
+	memset(vars, 0, sizeof(uint16_t) * num_vars);
 
 	list_for_each(pos, boot_list) {
 		boot = list_entry(pos, var_entry_t, list);
 		vars[i] = boot->num;
 			i++;
 	}
-	qsort(vars, i, sizeof(__u16), compare);
+	qsort(vars, i, sizeof(uint16_t), compare);
 	found = 1;
 
 	num_vars = i;
@@ -232,8 +237,6 @@ make_boot_var(struct list_head *boot_list)
 	/* Create a new var_entry_t object
 	   and populate it.
 	*/
-	// printf("free_number=%04x\n", free_number);
-
 
 	boot = malloc(sizeof(*boot));
 	if (!boot) return NULL;
@@ -277,12 +280,12 @@ read_boot_order(efi_variable_t *boot_order)
 
 
 static efi_status_t
-add_to_boot_order(__u16 num)
+add_to_boot_order(uint16_t num)
 {
 	efi_status_t status;
 	efi_variable_t boot_order;
-	__u64 new_data_size;
-	__u16 *new_data, *old_data;
+	uint64_t new_data_size;
+	uint16_t *new_data, *old_data;
 
 
 	status = read_boot_order(&boot_order);
@@ -292,8 +295,8 @@ add_to_boot_order(__u16 num)
 	/* We've now got an array (in boot_order.Data) of the
 	   boot order.  First add our entry, then copy the old array.
 	*/
-	old_data = (__u16 *)&(boot_order.Data);
-	new_data_size = boot_order.DataSize + sizeof(__u16);
+	old_data = (uint16_t *)&(boot_order.Data);
+	new_data_size = boot_order.DataSize + sizeof(uint16_t);
 	new_data = malloc(new_data_size);
 	
 	new_data[0] = num;
@@ -308,12 +311,12 @@ add_to_boot_order(__u16 num)
 
 
 static efi_status_t
-remove_from_boot_order(__u16 num)
+remove_from_boot_order(uint16_t num)
 {
 	efi_status_t status;
 	efi_variable_t boot_order;
-	__u64 new_data_size;
-	__u16 *new_data, *old_data;
+	uint64_t new_data_size;
+	uint16_t *new_data, *old_data;
 	int old_i,new_i;
 
 	read_boot_order(&boot_order);
@@ -326,12 +329,12 @@ remove_from_boot_order(__u16 num)
 	   boot order.  Simply copy the array, skipping the
 	   entry we're deleting.
 	*/
-	old_data = (__u16 *)&(boot_order.Data);
+	old_data = (uint16_t *)&(boot_order.Data);
 	/* Start with the same size */
 	new_data_size = boot_order.DataSize;
 	new_data = malloc(new_data_size);
 	for (old_i=0,new_i=0;
-	     old_i < boot_order.DataSize / sizeof(__u16);
+	     old_i < boot_order.DataSize / sizeof(uint16_t);
 	     old_i++) {
 		if (old_data[old_i] != num) {
 				/* Copy this value */
@@ -341,7 +344,7 @@ remove_from_boot_order(__u16 num)
 	}
 
 	/* Now new_data has what we need */
-	new_data_size = new_i * sizeof(__u16);
+	new_data_size = new_i * sizeof(uint16_t);
 	memset(&(boot_order.Data), 0, boot_order.DataSize);
 	memcpy(&(boot_order.Data), new_data, new_data_size);
 	boot_order.DataSize = new_data_size;
@@ -356,7 +359,7 @@ read_boot_current()
 	efi_variable_t boot_next;
 	efi_guid_t guid = EFI_GLOBAL_VARIABLE;
 	char boot_next_name[80], text_uuid[40];
-	__u16 *n = (__u16 *)(boot_next.Data);
+	uint16_t *n = (uint16_t *)(boot_next.Data);
 
 	efi_guid_unparse(&guid, text_uuid);
 
@@ -376,7 +379,7 @@ read_boot_next()
 	efi_variable_t boot_next;
 	efi_guid_t guid = EFI_GLOBAL_VARIABLE;
 	char boot_next_name[80], text_uuid[40];
-	__u16 *n = (__u16 *)(boot_next.Data);
+	uint16_t *n = (uint16_t *)(boot_next.Data);
 
 	efi_guid_unparse(&guid, text_uuid);
 
@@ -391,11 +394,11 @@ read_boot_next()
 
 
 static efi_status_t
-set_boot_next(__u16 num)
+set_boot_next(uint16_t num)
 {
 	efi_variable_t var;
 	efi_guid_t guid = EFI_GLOBAL_VARIABLE;
-	__u16 *n = (__u16 *)var.Data;
+	uint16_t *n = (uint16_t *)var.Data;
 
 	memset(&var, 0, sizeof(var));
 
@@ -403,7 +406,7 @@ set_boot_next(__u16 num)
 			  1024);
 	memcpy(&var.VendorGuid, &guid, sizeof(guid));
 	*n = num;
-	var.DataSize = sizeof(__u16);
+	var.DataSize = sizeof(uint16_t);
 	var.Attributes = EFI_VARIABLE_NON_VOLATILE 
 		| EFI_VARIABLE_BOOTSERVICE_ACCESS
 		| EFI_VARIABLE_RUNTIME_ACCESS;
@@ -426,7 +429,7 @@ delete_boot_next()
 
 
 static efi_status_t
-delete_boot_var(__u16 num)
+delete_boot_var(uint16_t num)
 {
 	efi_status_t status;
 	efi_variable_t var;
@@ -564,7 +567,7 @@ find_disk_blk(char *disk_name, struct list_head *blk_list)
 #endif	
 
 static void
-unparse_boot_order(__u16 *order, int length)
+unparse_boot_order(uint16_t *order, int length)
 {
 	int i;
 	printf("BootOrder: ");
@@ -577,7 +580,7 @@ unparse_boot_order(__u16 *order, int length)
 }
 
 static int
-parse_boot_order(char *buffer, __u16 *order, int length)
+parse_boot_order(char *buffer, uint16_t *order, int length)
 {
 	int i;
 	int num, rc;
@@ -598,7 +601,7 @@ set_boot_order()
 {
 	efi_variable_t var;
 	efi_guid_t guid = EFI_GLOBAL_VARIABLE;
-	__u16 *n = (__u16 *)var.Data;
+	uint16_t *n = (uint16_t *)var.Data;
 
 	if (!opts.bootorder) return EFI_SUCCESS;
 
@@ -611,7 +614,7 @@ set_boot_order()
 		| EFI_VARIABLE_BOOTSERVICE_ACCESS
 		| EFI_VARIABLE_RUNTIME_ACCESS;
 
-	var.DataSize = parse_boot_order(opts.bootorder, n, 1024/sizeof(__u16)) * sizeof(__u16);
+	var.DataSize = parse_boot_order(opts.bootorder, n, 1024/sizeof(uint16_t)) * sizeof(uint16_t);
 	return write_variable(&var);
 }
 
@@ -655,7 +658,7 @@ show_boot_order()
 {
 	efi_status_t status;
 	efi_variable_t boot_order;
-	__u16 *data;
+	uint16_t *data;
 
 	status = read_boot_order(&boot_order);
 	if (status != EFI_SUCCESS) return;
@@ -663,9 +666,9 @@ show_boot_order()
 	/* We've now got an array (in boot_order.Data) of the
 	   boot order.  First add our entry, then copy the old array.
 	*/
-	data = (__u16 *)&(boot_order.Data);
+	data = (uint16_t *)&(boot_order.Data);
 	if (boot_order.DataSize) 
-		unparse_boot_order(data, boot_order.DataSize / sizeof(__u16));
+		unparse_boot_order(data, boot_order.DataSize / sizeof(uint16_t));
 
 }
 
@@ -725,7 +728,7 @@ delete_boot_order()
 static void
 usage()
 {
-	printf("usage: efibootmgr [options]\n");
+	printf("usage: efibootmgr [options] [boot loader options ...]\n");
 	printf("\t-a | --active         sets bootnum active\n");
 	printf("\t-A | --inactive       sets bootnum inactive\n");
 	printf("\t-b | --bootnum XXXX   modify BootXXXX (hex)\n");

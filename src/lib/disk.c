@@ -20,8 +20,8 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <linux/types.h>
-#include <sys/types.h>
+#include <stdint.h>
+#include <stdint.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -38,7 +38,7 @@ disk_info_from_fd(int fd,
 {
 	struct stat buf;
 	int rc;
-	__u64 major;
+	uint64_t major;
 	unsigned char minor;
 	memset(&buf, 0, sizeof(struct stat));
 	rc = fstat(fd, &buf);
@@ -283,8 +283,8 @@ disk_get_size(int fd, long *size)
 
 static int
 msdos_disk_get_extended_partition_info (int fd, LegacyMBR_t *mbr,
-					__u32 num,
-					__u64 *start, __u64 *size)
+					uint32_t num,
+					uint64_t *start, uint64_t *size)
 {
         /* Until I can handle these... */
         fprintf(stderr, "Extended partition info not supported.\n");
@@ -306,17 +306,17 @@ msdos_disk_get_extended_partition_info (int fd, LegacyMBR_t *mbr,
 
 static int
 msdos_disk_get_partition_info (int fd, LegacyMBR_t *mbr,
-			       __u32 num,
-			       __u64 *start, __u64 *size,
+			       uint32_t num,
+			       uint64_t *start, uint64_t *size,
 			       char *signature,
-			       __u8 *mbr_type, __u8 *signature_type)
+			       uint8_t *mbr_type, uint8_t *signature_type)
 {	
 
 	long disk_size=0;
 
 	*mbr_type = 0x01;
 	*signature_type = 0x01;
-	*(__u32 *)signature = mbr->UniqueMBRSignature;
+	*(uint32_t *)signature = mbr->UniqueMBRSignature;
 
         if (num > 4) {
 		/* Extended partition */
@@ -356,10 +356,10 @@ msdos_disk_get_partition_info (int fd, LegacyMBR_t *mbr,
 
 int
 disk_get_partition_info (int fd, 
-			 __u32 num,
-			 __u64 *start, __u64 *size,
+			 uint32_t num,
+			 uint64_t *start, uint64_t *size,
 			 char *signature,
-			 __u8 *mbr_type, __u8 *signature_type)
+			 uint8_t *mbr_type, uint8_t *signature_type)
 {
 	LegacyMBR_t mbr;
 	off_t offset;

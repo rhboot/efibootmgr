@@ -26,16 +26,18 @@
  * Based on 'Extensible Firmware Interface Specification'
  *      version 1.02, 12 December, 2000
  */
-#include <linux/types.h>
+#include <stdint.h>
+
+#define EFI_ERROR(x) ((x) | (1L << 63))
 
 #define EFI_SUCCESS		0
-#define EFI_LOAD_ERROR          (1L | (1L << 63))
-#define EFI_INVALID_PARAMETER	(2L | (1L << 63))
-#define EFI_UNSUPPORTED		(3L | (1L << 63))
-#define EFI_BAD_BUFFER_SIZE     (4L | (1L << 63))
-#define EFI_BUFFER_TOO_SMALL	(5L | (1L << 63))
-#define EFI_NOT_FOUND          (14L | (1L << 63))
-#define EFI_OUT_OF_RESOURCES   (15L | (1L << 63))
+#define EFI_LOAD_ERROR          EFI_ERROR(1)
+#define EFI_INVALID_PARAMETER   EFI_ERROR(2)
+#define EFI_UNSUPPORTED		EFI_ERROR(3)
+#define EFI_BAD_BUFFER_SIZE     EFI_ERROR(4)
+#define EFI_BUFFER_TOO_SMALL	EFI_ERROR(5)
+#define EFI_NOT_FOUND           EFI_ERROR(14)
+#define EFI_OUT_OF_RESOURCES    EFI_ERROR(15)
 
 
 /*******************************************************
@@ -68,88 +70,88 @@
 
 
 
-typedef __u64 efi_status_t;
-typedef __u8  efi_bool_t;
-typedef __u16 efi_char16_t;		/* UNICODE character */
+typedef uint64_t efi_status_t;
+typedef uint8_t  efi_bool_t;
+typedef uint16_t efi_char16_t;		/* UNICODE character */
 
 typedef struct {
-	__u32 data1;
-	__u16 data2;
-	__u16 data3;
-	__u8  data4[8];
+	uint32_t data1;
+	uint16_t data2;
+	uint16_t data3;
+	uint8_t  data4[8];
 } efi_guid_t;
 
 typedef struct _efi_variable_t {
         efi_char16_t  VariableName[1024/sizeof(efi_char16_t)];
         efi_guid_t    VendorGuid;
-        __u64         DataSize;
-        __u8          Data[1024];
+        uint64_t         DataSize;
+        uint8_t          Data[1024];
 	efi_status_t  Status;
-        __u32         Attributes;
+        uint32_t         Attributes;
 } __attribute__((packed)) efi_variable_t;
 
 
 
 typedef struct {
-	__u8  type;
-	__u8  subtype;
-	__u16 length;
-	__u8  data[1];
+	uint8_t  type;
+	uint8_t  subtype;
+	uint16_t length;
+	uint8_t  data[1];
 } __attribute__((packed)) EFI_DEVICE_PATH;
 
 typedef struct {
-	__u32 attributes;
-	__u16 file_path_list_length;
+	uint32_t attributes;
+	uint16_t file_path_list_length;
 	efi_char16_t description[1];
 	EFI_DEVICE_PATH _unused_file_path_list[1];
 } __attribute__((packed)) EFI_LOAD_OPTION;
 
 
 typedef struct {
-	__u8 type;
-	__u8 subtype;
-	__u16 length;
-	__u32 _HID;
-	__u32 _UID;
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
+	uint32_t _HID;
+	uint32_t _UID;
 } __attribute__((packed)) ACPI_DEVICE_PATH;
 
 typedef struct {
-	__u8 type;
-	__u8 subtype;
-	__u16 length;
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
 	efi_guid_t vendor_guid;
-	__u8 data[1];
+	uint8_t data[1];
 } __attribute__((packed)) VENDOR_DEVICE_PATH;
 
 typedef struct {
-	__u8 type;
-	__u8 subtype;
-	__u16 length;
-	__u8 function;
-	__u8 device;
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
+	uint8_t function;
+	uint8_t device;
 } __attribute__((packed)) PCI_DEVICE_PATH;
 
 typedef struct {
-	__u8 type;
-	__u8 subtype;
-	__u16 length;
-	__u8  socket;
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
+	uint8_t  socket;
 } __attribute__((packed)) PCCARD_DEVICE_PATH;
 
 typedef struct {
-	__u8 type;
-	__u8 subtype;
-	__u16 length;
-	__u32 memory_type;
-	__u64 start;
-	__u64 end;
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
+	uint32_t memory_type;
+	uint64_t start;
+	uint64_t end;
 } __attribute__((packed)) MEMORY_MAPPED_DEVICE_PATH;
 
 typedef struct {
-	__u8 type;
-	__u8 subtype;
-	__u16 length;
-	__u32 controller;
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
+	uint32_t controller;
 } __attribute__((packed)) CONTROLLER_DEVICE_PATH;
 
 
@@ -157,168 +159,169 @@ typedef struct {
 
 
 typedef struct {
-	__u8 type;
-	__u8 subtype;
-	__u16 length;
-	__u16 id;
-	__u16 lun;
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
+	uint16_t id;
+	uint16_t lun;
 } __attribute__((packed)) SCSI_DEVICE_PATH;
 
 typedef struct {
-	__u8 type;
-	__u8 subtype;
-	__u16 length;
-	__u8  primary_secondary;
-	__u8  slave_master;
-	__u16 lun;
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
+	uint8_t  primary_secondary;
+	uint8_t  slave_master;
+	uint16_t lun;
 } __attribute__((packed)) ATAPI_DEVICE_PATH;
 
 typedef struct {
-	__u8 type;
-	__u8 subtype;
-	__u16 length;
-	__u32 reserved;
-	__u64 wwn;
-	__u64 lun;
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
+	uint32_t reserved;
+	uint64_t wwn;
+	uint64_t lun;
 } __attribute__((packed)) FIBRE_CHANNEL_DEVICE_PATH;
 
 typedef struct {
-	__u8 type;
-	__u8 subtype;
-	__u16 length;
-	__u32 reserved;
-	__u64 guid;
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
+	uint32_t reserved;
+	uint64_t guid;
 } __attribute__((packed)) I1394_DEVICE_PATH;
 
 typedef struct {
-	__u8 type;
-	__u8 subtype;
-	__u16 length;
-	__u8  port;
-	__u8  endpoint;
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
+	uint8_t  port;
+	uint8_t  endpoint;
 } __attribute__((packed)) USB_DEVICE_PATH;
 
 typedef struct {
-	__u8 type;
-	__u8 subtype;
-	__u16 length;
-	__u16 vendor;
-	__u16 product;
-	__u8  class;
-	__u8  subclass;
-	__u8  protocol;
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
+	uint16_t vendor;
+	uint16_t product;
+	uint8_t  class;
+	uint8_t  subclass;
+	uint8_t  protocol;
 } __attribute__((packed)) USB_CLASS_DEVICE_PATH;
 
 typedef struct {
-	__u8 type;
-	__u8 subtype;
-	__u16 length;
-	__u32 tid;
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
+	uint32_t tid;
 } __attribute__((packed)) I2O_DEVICE_PATH;
 
 typedef struct {
-	__u8 type;
-	__u8 subtype;
-	__u16 length;
-	__u8 macaddr[32];
-	__u8 iftype;
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
+	uint8_t macaddr[32];
+	uint8_t iftype;
 } __attribute__((packed)) MAC_ADDR_DEVICE_PATH;
 
 typedef struct {
-	__u8 type;
-	__u8 subtype;
-	__u16 length;
-	__u32 local_ip;
-	__u32 remote_ip;
-	__u16 local_port;
-	__u16 remote_port;
-	__u16 protocol;
-	__u8  static_addr;
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
+	uint32_t local_ip;
+	uint32_t remote_ip;
+	uint16_t local_port;
+	uint16_t remote_port;
+	uint16_t protocol;
+	uint8_t  static_addr;
 } __attribute__((packed)) IPv4_DEVICE_PATH;
 
 typedef struct {
-	__u8 type;
-	__u8 subtype;
-	__u16 length;
-	__u8  local_ip[16];
-	__u8  remote_ip[16];
-	__u16 local_port;
-	__u16 remote_port;
-	__u16 protocol;
-	__u8  static_addr;
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
+	uint8_t  local_ip[16];
+	uint8_t  remote_ip[16];
+	uint16_t local_port;
+	uint16_t remote_port;
+	uint16_t protocol;
+	uint8_t  static_addr;
 } __attribute__((packed)) IPv6_DEVICE_PATH;
 
 typedef struct {
-	__u8 type;
-	__u8 subtype;
-	__u16 length;
-	__u32 reserved;
-	__u64 node_guid;
-	__u64 ioc_guid;
-	__u64 id; 
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
+	uint32_t reserved;
+	uint64_t node_guid;
+	uint64_t ioc_guid;
+	uint64_t id; 
 } __attribute__((packed)) INFINIBAND_DEVICE_PATH;
 
 typedef struct {
-	__u8 type;
-	__u8 subtype;
-	__u16 length;
-	__u32 reserved;
-	__u64 baud_rate;
-	__u8  data_bits;
-	__u8  parity;
-	__u8  stop_bits;
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
+	uint32_t reserved;
+	uint64_t baud_rate;
+	uint8_t  data_bits;
+	uint8_t  parity;
+	uint8_t  stop_bits;
 } __attribute__((packed)) UART_DEVICE_PATH;
 
 
 typedef struct {
-	__u8 type;
-	__u8 subtype;
-	__u16 length;
-	__u32 part_num;
-	__u64 start;
-	__u64 size;
-	__u8  signature[16];
-	__u8  mbr_type;
-	__u8  signature_type;
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
+	uint32_t part_num;
+	uint64_t start;
+	uint64_t size;
+	uint8_t  signature[16];
+	uint8_t  mbr_type;
+	uint8_t  signature_type;
+	uint8_t  padding[6]; /* Emperically needed */
 } __attribute__((packed)) HARDDRIVE_DEVICE_PATH;
 
 typedef struct {
-	__u8 type;
-	__u8 subtype;
-	__u16 length;
-	__u32 boot_entry;
-	__u64 start;
-	__u64 size;
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
+	uint32_t boot_entry;
+	uint64_t start;
+	uint64_t size;
 } __attribute__((packed)) CDROM_DEVICE_PATH;
 
 typedef struct {
-	__u8 type;
-	__u8 subtype;
-	__u16 length;
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
 	efi_char16_t path_name[1];
 } __attribute__((packed)) FILE_PATH_DEVICE_PATH;
 
 
 typedef struct {
-	__u8 type;
-	__u8 subtype;
-	__u16 length;
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
 	efi_guid_t guid;
 } __attribute__((packed)) MEDIA_PROTOCOL_DEVICE_PATH;
 
 typedef struct {
-	__u8 type;
-	__u8 subtype;
-	__u16 length;
-	__u16 device_type;
-	__u16 status_flag;
-	__u8  description[1];
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
+	uint16_t device_type;
+	uint16_t status_flag;
+	uint8_t  description[1];
 } __attribute__((packed)) BIOS_BOOT_SPEC_DEVICE_PATH;
 
 typedef struct {
-	__u8  type;
-	__u8  subtype;
-	__u16 length;
+	uint8_t  type;
+	uint8_t  subtype;
+	uint16_t length;
 } __attribute__((packed)) END_DEVICE_PATH;
 
 	

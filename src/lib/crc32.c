@@ -2,7 +2,6 @@
  * Dec 5, 2000 Matt Domsch <Matt_Domsch@dell.com>
  * - Copied crc32.c from the linux/drivers/net/cipe directory.
  * - Now pass seed as an arg
- * - changed unsigned long to __u32, added #include<linux/types.h>
  * - changed len to be an unsigned long
  * - changed crc32val to be a register
  * - License remains unchanged!  It's still GPL-compatable!
@@ -48,9 +47,9 @@
   /*                                                                        */
   /*  --------------------------------------------------------------------  */
 
-#include<linux/types.h>
+#include <stdint.h>
 
-static __u32 crc32_tab[] = {
+static uint32_t crc32_tab[] = {
       0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,
       0x706af48fL, 0xe963a535L, 0x9e6495a3L, 0x0edb8832L, 0x79dcb8a4L,
       0xe0d5e91eL, 0x97d2d988L, 0x09b64c2bL, 0x7eb17cbdL, 0xe7b82d07L,
@@ -107,11 +106,11 @@ static __u32 crc32_tab[] = {
 
 /* Return a 32-bit CRC of the contents of the buffer. */
 
-__u32
-crc32(const void *buf, unsigned long len, __u32 seed)
+uint32_t
+crc32(const void *buf, unsigned long len, uint32_t seed)
 {
   unsigned long i;
-  register __u32 crc32val;
+  register uint32_t crc32val;
   const unsigned char *s = buf;
 
   crc32val = seed;

@@ -23,8 +23,8 @@
 
 int efichar_strlen(const efi_char16_t *p, int max);
 int efichar_strsize(const efi_char16_t *p);
-void efichar_from_char(efi_char16_t *dest, const char *src, size_t dest_len);
-void efichar_to_char(char *dest, const efi_char16_t *src, size_t dest_len);
+unsigned long efichar_from_char(efi_char16_t *dest, const char *src, size_t dest_len);
+unsigned long efichar_to_char(char *dest, const efi_char16_t *src, size_t dest_len);
 int efichar_strcmp(const efi_char16_t *s1, const efi_char16_t *s2);
 int efichar_char_strcmp(const char *s1, const efi_char16_t *s2);
 int efichar_strncpy(efi_char16_t *s1, const efi_char16_t *s2, int max);

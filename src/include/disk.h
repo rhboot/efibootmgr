@@ -77,10 +77,10 @@ int disk_info_from_fd(int fd,
 		      unsigned char *part);
 
 int disk_get_partition_info (int fd, 
-			     __u32 num,
-			     __u64 *start, __u64 *size,
+			     uint32_t num,
+			     uint64_t *start, uint64_t *size,
 			     char *signature,
-			     __u8 *mbr_type, __u8 *signature_type);
+			     uint8_t *mbr_type, uint8_t *signature_type);
 
 
 int disk_get_size(int fd, long *size);

@@ -19,10 +19,9 @@
  */
 
 #include <stdio.h>
-#include <pci/pci.h>
-#include <sys/types.h>
+#include <sys/pci.h>
+#include <stdint.h>
 #include <sys/stat.h>
-#include <linux/types.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include "scsi_ioctls.h"

@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <linux/types.h>
+#include <stdint.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
@@ -39,7 +39,7 @@
 #define BLKGETLASTSECT  _IO(0x12,108) /* get last sector of block device */
 #define BLKGETSIZE      _IO(0x12,96)  /* return device size */
 
-static struct blkdev_ioctl_param {
+struct blkdev_ioctl_param {
         unsigned int block;
         size_t content_length;
         char * block_contents;
@@ -59,7 +59,7 @@ static struct blkdev_ioctl_param {
  * but seeds the function with ~0, and xor's with ~0 at the end.
  ************************************************************/
 
-static inline __u32
+static inline uint32_t
 efi_crc32(const void *buf, unsigned long len)
 {
   return (crc32(buf, len, ~0L) ^ ~0L);
@@ -95,11 +95,11 @@ efi_guidcmp(efi_guid_t left, efi_guid_t right)
  *    blocks of 2. :(
  ************************************************************/
 
-static __u64
+static uint64_t
 LastLBA(int filedes)
 {
   int rc;
-  __u64 sectors = 0;
+  uint64_t sectors = 0;
   struct stat s;
   memset(&s, 0, sizeof(s));
   rc = fstat(filedes, &s);
@@ -141,7 +141,7 @@ LastLBA(int filedes)
 
 
 static inline int
-IsLBAValid(int fd, __u64 lba)
+IsLBAValid(int fd, uint64_t lba)
 {
 	return (lba <= LastLBA(fd));
 }
@@ -149,7 +149,7 @@ IsLBAValid(int fd, __u64 lba)
 
 
 static int
-read_lastoddsector(int fd, __u64 lba, void *buffer, size_t count)
+read_lastoddsector(int fd, uint64_t lba, void *buffer, size_t count)
 {
         int rc;
         struct blkdev_ioctl_param ioctl_param;
@@ -169,7 +169,7 @@ read_lastoddsector(int fd, __u64 lba, void *buffer, size_t count)
 
 
 static int
-ReadLBA(int fd, __u64 lba, void *buffer, size_t bytes)
+ReadLBA(int fd, uint64_t lba, void *buffer, size_t bytes)
 {
         off_t offset = lba * 512;
 
@@ -242,7 +242,7 @@ ReadGuidPartitionEntries(int fd,
  ************************************************************/
 static GuidPartitionTableHeader_t *
 ReadGuidPartitionTableHeader(int fd,
-                             __u64 lba)
+                             uint64_t lba)
 {
 	GuidPartitionTableHeader_t *gpt;
 	gpt = (GuidPartitionTableHeader_t *)
@@ -275,12 +275,12 @@ ReadGuidPartitionTableHeader(int fd,
 
 
 static int
-IsGuidPartitionTableValid(int fd, __u64 lba,
+IsGuidPartitionTableValid(int fd, uint64_t lba,
 			  GuidPartitionTableHeader_t ** gpt,
 			  GuidPartitionEntry_t ** ptes)
 {
 	int rc = 0;		/* default to not valid */
-	__u32 crc, origcrc;
+	uint32_t crc, origcrc;
         
         if (!gpt || !ptes) return rc;
 
@@ -366,7 +366,7 @@ FindValidGPT(int fd,
 {
 	int rc = 0;
 	GuidPartitionEntry_t *pptes = NULL, *aptes = NULL;
-	__u64 lastlba;
+	uint64_t lastlba;
 
 
 	lastlba = LastLBA(fd);
@@ -424,10 +424,10 @@ FindValidGPT(int fd,
 
 int
 gpt_disk_get_partition_info (int fd, 
-                             __u32 num,
-                             __u64 *start, __u64 *size,
+                             uint32_t num,
+                             uint64_t *start, uint64_t *size,
                              char *signature,
-                             __u8 *mbr_type, __u8 *signature_type)
+                             uint8_t *mbr_type, uint8_t *signature_type)
 {	
         GuidPartitionTableHeader_t * pgpt=NULL, * agpt=NULL, *gpt = NULL;
         GuidPartitionEntry_t       * ptes=NULL, *p;

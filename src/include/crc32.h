@@ -22,13 +22,13 @@
 #ifndef _CRC32_H
 #define _CRC32_H
 
-#include <linux/types.h>
+#include <stdint.h>
 
 /*
  * This computes a 32 bit CRC of the data in the buffer, and returns the CRC.
  * The polynomial used is 0xedb88320.
  */
 
-extern __u32 crc32 (const void *buf, unsigned long len, __u32 seed);
+extern uint32_t crc32 (const void *buf, unsigned long len, uint32_t seed);
 
 #endif /* _CRC32_H */

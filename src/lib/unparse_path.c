@@ -19,11 +19,12 @@
  */
 
 #include <stdio.h>
-#include <linux/types.h>
-#include <sys/types.h>
+#include <stdint.h>
+#include <stdint.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
+#include <netinet/in.h>
 
 #include "efi.h"
 #include "unparse_path.h"
@@ -33,12 +34,12 @@
 
 
 void
-dump_raw_data(void *data, __u64 length)
+dump_raw_data(void *data, uint64_t length)
 {
 	char buffer1[80], buffer2[80], *b1, *b2, c;
 	unsigned char *p = data;
 	unsigned long column=0;
-	__u64 length_printed = 0;
+	uint64_t length_printed = 0;
 	const char maxcolumn = 16;
 	while (length_printed < length) {
 		b1 = buffer1;
@@ -67,9 +68,9 @@ dump_raw_data(void *data, __u64 length)
 
 
 static int
-unparse_raw(char *buffer, __u8 *p, __u64 length)
+unparse_raw(char *buffer, uint8_t *p, uint64_t length)
 {
-	__u64 i; unsigned char c;
+	uint64_t i; unsigned char c;
 	char *q = buffer;
 	for (i=0; i<length; i++) {
 		c = p[i];
@@ -77,6 +78,18 @@ unparse_raw(char *buffer, __u8 *p, __u64 length)
 		buffer += sprintf(buffer, "%02x", c);
 	}
 	return buffer - q; 
+}
+
+static int
+unparse_ipv4_port(char *buffer, uint32_t ipaddr, uint16_t port)
+{
+	unsigned char *ip;
+//	ipaddr = nltoh(ipaddr);
+//	port = nstoh(port);
+	ip = (unsigned char *)&ipaddr;
+	return sprintf(buffer, "%hhu.%hhu.%hhu.%hhu:%hu",
+		       ip[0], ip[1], ip[2], ip[3], 
+		       port);
 }
 
 
@@ -90,7 +103,7 @@ unparse_acpi_path(char *buffer, EFI_DEVICE_PATH *path)
 		return sprintf(buffer, "ACPI(%x,%x)", acpi->_HID, acpi->_UID);
 		break;
 	default:
-		return sprintf(buffer, "Unknown");
+		return unparse_raw(buffer, (uint8_t *)path, path->length);
 		break;
 	}
 	return 0;
@@ -99,7 +112,7 @@ unparse_acpi_path(char *buffer, EFI_DEVICE_PATH *path)
 static int
 unparse_vendor_path(char *buffer, VENDOR_DEVICE_PATH *path)
 {
-	char text_guid[40], *p = buffer, *q = (__u8 *)path + 20;
+	char text_guid[40], *p = buffer, *q = (uint8_t *)path + 20;
 	efi_guid_unparse(&path->vendor_guid, text_guid);
 	p += sprintf(p, "Vendor(%s,", text_guid);
 	p += unparse_raw(p, q, path->length - 20);
@@ -135,8 +148,9 @@ unparse_hardware_path(char *buffer, EFI_DEVICE_PATH *path)
 	case 5:
 		return sprintf(buffer, "Controller(%x)", ctlr->controller);
 		break;
+
 	default:
-		return sprintf(buffer, "Unknown");
+		return unparse_raw(buffer, (uint8_t *)path, path->length);
 	}
 	return 0;
 }
@@ -150,6 +164,12 @@ unparse_messaging_path(char *buffer, EFI_DEVICE_PATH *path)
 	FIBRE_CHANNEL_DEVICE_PATH *fc = (FIBRE_CHANNEL_DEVICE_PATH *)path;
 	I1394_DEVICE_PATH *i1394 = (I1394_DEVICE_PATH *)path;
 	USB_DEVICE_PATH *usb = (USB_DEVICE_PATH *)path;
+	MAC_ADDR_DEVICE_PATH *mac = (MAC_ADDR_DEVICE_PATH *)path;
+	USB_CLASS_DEVICE_PATH *usbclass = (USB_CLASS_DEVICE_PATH *)path;
+	I2O_DEVICE_PATH *i2o = (I2O_DEVICE_PATH *)path; 
+	IPv4_DEVICE_PATH *ipv4 = (IPv4_DEVICE_PATH *)path;
+	IPv6_DEVICE_PATH *ipv6 = (IPv6_DEVICE_PATH *)path;
+	char *p = buffer;
 
 	switch (path->subtype) {
 	case 1:
@@ -170,8 +190,32 @@ unparse_messaging_path(char *buffer, EFI_DEVICE_PATH *path)
 	case 5:
 		return sprintf(buffer, "USB(%x,%x)", usb->port, usb->endpoint);
 		break;
+	case 6:
+		return sprintf(buffer, "I2O(%x)", i2o->tid);
+		break;
+	case 11:
+		p += sprintf(p, "MAC(");
+		p += unparse_raw(p, mac->macaddr, 6);
+		p += sprintf(p, ",%hhx)", mac->iftype);
+		return (int) (p - buffer);
+		break;
+	case 12:
+		p += sprintf(p, "IPv4(");
+		p += unparse_ipv4_port(p, ipv4->local_ip, ipv4->local_port);
+		p += sprintf(p, "<->");
+		p += unparse_ipv4_port(p, ipv4->remote_ip, ipv4->remote_port);
+		p += sprintf(p, ",%hx, %hhx", ipv4->protocol, ipv4->static_addr);
+		return (int) (p - buffer);
+		break;
+
+	case 15:
+		return sprintf(buffer, "USBClass(%hx,%hx,%hhx,%hhx,%hhx)",
+			       usbclass->vendor, usbclass->product,
+			       usbclass->class, usbclass->subclass,
+			       usbclass->protocol);
+		break;
 	default:
-		return sprintf(buffer, "Unknown");
+		return unparse_raw(buffer, (uint8_t *)path, path->length);
 		break;
 	}
 	return 0;
@@ -188,7 +232,7 @@ unparse_media_hard_drive_path(char *buffer, EFI_DEVICE_PATH *path)
 		sprintf(sig, "None");
 		break;
 	case 0x01:
-		sprintf(sig, "%08x", *(__u32 *)hd->signature);
+		sprintf(sig, "%08x", *(uint32_t *)hd->signature);
 		break;
 	case 0x02: /* GPT */
                 efi_guid_unparse((efi_guid_t *)hd->signature, sig);
@@ -243,7 +287,7 @@ static int
 unparse_bios_path(char *buffer, EFI_DEVICE_PATH *path)
 {
 	BIOS_BOOT_SPEC_DEVICE_PATH *bios = (BIOS_BOOT_SPEC_DEVICE_PATH *)path;
-	char *p = buffer, *q = (__u8 *)path + 8;
+	char *p = buffer, *q = (uint8_t *)path + 8;
 	p += sprintf(p, "BIOS(%x,%x,",
 		     bios->device_type, bios->status_flag);
 	p += unparse_raw(p, q, path->length - 8);
@@ -252,10 +296,10 @@ unparse_bios_path(char *buffer, EFI_DEVICE_PATH *path)
 }
 
 
-__u64
-unparse_path(char *buffer, EFI_DEVICE_PATH *path, __u16 pathsize)
+uint64_t
+unparse_path(char *buffer, EFI_DEVICE_PATH *path, uint16_t pathsize)
 {
-	__u16 parsed_length = 0;
+	uint16_t parsed_length = 0;
 	char *p = buffer;
 	int exit_now = 0;
 
@@ -289,7 +333,7 @@ unparse_path(char *buffer, EFI_DEVICE_PATH *path, __u16 pathsize)
 		}
 //		p += sprintf(p, "\\");
 		parsed_length += path->length;
-		path = (EFI_DEVICE_PATH *) ((__u8 *)path + path->length);
+		path = (EFI_DEVICE_PATH *) ((uint8_t *)path + path->length);
 	}
 
 	return p - buffer;
@@ -311,14 +355,14 @@ static int
 compare_hardware_path_pci(EFI_DEVICE_PATH *path,
 			  int device, int func)
 {
-	__u8 *p = ((void *)path) + OFFSET_OF(EFI_DEVICE_PATH, data);
-	__u8 path_device, path_func;
+	uint8_t *p = ((void *)path) + OFFSET_OF(EFI_DEVICE_PATH, data);
+	uint8_t path_device, path_func;
 
 	switch (path->subtype) {
 	case 1:
 		/* PCI */
-		path_func   = *(__u8 *)p;
-		path_device = *(__u8 *)(p+1);
+		path_func   = *(uint8_t *)p;
+		path_device = *(uint8_t *)(p+1);
 		
 		return !(path_func == func && path_device == device);
 		
@@ -332,14 +376,14 @@ compare_hardware_path_pci(EFI_DEVICE_PATH *path,
 static int
 compare_hardware_path_scsi(EFI_DEVICE_PATH *path, int id, int lun)
 {
-	__u8 *p = ((void *)path) + OFFSET_OF(EFI_DEVICE_PATH, data);
-	__u16 path_id, path_lun;
+	uint8_t *p = ((void *)path) + OFFSET_OF(EFI_DEVICE_PATH, data);
+	uint16_t path_id, path_lun;
 
 	switch (path->subtype) {
 	case 2:
 		/* SCSI */
-		path_id   = *(__u16 *)p;
-		path_lun = *(__u16 *)(p+2);
+		path_id   = *(uint16_t *)p;
+		path_lun = *(uint16_t *)(p+2);
 		
 		return !(path_id == id && path_lun == lun);
 		break;
@@ -352,14 +396,14 @@ compare_hardware_path_scsi(EFI_DEVICE_PATH *path, int id, int lun)
 static int
 compare_hardware_path_acpi(EFI_DEVICE_PATH *path, int bus)
 {
-	__u8 *p = ((void *)path) + OFFSET_OF(EFI_DEVICE_PATH, data);
-	__u32 _HID, _UID;
+	uint8_t *p = ((void *)path) + OFFSET_OF(EFI_DEVICE_PATH, data);
+	uint32_t _HID, _UID;
 
 	switch (path->subtype) {
 	case 1:
 		/* ACPI */
-		_HID = *(__u32 *)p;
-		_UID = *(__u32 *)(p+4);
+		_HID = *(uint32_t *)p;
+		_UID = *(uint32_t *)(p+4);
 		
 		/* FIXME: Need to convert _HID and _UID to bus number */
 
@@ -372,8 +416,8 @@ compare_hardware_path_acpi(EFI_DEVICE_PATH *path, int bus)
 }
 
 static int
-compare_media_path_harddrive(EFI_DEVICE_PATH *path, __u32 num,
-			     __u64 start, __u64 size)
+compare_media_path_harddrive(EFI_DEVICE_PATH *path, uint32_t num,
+			     uint64_t start, uint64_t size)
 {
 	HARDDRIVE_DEVICE_PATH *p = (HARDDRIVE_DEVICE_PATH *)path;
 	
@@ -397,11 +441,11 @@ int
 compare_pci_scsi_disk_blk(efi_variable_t *var,
 			  int bus, int device, int func,
 			  int host, int channel, int id, int lun,
-			  __u64 start, __u64 size)
+			  uint64_t start, uint64_t size)
 {
 
 	EFI_DEVICE_PATH *path = (EFI_DEVICE_PATH *) var->Data;
-	__u64 parsed_length = 0;
+	uint64_t parsed_length = 0;
 	int exit_now = 0;
 	int rc = 0;
 
