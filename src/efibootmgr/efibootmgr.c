@@ -48,7 +48,7 @@
 #include "disk.h"
 #include "efibootmgr.h"
 
-#define EFIBOOTMGR_VERSION "0.2 15-May-2001"
+#define EFIBOOTMGR_VERSION "0.2.0 15-May-2001"
 
 
 typedef struct _var_entry {
