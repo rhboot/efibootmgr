@@ -181,7 +181,7 @@ unparse_messaging_path(char *buffer, EFI_DEVICE_PATH *path)
 	USB_CLASS_DEVICE_PATH *usbclass = (USB_CLASS_DEVICE_PATH *)path;
 	I2O_DEVICE_PATH *i2o = (I2O_DEVICE_PATH *)path; 
 	IPv4_DEVICE_PATH *ipv4 = (IPv4_DEVICE_PATH *)path;
-	IPv6_DEVICE_PATH *ipv6 = (IPv6_DEVICE_PATH *)path;
+/* 	IPv6_DEVICE_PATH *ipv6 = (IPv6_DEVICE_PATH *)path; */
 	char *p = buffer;
 
 	switch (path->subtype) {

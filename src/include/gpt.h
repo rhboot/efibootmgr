@@ -26,7 +26,7 @@
 #define _GPT_H
 
 
-#include <stdint.h>
+#include <inttypes.h>
 #include "efi.h"
 
 #define EFI_PMBR_OSTYPE_EFI 0xEF
@@ -60,38 +60,38 @@
 #define PARTITION_RESERVED_GUID \
     ((efi_guid_t) { 0x8da63339, 0x0007, 0x60c0, { 0xc4, 0x36, 0x08, 0x3a, 0xc8, 0x23, 0x09, 0x08 }})
 
-typedef struct _GuidPartitionTableHeader_t {
-	uint64_t Signature;
-	uint32_t Revision;
-	uint32_t HeaderSize;
-	uint32_t HeaderCRC32;
-	uint32_t Reserved1;
-	uint64_t MyLBA;
-	uint64_t AlternateLBA;
-	uint64_t FirstUsableLBA;
-	uint64_t LastUsableLBA;
-	efi_guid_t DiskGUID;
-	uint64_t PartitionEntryLBA;
-	uint32_t NumberOfPartitionEntries;
-	uint32_t SizeOfPartitionEntry;
-	uint32_t PartitionEntryArrayCRC32;
-	uint8_t Reserved2[GPT_BLOCK_SIZE - 92];
-} __attribute__ ((packed)) GuidPartitionTableHeader_t;
+typedef struct _gpt_header {
+	uint64_t signature;
+	uint32_t revision;
+	uint32_t header_size;
+	uint32_t header_crc32;
+	uint32_t reserved1;
+	uint64_t my_lba;
+	uint64_t alternate_lba;
+	uint64_t first_usable_lba;
+	uint64_t last_usable_lba;
+	efi_guid_t disk_guid;
+	uint64_t partition_entry_lba;
+	uint32_t num_partition_entries;
+	uint32_t sizeof_partition_entry;
+	uint32_t partition_entry_array_crc32;
+	uint8_t reserved2[GPT_BLOCK_SIZE - 92];
+} __attribute__ ((packed)) gpt_header;
 
-typedef struct _GuidPartitionEntryAttributes_t {
-	uint64_t RequiredToFunction:1;
-	uint64_t Reserved:47;
-        uint64_t GuidSpecific:16;
-} __attribute__ ((packed)) GuidPartitionEntryAttributes_t;
+typedef struct _gpt_entry_attributes {
+	uint64_t required_to_function:1;
+	uint64_t reserved:47;
+        uint64_t type_guid_specific:16;
+} __attribute__ ((packed)) gpt_entry_attributes;
 
-typedef struct _GuidPartitionEntry_t {
-	efi_guid_t PartitionTypeGuid;
-	efi_guid_t UniquePartitionGuid;
-	uint64_t StartingLBA;
-	uint64_t EndingLBA;
-	GuidPartitionEntryAttributes_t Attributes;
-	efi_char16_t PartitionName[72 / sizeof(efi_char16_t)];
-} __attribute__ ((packed)) GuidPartitionEntry_t;
+typedef struct _gpt_entry {
+	efi_guid_t partition_type_guid;
+	efi_guid_t unique_partition_guid;
+	uint64_t starting_lba;
+	uint64_t ending_lba;
+	gpt_entry_attributes attributes;
+	efi_char16_t partition_name[72 / sizeof(efi_char16_t)];
+} __attribute__ ((packed)) gpt_entry;
 
 
 /* 
@@ -106,38 +106,38 @@ typedef struct _GuidPartitionEntry_t {
 */
 #define GPT_DEFAULT_RESERVED_PARTITION_ENTRIES \
         (GPT_DEFAULT_RESERVED_PARTITION_ENTRY_ARRAY_SIZE / \
-         sizeof(GuidPartitionEntry_t))
+         sizeof(gpt_entry))
 
 
-typedef struct _PartitionRecord_t {
-	uint8_t BootIndicator;	/* Not used by EFI firmware. Set to 0x80 to indicate that this
+typedef struct _partition_record {
+	uint8_t boot_indicator;	/* Not used by EFI firmware. Set to 0x80 to indicate that this
 				   is the bootable legacy partition. */
-	uint8_t StartHead;		/* Start of partition in CHS address, not used by EFI firmware. */
-	uint8_t StartSector;	/* Start of partition in CHS address, not used by EFI firmware. */
-	uint8_t StartTrack;	/* Start of partition in CHS address, not used by EFI firmware. */
-	uint8_t OSType;		/* OS type. A value of 0xEF defines an EFI system partition.
+	uint8_t start_head;		/* Start of partition in CHS address, not used by EFI firmware. */
+	uint8_t start_sector;	/* Start of partition in CHS address, not used by EFI firmware. */
+	uint8_t start_track;	/* Start of partition in CHS address, not used by EFI firmware. */
+	uint8_t os_type;		/* OS type. A value of 0xEF defines an EFI system partition.
 				   Other values are reserved for legacy operating systems, and
 				   allocated independently of the EFI specification. */
-	uint8_t EndHead;		/* End of partition in CHS address, not used by EFI firmware. */
-	uint8_t EndSector;		/* End of partition in CHS address, not used by EFI firmware. */
-	uint8_t EndTrack;		/* End of partition in CHS address, not used by EFI firmware. */
-	uint32_t StartingLBA;	/* Starting LBA address of the partition on the disk. Used by
+	uint8_t end_head;		/* End of partition in CHS address, not used by EFI firmware. */
+	uint8_t end_sector;		/* End of partition in CHS address, not used by EFI firmware. */
+	uint8_t end_track;		/* End of partition in CHS address, not used by EFI firmware. */
+	uint32_t starting_lba;	/* Starting LBA address of the partition on the disk. Used by
 				   EFI firmware to define the start of the partition. */
-	uint32_t SizeInLBA;	/* Size of partition in LBA. Used by EFI firmware to determine
+	uint32_t size_in_lba;	/* Size of partition in LBA. Used by EFI firmware to determine
 				   the size of the partition. */
-} __attribute__ ((packed)) PartitionRecord_t;
+} __attribute__ ((packed)) partition_record;
 
 
 /* Protected Master Boot Record  & Legacy MBR share same structure */
 /* Needs to be packed because the u16s force misalignment. */
 
-typedef struct _LegacyMBR_t {
-	uint8_t BootCode[440];
-	uint32_t UniqueMBRSignature;
-	uint16_t Unknown;
-	PartitionRecord_t PartitionRecord[4];
-	uint16_t Signature;
-} __attribute__ ((packed)) LegacyMBR_t;
+typedef struct _legacy_mbr {
+	uint8_t bootcode[440];
+	uint32_t unique_mbr_signature;
+	uint16_t unknown;
+	partition_record partition[4];
+	uint16_t signature;
+} __attribute__ ((packed)) legacy_mbr;
 
 
 

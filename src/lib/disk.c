@@ -284,7 +284,7 @@ disk_get_size(int fd, long *size)
  ************************************************************/
 
 static int
-msdos_disk_get_extended_partition_info (int fd, LegacyMBR_t *mbr,
+msdos_disk_get_extended_partition_info (int fd, legacy_mbr *mbr,
 					uint32_t num,
 					uint64_t *start, uint64_t *size)
 {
@@ -307,14 +307,13 @@ msdos_disk_get_extended_partition_info (int fd, LegacyMBR_t *mbr,
  ************************************************************/
 
 static int
-msdos_disk_get_partition_info (int fd, LegacyMBR_t *mbr,
+msdos_disk_get_partition_info (int fd, legacy_mbr *mbr,
 			       uint32_t num,
 			       uint64_t *start, uint64_t *size,
 			       char *signature,
 			       uint8_t *mbr_type, uint8_t *signature_type)
 {	
 	int rc;
-	uint32_t new_sig=0;
 	long disk_size=0;
 	struct stat stat;
 	struct timeval tv;
@@ -322,7 +321,7 @@ msdos_disk_get_partition_info (int fd, LegacyMBR_t *mbr,
 	*mbr_type = 0x01;
 	*signature_type = 0x01;
 
-	if (!mbr->UniqueMBRSignature && !opts.write_signature) {
+	if (!mbr->unique_mbr_signature && !opts.write_signature) {
 		
 		printf("\n\n******************************************************\n");
 		printf("Warning! This MBR disk does not have a unique signature.\n");
@@ -351,15 +350,15 @@ msdos_disk_get_partition_info (int fd, LegacyMBR_t *mbr,
 		
 		/* Write the device type to the signature.
 		   This should be unique per disk per system */
-		mbr->UniqueMBRSignature =  tv.tv_usec << 16;
-		mbr->UniqueMBRSignature |= stat.st_rdev & 0xFFFF;
+		mbr->unique_mbr_signature =  tv.tv_usec << 16;
+		mbr->unique_mbr_signature |= stat.st_rdev & 0xFFFF;
 			
 		/* Write it to the disk */
 		lseek(fd, 0, SEEK_SET);
 		write(fd, mbr, sizeof(*mbr));
 
 	}
-	*(uint32_t *)signature = mbr->UniqueMBRSignature;
+	*(uint32_t *)signature = mbr->unique_mbr_signature;
 		
 		
         if (num > 4) {
@@ -375,8 +374,8 @@ msdos_disk_get_partition_info (int fd, LegacyMBR_t *mbr,
 	}
 	else if (num >= 1 && num <= 4) {
 		/* Primary partition */
-                *start = mbr->PartitionRecord[num-1].StartingLBA;
-                *size  = mbr->PartitionRecord[num-1].SizeInLBA;
+                *start = mbr->partition[num-1].starting_lba;
+                *size  = mbr->partition[num-1].size_in_lba;
                 
 	}
 	return 0;
@@ -405,7 +404,7 @@ disk_get_partition_info (int fd,
 			 char *signature,
 			 uint8_t *mbr_type, uint8_t *signature_type)
 {
-	LegacyMBR_t mbr;
+	legacy_mbr mbr;
 	off_t offset;
 	int this_bytes_read = 0;
 	int i, is_gpt=0;
@@ -416,10 +415,10 @@ disk_get_partition_info (int fd,
 	if (this_bytes_read < sizeof(mbr)) return 1;
 
 	
-	if (mbr.Signature == MSDOS_MBR_SIGNATURE) {
+	if (mbr.signature == MSDOS_MBR_SIGNATURE) {
 	
 		for (i=0; i<4; i++) {
-			if (mbr.PartitionRecord[i].OSType ==
+			if (mbr.partition[i].os_type ==
 			    EFI_PMBR_OSTYPE_EFI_GPT) {
 				is_gpt=1;
 				break;

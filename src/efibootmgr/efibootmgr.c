@@ -772,6 +772,7 @@ usage()
 	printf("\t-d | --disk disk       (defaults to /dev/sda) containing loader\n");
 	printf("\t-e | --edd [1|3|-1]   force EDD 1.0 or 3.0 creation variables, or guess\n");
 	printf("\t-E | --device num      EDD 1.0 device number (defaults to 0x80)\n");
+	printf("\t-g | --gpt            force disk with invalid PMBR to be treated as GPT\n");
 	printf("\t-l | --loader name     (defaults to \\elilo.efi)\n");
 	printf("\t-L | --label label     Boot manager display label (defaults to \"Linux\")\n");
 	printf("\t-n | --bootnext XXXX   set BootNext to XXXX (hex)\n");
@@ -820,6 +821,7 @@ parse_opts(int argc, char **argv)
 			{"disk",             required_argument, 0, 'd'},
 			{"edd-device",       required_argument, 0, 'E'},
 			{"edd30",            required_argument, 0, 'e'},
+			{"gpt",                    no_argument, 0, 'g'},
 			{"loader",           required_argument, 0, 'l'},
 			{"label",            required_argument, 0, 'L'},
 			{"bootnext",         required_argument, 0, 'n'},
@@ -838,7 +840,7 @@ parse_opts(int argc, char **argv)
 		};
 		
 		c = getopt_long (argc, argv,
-				 "AaBb:cd:e:E:l:L:n:No:Op:qt:uv::Vw",
+				 "AaBb:cd:e:E:gl:L:n:No:Op:qt:uv::Vw",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -871,6 +873,9 @@ parse_opts(int argc, char **argv)
 		case 'E':
 			rc = sscanf(optarg, "%x", &num);
 			if (rc == 1) opts.edd10_devicenum = num;
+			break;
+		case 'g':
+			opts.forcegpt = 1;
 			break;
 		case 'l':
 			opts.loader = optarg;
