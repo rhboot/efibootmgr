@@ -4,38 +4,52 @@
   RELEASE_MINOR := 2
   RELEASE_SUBLEVEL := 0
   RELEASE_EXTRALEVEL := 
-  RELEASE_STRING := efibootmgr-$(RELEASE_MAJOR).$(RELEASE_MINOR).$(RELEASE_SUBLEVEL)$(RELEASE_EXTRALEVEL)
-
-  BUILDDIR := $(shell pwd)
+  RELEASE_NAME := efibootmgr
+  RELEASE_STRING := $(RELEASE_NAME)-$(RELEASE_MAJOR).$(RELEASE_MINOR).$(RELEASE_SUBLEVEL)$(RELEASE_EXTRALEVEL)
 
   MODULES := src
+
+#--------------------------------------------
+# Generic Makefile stuff is below. You 
+#  should not have to modify any of the stuff
+#  below.
+#--------------------------------------------
 
 #Included makefiles will add their deps for each stage in these vars:
   INSTALLDEPS :=
   CLEANDEPS :=
   ALLDEPS :=
+  CLEANLIST :=
+
+#Define the top-level build directory
+  BUILDDIR := $(shell pwd)
 
 #Include make rules from each submodule (subdirectory)
   include $(patsubst %,%/module.mk,$(MODULES))
 
-  .PHONY: all clean install install_link post_install echotree default
+  .PHONY: all clean install_list install install_link post_install tarball echotree default
 
   all:  $(ALLDEPS) 
-  clean: $(CLEANDEPS) 
+  clean: clean_list $(CLEANDEPS) 
+
+  clean_list:
+	rm -f $(CLEANLIST)
 
   install_list: echotree $(INSTALLDEPS) 
 
   install: all 
-	@make install_list | package/install.pl copy
+	@make install_list | tools/install.pl copy
 	@make post_install
 
   install_link: all
-	@make install_list | package/install.pl link
+	@make install_list | tools/install.pl link
 	@make post_install
 
+  post_install: 
+
   tarball: clean
-	-rm ali-*.tar.gz
-	cp -a ../ali-dist ../$(RELEASE_STRING)
+	-rm $(RELEASE_NAME)*.tar.gz
+	cp -a ../$(RELEASE_NAME) ../$(RELEASE_STRING)
 	find ../$(RELEASE_STRING) -name CVS -type d -depth -exec rm -rf {} \;
 	cd ..; tar cvzf $(RELEASE_STRING).tar.gz $(RELEASE_STRING)
 	mv ../$(RELEASE_STRING).tar.gz .
@@ -43,8 +57,7 @@
 
 
 #The rest of the docs...
-  doc_TARGETS += COPYING TODO
-
+  doc_TARGETS += COPYING README INSTALL
 
 echotree:
 	@# making directory tree 

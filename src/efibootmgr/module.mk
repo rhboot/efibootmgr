@@ -1,20 +1,17 @@
-
-# Uncomment the lines below if we ever have subdirs to make
-  #MODULES := 	
-  # include the description for
-  #   each module
-  #include $(patsubst %, %/module.mk,$(MODULES))
-
-# One of our parent makefiles will copy this for us...
-ALLDEPS += efibootmgr_TARGETS
 efibootmgr_SRCDIR := src/efibootmgr
-efibootmgr_SOURCES := efibootmgr.c
-efibootmgr_LIBS    := crc32.c disk.c efi.c efichar.c gpt.c scsi_ioctls.c \
-                      unparse_path.c
-efibootmgr_LIBDIR  := src/lib
+efibootmgr_OBJECTS := efibootmgr.o
 efibootmgr_TARGETS := efibootmgr
 
-$(efibootmgr_TARGETS): $(patsubst %,$(efibootmgr_SRCDIR)/%,$(efibootmgr_SOURCES)) $(patsubst %,$(efibootmgr_LIBDIR)/%,$(efibootmgr_LIBS))
+efibootmgr_LIBS    := crc32.o disk.o efi.o efichar.o gpt.o scsi_ioctls.o \
+                      unparse_path.o
+efibootmgr_LIBDIR  := src/lib
 
+ALLDEPS += $(patsubst %, $(efibootmgr_SRCDIR)/%, $(efibootmgr_TARGETS))
+CLEANLIST += $(patsubst %, $(efibootmgr_SRCDIR)/%, $(efibootmgr_TARGETS))
+CLEANLIST += $(patsubst %, $(efibootmgr_SRCDIR)/%, $(efibootmgr_OBJECTS))
 
+CFLAGS += -Isrc/include -Isrc/lib
 
+$(patsubst %, $(efibootmgr_SRCDIR)/%, $(efibootmgr_TARGETS)):  \
+  	$(patsubst %,$(efibootmgr_SRCDIR)/%,$(efibootmgr_OBJECTS)) \
+  	$(patsubst %,$(efibootmgr_LIBDIR)/%,$(efibootmgr_LIBS))
