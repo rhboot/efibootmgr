@@ -918,6 +918,11 @@ main(int argc, char **argv)
 	struct dirent  **boot_names = NULL;
 	var_entry_t *new_boot = NULL;
 	int num;
+
+	if (getuid() != 0) {
+		printf("efibootmgr must be run as root.\n");
+		exit(1);
+	}
 	
 	set_default_opts();
 	parse_opts(argc, argv);
