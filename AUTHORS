@@ -13,3 +13,6 @@ dann frazier <dannf@debian.org>
 - Patches to efibootmgr.c
 - network boot entry creation in efi.c
 
+Joshua Giles <Joshua_Giles@dell.com>
+- walk the PCI path inserting parent bridge device path components for
+  network boot and EDD30 entries.
