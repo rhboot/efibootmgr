@@ -9,6 +9,8 @@
 
   MODULES := src
 
+  BINDIR := /bin
+
 #--------------------------------------------
 # Generic Makefile stuff is below. You 
 #  should not have to modify any of the stuff
@@ -39,11 +41,9 @@
 
   install: all 
 	@make install_list | tools/install.pl copy
-	@make post_install
 
   install_link: all
 	@make install_list | tools/install.pl link
-	@make post_install
 
   post_install: 
 

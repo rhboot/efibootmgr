@@ -15,6 +15,7 @@ efibootmgr_FULLLIB := \
 ALLDEPS += $(efibootmgr_FULLTARGET) 
 CLEANLIST += $(efibootmgr_FULLTARGET)
 CLEANLIST += $(efibootmgr_FULLOBJECT)
+bindir_TARGETS += $(efibootmgr_FULLTARGET) 
 
 $(efibootmgr_FULLTARGET): \
   	$(efibootmgr_FULLOBJECT) \
