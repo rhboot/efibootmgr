@@ -1,3 +1,8 @@
+* Mon Aug 6 2001 Matt Domsch <Matt_Domsch@dell.com>
+- applied patch from Richard Hirst <rhirst@linuxcare.com> to fix
+  efichar_char_strcmp().
+
+
 * Fri Aug 3 2001 Matt Domsch <Matt_Domsch@dell.com>
 - By request, warn when creating a new boot entry with the same name
   as another boot entry.

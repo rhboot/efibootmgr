@@ -36,11 +36,12 @@ efichar_char_strcmp(const char *s1, const efi_char16_t *s2)
 	char *buffer;
 	int s2_len = efichar_strlen(s2, -1);
 	
-	buffer = malloc(s2_len / sizeof(efi_char16_t));
+	buffer = malloc(s2_len+1);
 	if (!buffer) return -1;
 	for (i=0; i<(s2_len); i++) {
 		buffer[i] = s2[i] & 0xFF;
 	}
+	buffer[i] = '\0';
 	rc = strcmp(s1, buffer);
 	free(buffer);
 	return rc;

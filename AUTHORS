@@ -4,3 +4,6 @@ Matt Domsch <Matt_Domsch@dell.com>
 
 Andreas Schwab <schwab@suse.de>
 - Patches to several .c and .h files
+
+Richard Hirst <rhirst@linuxcare.com>
+- Patch to efichar.c
