@@ -591,7 +591,7 @@ gpt_disk_get_partition_info(int fd,
 	*mbr_type = 0x02;
 	*signature_type = 0x02;
 
-	if (num > 0) {
+	if (num > 0 && num <= __le32_to_cpu(gpt->num_partition_entries)) {
 		p = &ptes[num - 1];
 		*start = __le64_to_cpu(p->starting_lba);
 		*size = __le64_to_cpu(p->ending_lba) - 
