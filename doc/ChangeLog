@@ -1,6 +1,7 @@
 * Wed Jul 25 2001 Matt Domsch <Matt_Domsch@dell.com>
 - Added -u option to pass extra args to the bootloader in unicode
   (default is to pass in ASCII)
+- Added -t option to allow writing to a file (for testing)
 
 * Tue May 22 2001 Matt Domsch <Matt_Domsch@dell.com>
 - Applied patch from Andreas Schwab.  remove_from_boot_order() called

@@ -745,6 +745,7 @@ usage()
 	printf("\t-O | --delete-bootorder delete BootOrder\n");
 	printf("\t-p | --part part        (defaults to 1) containing loader\n");
 	printf("\t-q | --quiet            be quiet\n");
+	printf("\t-t | --test filename    don't write to NVRAM, write to filename.\n");
 	printf("\t-u | --unicode | --UCS-2  pass extra args as UCS-2 (default is ASCII\n");
 	printf("\t-v | --verbose          print additional information\n");
 	printf("\t-V | --version          return version and exit\n");
@@ -791,6 +792,7 @@ parse_opts(int argc, char **argv)
 			{"delete-bootorder",       no_argument, 0, 'O'},
 			{"part",             required_argument, 0, 'p'},
 			{"quiet",                  no_argument, 0, 'q'},
+			{"test",             required_argument, 0, 't'},
 			{"unicode",                no_argument, 0, 'u'},
 			{"UCS-2",                  no_argument, 0, 'u'},
 			{"verbose",          optional_argument, 0, 'v'},
@@ -798,7 +800,8 @@ parse_opts(int argc, char **argv)
 			{0, 0, 0, 0}
 		};
 		
-		c = getopt_long (argc, argv, "AaBb:cd:e:E:l:L:n:No:Op:quv::V",
+		c = getopt_long (argc, argv,
+				 "AaBb:cd:e:E:l:L:n:No:Op:qt:uv::V",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -858,6 +861,9 @@ parse_opts(int argc, char **argv)
 		case 'q':
 			opts.quiet = 1;
 			break;
+		case 't':
+			opts.testfile = optarg;
+			break;
 		case 'u':
 			opts.unicode = 1;
 			break;
@@ -881,10 +887,10 @@ parse_opts(int argc, char **argv)
 		}
 	}
 
-	if (c == -1) {
+	if (optind < argc) {
 		opts.argc = argc;
 		opts.argv = argv;
-		opts.optind = option_index;
+		opts.optind = optind;
 	}
 }
 
@@ -903,57 +909,60 @@ main(int argc, char **argv)
 		return 0;
 	}
 
-
-	read_boot_var_names(&boot_names);
-	read_vars(boot_names, &boot_entry_list);
-	set_var_nums("Boot%04x-%*s", &boot_entry_list);
 	
-	if (opts.delete_boot) {
-		delete_boot_var(opts.bootnum);
+	if (!opts.testfile) {
+		read_boot_var_names(&boot_names);
+		read_vars(boot_names, &boot_entry_list);
+		set_var_nums("Boot%04x-%*s", &boot_entry_list);
+		
+		if (opts.delete_boot) {
+			delete_boot_var(opts.bootnum);
+		}
+		
+		if (opts.active >= 0) {
+			set_active_state();
+		}
 	}
-
-	if (opts.active >= 0) {
-		set_active_state();
-	}
-
-	
+		
 	if (opts.create) {
 		new_boot = make_boot_var(&boot_entry_list);
 		/* Put this boot var in the right BootOrder */
-		add_to_boot_order(new_boot->num);
+		if (!opts.testfile) 
+			add_to_boot_order(new_boot->num);
 	}
 
-
-	if (opts.delete_bootorder) {
-		delete_boot_order();
-	}
-
-	if (opts.bootorder) {
-		set_boot_order();
-	}
-
-
-	if (opts.delete_bootnext) {
-		delete_boot_next();
-	}
-
-	if (opts.bootnext >= 0) {
-		set_boot_next(opts.bootnext & 0xFFFF);
-	}
-
-	if (!opts.quiet) {
-		num = read_boot_next();
-		if (num != -1 ) {
-			printf("BootNext: %04x\n", num);
+	if (!opts.testfile) {
+		
+		if (opts.delete_bootorder) {
+			delete_boot_order();
 		}
-		num = read_boot_current();
-		if (num != -1) {
-			printf("BootCurrent: %04x\n", num);
+		
+		if (opts.bootorder) {
+			set_boot_order();
 		}
-		show_boot_order();
-		show_boot_vars();
-	}
 
+
+		if (opts.delete_bootnext) {
+			delete_boot_next();
+		}
+
+		if (opts.bootnext >= 0) {
+			set_boot_next(opts.bootnext & 0xFFFF);
+		}
+
+		if (!opts.quiet) {
+			num = read_boot_next();
+			if (num != -1 ) {
+				printf("BootNext: %04x\n", num);
+			}
+			num = read_boot_current();
+			if (num != -1) {
+				printf("BootCurrent: %04x\n", num);
+			}
+			show_boot_order();
+			show_boot_vars();
+		}
+	}
 	free_dirents(boot_names);
 	return 0;
 } 

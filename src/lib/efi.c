@@ -85,6 +85,30 @@ read_variable(char *name, efi_variable_t *var)
 	return var->Status;
 }
 
+static efi_status_t
+write_variable_to_file(efi_variable_t *var)
+{
+	int fd, byteswritten;
+	if (!var || !opts.testfile) return EFI_INVALID_PARAMETER;
+
+	printf("Test mode: Writing to %s\n", opts.testfile);
+	fd = creat(opts.testfile, S_IRWXU);
+	if (fd == -1) {
+		perror("Couldn't write to testfile");
+		return EFI_INVALID_PARAMETER;
+	}
+
+	byteswritten = write(fd, var, sizeof(*var));
+	if (byteswritten == -1) {
+		perror("Writing to testfile");
+
+	}
+	close(fd);
+	return EFI_SUCCESS;
+}
+
+
+
 efi_status_t
 write_variable(efi_variable_t *var)
 {
@@ -93,6 +117,8 @@ write_variable(efi_variable_t *var)
 	char buffer[PATH_MAX];
 	char name[]="/proc/efi/vars/Efi-47c7b226-c42a-11d2-8e57-00a0c969723b";
 	if (!var) return EFI_INVALID_PARAMETER;
+
+	if (opts.testfile) return write_variable_to_file(var);
 	
 	fd = open(name, O_WRONLY);
 	if (fd == -1) {
