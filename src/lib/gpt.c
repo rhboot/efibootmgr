@@ -304,7 +304,7 @@ is_gpt_valid(int fd, uint64_t lba,
 	if (__le64_to_cpu((*gpt)->signature) != GPT_HEADER_SIGNATURE) {
 		/* 
 		   printf("GUID Partition Table Header signature is wrong: %" PRIx64" != %" PRIx64 "\n",
-		   (*gpt)->signature, GUID_PT_HEADER_SIGNATURE);
+		   __le64_to_cpu((*gpt)->signature), GUID_PT_HEADER_SIGNATURE);
 		 */
 		free(*gpt);
 		*gpt = NULL;
@@ -317,7 +317,7 @@ is_gpt_valid(int fd, uint64_t lba,
 	crc = efi_crc32(*gpt, __le32_to_cpu((*gpt)->header_size));
 	if (crc != origcrc) {
 		// printf( "GPTH CRC check failed, %x != %x.\n", origcrc, crc);
-		(*gpt)->header_crc32 = origcrc;
+		(*gpt)->header_crc32 = __cpu_to_le32(origcrc);
 		free(*gpt);
 		*gpt = NULL;
 		return 0;
@@ -327,7 +327,7 @@ is_gpt_valid(int fd, uint64_t lba,
 	/* Check that the my_lba entry points to the LBA
 	 * that contains the GPT we read */
 	if (__le64_to_cpu((*gpt)->my_lba) != lba) {
-		// printf( "my_lba % PRIx64 "x != lba %"PRIx64 "x.\n", (*gpt)->my_lba, lba);
+		// printf( "my_lba % PRIx64 "x != lba %"PRIx64 "x.\n", __le64_to_cpu((*gpt)->my_lba), lba);
 		free(*gpt);
 		*gpt = NULL;
 		return 0;
