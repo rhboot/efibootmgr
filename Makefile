@@ -12,7 +12,7 @@
 
   MODULES := src
 
-  BINDIR := /bin
+  BINDIR := /usr/sbin
 
 #--------------------------------------------
 # Generic Makefile stuff is below. You 
