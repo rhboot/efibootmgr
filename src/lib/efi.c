@@ -35,12 +35,7 @@
 #include <sys/ioctl.h>
 #include <linux/sockios.h>
 #include <net/if.h>
-
-typedef unsigned long long u64; /* hack, so we may include kernel's ethtool.h */
-typedef __uint32_t u32;         /* ditto */
-typedef __uint16_t u16;         /* ditto */
-typedef __uint8_t u8;           /* ditto */
-
+#include <pci/pci.h>
 #include <linux/ethtool.h>
 #include "efi.h"
 #include "efichar.h"
@@ -49,6 +44,7 @@ typedef __uint8_t u8;           /* ditto */
 #include "efibootmgr.h"
 #include "efivars_procfs.h"
 #include "efivars_sysfs.h"
+#include "list.h"
 
 static struct efivar_kernel_calls *fs_kernel_calls;
 
@@ -298,8 +294,55 @@ make_mac_addr_device_path(void *dest, char *mac, uint8_t iftype)
 	return p.length;
 }
 
+struct device
+{
+	struct pci_dev *pci_dev;
+	struct list_head node;
+};
+
+static struct device *
+is_parent_bridge(struct pci_dev *p, unsigned int target_bus)
+{
+	struct device *d;
+ 	unsigned int primary, secondary;
+
+	if ( (pci_read_word(p, PCI_HEADER_TYPE) & 0x7f) != PCI_HEADER_TYPE_BRIDGE)
+		return NULL;
+
+	primary=pci_read_byte(p, PCI_PRIMARY_BUS);
+	secondary=pci_read_byte(p, PCI_SECONDARY_BUS);
+
+
+	if (secondary != target_bus)
+		return NULL;
+
+	d = malloc(sizeof(struct device));
+	if (!d)
+		return NULL;
+	memset(d, 0, sizeof(*d));
+	INIT_LIST_HEAD(&d->node);
+
+	d->pci_dev = p;
+
+	return d;
+}
+
+static struct device *
+find_parent(struct pci_access *pacc, unsigned int target_bus)
+{
+	struct device *dev;
+	struct pci_dev *p;
+
+	for (p=pacc->devices; p; p=p->next) {
+		dev = is_parent_bridge(p, target_bus);
+		if (dev)
+			return dev;
+	}
+	return NULL;
+}
+
 static uint16_t
-make_pci_device_path(void *dest, uint8_t device, uint8_t function)
+make_one_pci_device_path(void *dest, uint8_t device, uint8_t function)
 {
 	PCI_DEVICE_PATH p;
 	memset(&p, 0, sizeof(p));
@@ -310,6 +353,47 @@ make_pci_device_path(void *dest, uint8_t device, uint8_t function)
 	p.function = function;
 	memcpy(dest, &p, p.length);
 	return p.length;
+}
+
+static uint16_t
+make_pci_device_path(void *dest, uint8_t bus, uint8_t device, uint8_t function)
+{
+	struct device *dev;
+	struct pci_access *pacc;
+	struct list_head *pos, *n;
+	LIST_HEAD(pci_parent_list);
+	char *p = dest;
+
+	pacc = pci_alloc();
+	if (!pacc)
+		return 0;
+
+	pci_init(pacc);
+	pci_scan_bus(pacc);
+
+	do {
+		dev = find_parent(pacc, bus);
+		if (dev) {
+			list_add(&pci_parent_list, &dev->node);
+			bus = dev->pci_dev->bus;
+		}
+	} while (dev && bus);
+
+
+	list_for_each_safe(pos, n, &pci_parent_list) {
+		dev = list_entry(pos, struct device, node);
+		p += make_one_pci_device_path(p,
+					      dev->pci_dev->dev,
+					      dev->pci_dev->func);
+		list_del(&dev->node);
+		free(dev);
+	}
+
+	p += make_one_pci_device_path(p, device, function);
+
+	pci_cleanup(pacc);
+
+	return ((void *)p - dest);
 }
 
 static uint16_t
@@ -388,7 +472,7 @@ make_edd30_device_path(int fd, void *buffer)
 	idlun_to_components(&idlun, &host, &channel, &id, &lun);
 
 	p += make_acpi_device_path      (p, EISAID_PNP0A03, bus);
-	p += make_pci_device_path       (p, device, function);
+	p += make_pci_device_path       (p, bus, device, function);
 	p += make_scsi_device_path      (p, id, lun);
 	return ((void *)p - buffer);
 }
@@ -463,7 +547,7 @@ char *make_disk_load_option(char *p, char *disk)
 char *make_net_load_option(char *p, char *iface)
 {
     /* copied pretty much verbatim from the ethtool source */
-    int fd = 0, err;
+    int fd = 0, err; 
     int bus, slot, func;
     struct ifreq ifr;
     struct ethtool_drvinfo drvinfo;
@@ -482,13 +566,14 @@ char *make_net_load_option(char *p, char *iface)
         perror("Cannot get driver information");
     }
 
+
     err = sscanf(drvinfo.bus_info, "%2x:%2x.%x", &bus, &slot, &func);
     if (err == 0) {
         perror("Couldn't parse device location string.");
     }
 
     p += make_acpi_device_path(p, opts.acpi_hid, opts.acpi_uid);
-    p += make_pci_device_path(p, (uint8_t)slot, (uint8_t)func);
+    p += make_pci_device_path(p, bus, (uint8_t)slot, (uint8_t)func);
 
     err = ioctl(fd, SIOCGIFHWADDR, &ifr);
     if (err < 0) {
@@ -497,7 +582,6 @@ char *make_net_load_option(char *p, char *iface)
 
     p += make_mac_addr_device_path(p, ifr.ifr_ifru.ifru_hwaddr.sa_data, 0);
     p += make_end_device_path       (p);
-
     return(p);
 }
 
