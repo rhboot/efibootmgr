@@ -1,3 +1,6 @@
+* Mon Apr 08 2002 Matt Domsch <Matt_Domsch@dell.com>
+- Make sure partition number arg is in the GPT disk.
+	
 * Fri Apr 05 2002 Matt Domsch <Matt_Domsch@dell.com>
 - Added syncs to make tarball target so NFS is current and CVS dirs get
 deleted before the tarball is made.
