@@ -96,6 +96,18 @@ fill_var(efi_variable_t *var, const char *name)
 		| EFI_VARIABLE_RUNTIME_ACCESS;
 }
 
+static void
+free_vars(list_t *head)
+{
+	list_t *pos, *n;
+	var_entry_t *boot;
+
+	list_for_each_safe(pos, n, head) {
+		boot = list_entry(pos, var_entry_t, list);
+		list_del(&(boot->list));
+		free(boot);
+	}
+}
 
 static void
 read_vars(struct dirent **namelist,
@@ -1027,6 +1039,7 @@ main(int argc, char **argv)
 		}
 	}
 	free_dirents(boot_names, num_boot_names);
+	free_vars(&boot_entry_list);
 	return 0;
 }
 
