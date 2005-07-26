@@ -546,7 +546,8 @@ char *make_disk_load_option(char *p, char *disk)
  * make_net_load_option()
  * @data - load option returned
  *
- * Returns 0 on error, length of load option created on success.
+ * Returns NULL on error, or p advanced by length of load option
+ * created on success.
  */
 char *make_net_load_option(char *p, char *iface)
 {
@@ -564,29 +565,37 @@ char *make_net_load_option(char *p, char *iface)
     fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (fd < 0) {
         perror("Cannot get control socket");
+	goto out;
     }
     err = ioctl(fd, SIOCETHTOOL, &ifr);
     if (err < 0) {
         perror("Cannot get driver information");
+	goto out;
     }
 
-
-    err = sscanf(drvinfo.bus_info, "%2x:%2x.%x", &bus, &slot, &func);
-    if (err == 0) {
-        perror("Couldn't parse device location string.");
+    /* The domain part was added in 2.6 kernels.  Test for that first. */
+    err = sscanf(drvinfo.bus_info, "%*x:%2x:%2x.%x", &bus, &slot, &func);
+    if (err != 3) {
+	    err = sscanf(drvinfo.bus_info, "%2x:%2x.%x", &bus, &slot, &func);
+	    if (err != 3) {
+		    perror("Couldn't parse device location string.");
+		    goto out;
+	    }
     }
-
-    p += make_acpi_device_path(p, opts.acpi_hid, opts.acpi_uid);
-    p += make_pci_device_path(p, bus, (uint8_t)slot, (uint8_t)func);
 
     err = ioctl(fd, SIOCGIFHWADDR, &ifr);
     if (err < 0) {
         perror("Cannot get hardware address.");
+	goto out;
     }
 
+    p += make_acpi_device_path(p, opts.acpi_hid, opts.acpi_uid);
+    p += make_pci_device_path(p, bus, (uint8_t)slot, (uint8_t)func);
     p += make_mac_addr_device_path(p, ifr.ifr_ifru.ifru_hwaddr.sa_data, 0);
     p += make_end_device_path       (p);
     return(p);
+ out:
+    return NULL;
 }
 
 /**
@@ -621,10 +630,11 @@ make_linux_load_option(void *data)
 	if (opts.iface) {
 	      p = (char *)make_net_load_option(p, opts.iface);
 	}
-
 	else {
 	      p = (char *)make_disk_load_option(p, opts.iface);
 	}
+	if (p == NULL)
+		return 0;
 
 	load_option->file_path_list_length = p - q;
 
