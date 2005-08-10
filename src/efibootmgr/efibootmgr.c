@@ -735,7 +735,7 @@ usage()
 {
 	printf("efibootmgr version %s\n", EFIBOOTMGR_VERSION);
 	printf("usage: efibootmgr [options]\n");
-	printf("\t-@ | --@ file         define the file to include more options\n");
+	printf("\t-@ | --@ file         append extra variable args from file (use \"-\" for stdin)\n");
 	printf("\t-a | --active         sets bootnum active\n");
 	printf("\t-A | --inactive       sets bootnum inactive\n");
 	printf("\t-b | --bootnum XXXX   modify BootXXXX (hex)\n");
@@ -835,8 +835,7 @@ parse_opts(int argc, char **argv)
 		switch (c)
 		{
 		case '@':
-			opts.opts = optarg;
-			opts.extra_opts = 1;
+			opts.extra_opts_file = optarg;
 			break;
 		case 'a':
 			opts.active = 1;

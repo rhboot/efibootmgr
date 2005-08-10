@@ -31,7 +31,7 @@ typedef struct {
 	char *label;
 	char *bootorder;
 	char *testfile;
-	char *opts;
+	char *extra_opts_file;
 	uint32_t part;
 	int edd_version;
 	int edd10_devicenum;
@@ -53,7 +53,6 @@ typedef struct {
 	unsigned int set_timeout:1;
 	unsigned int delete_timeout:1;
 	unsigned short int timeout;
-	unsigned int extra_opts:1;
 } efibootmgr_opt_t;
 
 

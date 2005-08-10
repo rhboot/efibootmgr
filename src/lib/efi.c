@@ -707,29 +707,37 @@ append_extra_args_unicode(void *data, unsigned long maxchars)
 static unsigned long
 append_extra_args_file(void *data, unsigned long maxchars)
 {
-   char *p = data;
-	size_t num_read=0; int appended=0;
-	FILE *fd;
+	char *p = data;
+	char *file = opts.extra_opts_file;
+	int fd = STDIN_FILENO;
+	ssize_t num_read=0;
+	unsigned long appended=0;
 
 	if (!data) return 0;
 
-	fd = fopen(opts.opts, "rb");
+	if (file && strncmp(file, "-", 1))
+		fd = open(file, O_RDONLY);
 
-	if (!fd){
-		fprintf(stderr, "could not open the file for reading, does it exist?\n");
+	if (fd == -1) {
+		perror("Failed to open extra arguments file");
 		return 0;
 	}
 
-    do {
-		num_read = fread(p, 1, 512, fd);
-		if (num_read>0) {
+	do {
+		num_read = read(fd, p, maxchars - appended);
+		if (num_read < 0) {
+			perror("Error reading extra arguments file");
+			break;
+		}
+		else if (num_read>0) {
 			appended += num_read;
 			p += num_read;
 		}
-	} while (num_read==512);
- 
-	fclose(fd);
- 
+	} while (num_read > 0 && ((maxchars - appended) > 0));
+
+	if (fd != STDIN_FILENO)
+		close(fd);
+
 	return appended;
 }
 
@@ -737,12 +745,16 @@ append_extra_args_file(void *data, unsigned long maxchars)
 static unsigned long
 append_extra_args(void *data, unsigned long maxchars)
 {
-	if (opts.unicode)
-	  return append_extra_args_unicode(data, maxchars);
-	else if (opts.extra_opts)
-	  return append_extra_args_file(data, maxchars);
+	unsigned long bytes_written=0;
+
+	if (opts.extra_opts_file)
+		bytes_written += append_extra_args_file(data, maxchars);
+
+	if  (opts.unicode)
+		bytes_written += append_extra_args_unicode(data, maxchars - bytes_written);
 	else
-	  return append_extra_args_ascii(data, maxchars);
+		bytes_written += append_extra_args_ascii(data, maxchars - bytes_written);
+	return bytes_written;
 }
 
 
