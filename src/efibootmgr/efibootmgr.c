@@ -735,6 +735,7 @@ usage()
 {
 	printf("efibootmgr version %s\n", EFIBOOTMGR_VERSION);
 	printf("usage: efibootmgr [options]\n");
+	printf("\t-@ | --@ file         define the file to include more options\n");
 	printf("\t-a | --active         sets bootnum active\n");
 	printf("\t-A | --inactive       sets bootnum inactive\n");
 	printf("\t-b | --bootnum XXXX   modify BootXXXX (hex)\n");
@@ -793,6 +794,7 @@ parse_opts(int argc, char **argv)
 		static struct option long_options[] =
 			/* name, has_arg, flag, val */
 		{
+			{"@",                required_argument, 0, '@'},
 			{"active",                 no_argument, 0, 'a'},
 			{"inactive",               no_argument, 0, 'A'},
 			{"bootnum",          required_argument, 0, 'b'},
@@ -825,13 +827,17 @@ parse_opts(int argc, char **argv)
 		};
 
 		c = getopt_long (argc, argv,
-				 "AaBb:cd:e:E:gH:i:l:L:n:No:Op:qt:TuU:v::Vw",
+				 "@:AaBb:cd:e:E:gH:i:l:L:n:No:Op:qt:TuU:v::Vw",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
 
 		switch (c)
 		{
+		case '@':
+			opts.opts = optarg;
+			opts.extra_opts = 1;
+			break;
 		case 'a':
 			opts.active = 1;
 			break;

@@ -20,3 +20,7 @@ Joshua Giles <Joshua_Giles@dell.com>
 Alex Williamson <alex.williamson@hp.com>
 - Patch to efi.c and efibootmgr.c for handling BootXXXX values
   using uppercase hex rather than lowercase, per EFI 1.10 spec.
+
+Rogerio Timmers <rogerio.timmers@hp.com>
+- add option -@  for passing extra variable options in from a file,
+  necessary for setting up some boot entries for Microsoft Windows.

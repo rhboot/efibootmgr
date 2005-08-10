@@ -704,12 +704,43 @@ append_extra_args_unicode(void *data, unsigned long maxchars)
 	return 0;
 }
 
+static unsigned long
+append_extra_args_file(void *data, unsigned long maxchars)
+{
+   char *p = data;
+	size_t num_read=0; int appended=0;
+	FILE *fd;
+
+	if (!data) return 0;
+
+	fd = fopen(opts.opts, "rb");
+
+	if (!fd){
+		fprintf(stderr, "could not open the file for reading, does it exist?\n");
+		return 0;
+	}
+
+    do {
+		num_read = fread(p, 1, 512, fd);
+		if (num_read>0) {
+			appended += num_read;
+			p += num_read;
+		}
+	} while (num_read==512);
+ 
+	fclose(fd);
+ 
+	return appended;
+}
+
 
 static unsigned long
 append_extra_args(void *data, unsigned long maxchars)
 {
 	if (opts.unicode)
 	  return append_extra_args_unicode(data, maxchars);
+	else if (opts.extra_opts)
+	  return append_extra_args_file(data, maxchars);
 	else
 	  return append_extra_args_ascii(data, maxchars);
 }
