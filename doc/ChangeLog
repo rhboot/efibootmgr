@@ -1,3 +1,10 @@
+* Fri May 20 2005 Matt Domsch <Matt_Domsch@dell.com>
+- applied patch from Andreas Schwab to properly parse PCI
+  domain:bus:device.fn info in netboot entries.  Fixed up return value
+  when creating network boot entries for nonexistant devices, so the
+  creation now fails, rather than succeeding with incorrect data.
+- v0.5.2 released
+
 * Tue Mar 08 2005 Matt Domsch <Matt_Domsch@dell.com>
 - applied patch from Alex Williamson for handling BootXXXX values
   using uppercase hex rather than lowercase, per EFI 1.10 spec.
