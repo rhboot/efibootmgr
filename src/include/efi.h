@@ -98,7 +98,7 @@ typedef uint16_t efi_char16_t;		/* UNICODE character */
 typedef struct _efi_variable_t {
         efi_char16_t  VariableName[1024/sizeof(efi_char16_t)];
         efi_guid_t    VendorGuid;
-        uint64_t         DataSize;
+        unsigned long DataSize;
         uint8_t          Data[1024];
 	efi_status_t  Status;
         uint32_t         Attributes;
