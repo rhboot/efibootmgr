@@ -1,3 +1,23 @@
+* Thu Aug 11 2005 Matt Domsch <Matt_Domsch@dell.com>
+- applied patch from Rogerio Timmers which adds a new option -@ <file>,
+  which takes extra variable parameters from <file>, or - from stdin.
+  This lets you pass binary (non-unicode, non-ascii) formatted options to
+  your bootloader.
+- cleaned up Rogerio's patch some.
+- moved definition of _FILE_OFFSET_BITS=64 into Makefile and out of the
+  individual .c files.  This fixes a bug reported by Red Flag, where
+  variable data was getting incorrectly set with a 32-bit copy of
+  efibootmgr on a 32-bit kernel.
+- made efi_variable_t.DataSize be an unsigned long to match the kernel.
+  This lets a 32-bit copy of efibootmgr run on a 32-bit kernel.  This
+  means you've got to have a 32-bit efibootmgr on a 32-bit kernel, and a
+  64-bit efibootmgr on a 64-bit kernel, but since efi_status_t is also a
+  long, this was really going to be the case anyway.
+- valgrind caught the app exiting without freeing some malloc'd
+  structures, fix that.
+- v0.5.2.2 released for testing	
+
+
 * Fri May 20 2005 Matt Domsch <Matt_Domsch@dell.com>
 - applied patch from Andreas Schwab to properly parse PCI
   domain:bus:device.fn info in netboot entries.  Fixed up return value
