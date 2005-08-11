@@ -735,7 +735,6 @@ usage()
 {
 	printf("efibootmgr version %s\n", EFIBOOTMGR_VERSION);
 	printf("usage: efibootmgr [options]\n");
-	printf("\t-@ | --@ file         append extra variable args from file (use \"-\" for stdin)\n");
 	printf("\t-a | --active         sets bootnum active\n");
 	printf("\t-A | --inactive       sets bootnum inactive\n");
 	printf("\t-b | --bootnum XXXX   modify BootXXXX (hex)\n");
@@ -763,6 +762,7 @@ usage()
 	printf("\t-v | --verbose          print additional information\n");
 	printf("\t-V | --version          return version and exit\n");
 	printf("\t-w | --write-signature  write unique sig to MBR if needed\n");
+	printf("\t-@ | --append-binary-args file  append extra args from file (use \"-\" for stdin)\n");
 }
 
 static void
@@ -794,7 +794,6 @@ parse_opts(int argc, char **argv)
 		static struct option long_options[] =
 			/* name, has_arg, flag, val */
 		{
-			{"@",                required_argument, 0, '@'},
 			{"active",                 no_argument, 0, 'a'},
 			{"inactive",               no_argument, 0, 'A'},
 			{"bootnum",          required_argument, 0, 'b'},
@@ -823,11 +822,12 @@ parse_opts(int argc, char **argv)
 			{"verbose",          optional_argument, 0, 'v'},
 			{"version",                no_argument, 0, 'V'},
 			{"write-signature",        no_argument, 0, 'w'},
+			{"append-binary-args", required_argument, 0, '@'},
 			{0, 0, 0, 0}
 		};
 
 		c = getopt_long (argc, argv,
-				 "@:AaBb:cd:e:E:gH:i:l:L:n:No:Op:qt:TuU:v::Vw",
+				 "AaBb:cd:e:E:gH:i:l:L:n:No:Op:qt:TuU:v::Vw@:",
 				 long_options, &option_index);
 		if (c == -1)
 			break;

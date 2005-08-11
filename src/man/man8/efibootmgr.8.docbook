@@ -1,4 +1,3 @@
-
 <!doctype refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
 
 <!-- This manpage was compiled by dann frazier <email>dannf@debian.org</email>,
@@ -17,7 +16,7 @@
   <!ENTITY manfirstname "<firstname>dann</firstname>">
   <!ENTITY mansurname   "<surname>frazier</surname>">
   <!-- Please adjust the date whenever revising the manpage. -->
-  <!ENTITY mandate      "<date>2004-02-05</date>">
+  <!ENTITY mandate      "<date>2005-08-11</date>">
   <!-- SECTION should be 1-8, maybe with subsection. Other parameters are
        allowed: see man(7), man(1). -->
   <!ENTITY mansection   "<manvolnum>8</manvolnum>">
@@ -82,6 +81,7 @@
         <arg>-v</arg>
         <arg>-V</arg>
         <arg>-w</arg>
+        <arg>-@ <replaceable>file</replaceable></arg>
     </cmdsynopsis>
   </refsynopsisdiv>
   <refsect1>
@@ -279,7 +279,19 @@
           <para>write unique signature to the MBR if needed</para>
         </listitem>
       </varlistentry>
+      <varlistentry>
+        <term><option>-@</option> |
+        <option>--append-binary-args</option>
+	  </term>
+        <listitem>
+          <para>append extra variable args from file (use - to read
+        from stdin).  Data in file is appended as command line
+        arguments to the boot loader command, with no modification to
+        the data, so you can pass any binary or text data necessary.</para>
+        </listitem>
+      </varlistentry>
     </variablelist>
+
   </refsect1>
 
   <refsect1>

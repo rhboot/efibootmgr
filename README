@@ -37,6 +37,8 @@ usage: efibootmgr [options]
 	-v | --verbose         print additional information
 	-V | --version         return version and exit
 	-w | --write-signature  write unique sig to MBR if needed
+        -@ | --append-binary-args   append extra variable args from
+			   	    file (use - to read from stdin).  
 
 
 Typical usage:
