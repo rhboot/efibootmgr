@@ -20,5 +20,5 @@ bindir_TARGETS += $(efibootmgr_FULLTARGET)
 
 $(efibootmgr_FULLTARGET): \
 	$(efibootmgr_FULLOBJECT) \
-	$(efibootmgr_FULLLIB) \
-	$(LIBS)
+	$(efibootmgr_FULLLIB)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(efibootmgr_SRCDIR)/efibootmgr.c $^ $(LIBS) -o $@

@@ -35,6 +35,7 @@
 #include <linux/sockios.h>
 #include <net/if.h>
 #include <pci/pci.h>
+#include <asm/types.h>
 #include <linux/ethtool.h>
 #include "efi.h"
 #include "efichar.h"
