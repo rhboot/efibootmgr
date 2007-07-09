@@ -11,7 +11,7 @@ efibootmgr_LIBS    := crc32.o disk.o efi.o efichar.o gpt.o scsi_ioctls.o \
 efibootmgr_LIBDIR  := src/lib
 efibootmgr_FULLLIB := \
 	$(patsubst %,$(efibootmgr_LIBDIR)/%,$(efibootmgr_LIBS))
-LIBS = -lpci
+LIBS = -lpci -lz
 
 ALLDEPS += $(efibootmgr_FULLTARGET)
 CLEANLIST += $(efibootmgr_FULLTARGET)
