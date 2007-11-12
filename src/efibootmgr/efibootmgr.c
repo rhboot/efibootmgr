@@ -586,7 +586,7 @@ unparse_boot_order(uint16_t *order, int length)
 	printf("\n");
 }
 
-int
+static int
 is_current_boot_entry(int b)
 {
 	list_t *pos;
@@ -1027,7 +1027,7 @@ main(int argc, char **argv)
 	struct dirent  **boot_names = NULL;
 	var_entry_t *new_boot = NULL;
 	int num, num_boot_names=0;
-	int ret=0;
+	efi_status_t ret=0;
 
 	set_default_opts();
 	parse_opts(argc, argv);
@@ -1130,6 +1130,8 @@ main(int argc, char **argv)
 	}
 	free_dirents(boot_names, num_boot_names);
 	free_vars(&boot_entry_list);
-	return ret;
+	if (ret)
+		return 1;
+	return 0;
 }
 
