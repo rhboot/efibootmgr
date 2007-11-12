@@ -32,7 +32,8 @@
 #include "unparse_path.h"
 #include "efichar.h"
 
-
+/* Avoid unaligned access warnings */
+#define get(buf, obj) *(typeof(obj) *)memcpy(buf, &obj, sizeof(obj))
 
 
 void
@@ -72,12 +73,11 @@ dump_raw_data(void *data, uint64_t length)
 unsigned long
 unparse_raw(char *buffer, uint8_t *p, uint64_t length)
 {
-	uint64_t i; unsigned char c;
+	uint64_t i;
+	char a[1];
 	char *q = buffer;
 	for (i=0; i<length; i++) {
-		c = p[i];
-		//if (c < 32 || c > 127) c = '.';
-		q += sprintf(q, "%02x", c);
+		q += sprintf(q, "%02x", get(a, p[i]));
 	}
 	return q - buffer;
 }
@@ -116,9 +116,7 @@ unparse_acpi_path(char *buffer, EFI_DEVICE_PATH *path)
 
 	switch (path->subtype) {
 	case 1:
-		return sprintf(buffer, "ACPI(%x,%x)",
-			       *(typeof(acpi->_HID) *)memcpy(a, &acpi->_HID, sizeof(acpi->_HID)),
-			       *(typeof(acpi->_UID) *)memcpy(b, &acpi->_UID, sizeof(acpi->_UID)));
+		return sprintf(buffer, "ACPI(%x,%x)", get(a, acpi->_HID), get(b, acpi->_UID));
 		break;
 	default:
 		return unparse_raw(buffer, (uint8_t *)path, path->length);
@@ -130,7 +128,8 @@ unparse_acpi_path(char *buffer, EFI_DEVICE_PATH *path)
 static int
 unparse_vendor_path(char *buffer, VENDOR_DEVICE_PATH *path)
 {
-	char text_guid[40], *p = buffer, *q = (uint8_t *)path + 20;
+	char text_guid[40], *p = buffer;
+	unsigned char *q = (uint8_t *)path + 20;
 	efi_guid_unparse(&path->vendor_guid, text_guid);
 	p += sprintf(p, "Vendor(%s,", text_guid);
 	p += unparse_raw(p, q, path->length - 20);
@@ -145,28 +144,27 @@ unparse_hardware_path(char *buffer, EFI_DEVICE_PATH *path)
 	PCCARD_DEVICE_PATH *pccard = (PCCARD_DEVICE_PATH *)path;
 	MEMORY_MAPPED_DEVICE_PATH *mm = (MEMORY_MAPPED_DEVICE_PATH *)path;
 	CONTROLLER_DEVICE_PATH *ctlr = (CONTROLLER_DEVICE_PATH *)path;
-	char a[16], b[16];
+	char a[16], b[16], c[16];
 
 	switch (path->subtype) {
 	case 1:
-		return sprintf(buffer, "PCI(%x,%x)",
-			       *(typeof(pci->device) *)memcpy(a, &pci->device, sizeof(pci->device)),
-			       *(typeof(pci->function) *)memcpy(b, &pci->function, sizeof(pci->function)));
+		return sprintf(buffer, "PCI(%x,%x)", get(a, pci->device), get(b, pci->function));
 		break;
 	case 2:
-		return sprintf(buffer, "PCCARD(%x)", pccard->socket);
+		return sprintf(buffer, "PCCARD(%x)", get(a, pccard->socket));
 		break;
 	case 3:
 		return sprintf(buffer, "MM(%x,%" PRIx64 ",%" PRIx64 ")",
-			       mm->memory_type,
-			       mm->start, mm->end);
+			       get(a, mm->memory_type),
+			       get(b, mm->start),
+			       get(c, mm->end));
 		break;
 	case 4:
 		return unparse_vendor_path(buffer, (VENDOR_DEVICE_PATH *)path);
 		break;
 
 	case 5:
-		return sprintf(buffer, "Controller(%x)", ctlr->controller);
+		return sprintf(buffer, "Controller(%x)", get(a, ctlr->controller));
 		break;
 
 	default:
@@ -190,33 +188,35 @@ unparse_messaging_path(char *buffer, EFI_DEVICE_PATH *path)
 	IPv4_DEVICE_PATH *ipv4 = (IPv4_DEVICE_PATH *)path;
 /* 	IPv6_DEVICE_PATH *ipv6 = (IPv6_DEVICE_PATH *)path; */
 	char *p = buffer;
+	char a[16], b[16], c[16], d[16], e[16];
 
 	switch (path->subtype) {
 	case 1:
 		return sprintf(buffer, "ATAPI(%x,%x,%x)",
-			       atapi->primary_secondary,
-			       atapi->slave_master, atapi->lun);
+			       get(a, atapi->primary_secondary),
+			       get(b, atapi->slave_master),
+			       get(c, atapi->lun));
 		break;
 	case 2:
-		return sprintf(buffer, "SCSI(%x,%x)", scsi->id, scsi->lun);
+		return sprintf(buffer, "SCSI(%x,%x)", get(a, scsi->id), get(b, scsi->lun));
 		break;
 
 	case 3:
-		return sprintf(buffer, "FC(%" PRIx64 ",%" PRIx64 ")", fc->wwn, fc->lun);
+		return sprintf(buffer, "FC(%" PRIx64 ",%" PRIx64 ")", get(a, fc->wwn), get(b, fc->lun));
 		break;
 	case 4:
-		return sprintf(buffer, "1394(%" PRIx64 ")", i1394->guid);
+		return sprintf(buffer, "1394(%" PRIx64 ")", get(a, i1394->guid));
 		break;
 	case 5:
-		return sprintf(buffer, "USB(%x,%x)", usb->port, usb->endpoint);
+		return sprintf(buffer, "USB(%x,%x)", get(a, usb->port), get(b, usb->endpoint));
 		break;
 	case 6:
-		return sprintf(buffer, "I2O(%x)", i2o->tid);
+		return sprintf(buffer, "I2O(%x)", get(a, i2o->tid));
 		break;
 	case 11:
 		p += sprintf(p, "MAC(");
 		p += unparse_raw(p, mac->macaddr, 6);
-		p += sprintf(p, ",%hhx)", mac->iftype);
+		p += sprintf(p, ",%hhx)", get(a, mac->iftype));
 		return (int) (p - buffer);
 		break;
 	case 12:
@@ -224,15 +224,15 @@ unparse_messaging_path(char *buffer, EFI_DEVICE_PATH *path)
 		p += unparse_ipv4_port(p, ipv4->local_ip, ipv4->local_port);
 		p += sprintf(p, "<->");
 		p += unparse_ipv4_port(p, ipv4->remote_ip, ipv4->remote_port);
-		p += sprintf(p, ",%hx, %hhx", ipv4->protocol, ipv4->static_addr);
+		p += sprintf(p, ",%hx, %hhx", get(a, ipv4->protocol), get(b, ipv4->static_addr));
 		return (int) (p - buffer);
 		break;
 
 	case 15:
 		return sprintf(buffer, "USBClass(%hx,%hx,%hhx,%hhx,%hhx)",
-			       usbclass->vendor, usbclass->product,
-			       usbclass->class, usbclass->subclass,
-			       usbclass->protocol);
+			       get(a, usbclass->vendor), get(b, usbclass->product),
+			       get(c, usbclass->class), get(d, usbclass->subclass),
+			       get(e, usbclass->protocol));
 		break;
 	default:
 		return unparse_raw(buffer, (uint8_t *)path, path->length);
@@ -264,9 +264,9 @@ unparse_media_hard_drive_path(char *buffer, EFI_DEVICE_PATH *path)
 	}
 
 	return sprintf(buffer, "HD(%x,%" PRIx64 ",%" PRIx64 ",%s)",
-		       *(typeof(hd->part_num) *)memcpy(a, &hd->part_num, sizeof(hd->part_num)),
-		       *(typeof(hd->start) *)memcpy(b, &hd->start, sizeof(hd->start)),
-		       *(typeof(hd->size) *)memcpy(c, &hd->size, sizeof(hd->size)),
+		       get(a, hd->part_num),
+		       get(b, hd->start),
+		       get(c, hd->size),
 		       sig);
 }
 
@@ -282,6 +282,7 @@ unparse_media_path(char *buffer, EFI_DEVICE_PATH *path)
 	char text_guid[40], *p = buffer;
 	char file_name[80];
 	memset(file_name, 0, sizeof(file_name));
+	char a[16], b[16], c[16];
 
 	switch (path->subtype) {
 	case 1:
@@ -289,7 +290,7 @@ unparse_media_path(char *buffer, EFI_DEVICE_PATH *path)
 		break;
 	case 2:
 		return sprintf(buffer, "CD-ROM(%x,%" PRIx64 ",%" PRIx64 ")",
-			       cdrom->boot_entry, cdrom->start, cdrom->size);
+			       get(a, cdrom->boot_entry), get(b, cdrom->start), get(c, cdrom->size));
 		break;
 	case 3:
 		return unparse_vendor_path(buffer, (VENDOR_DEVICE_PATH *)path);
@@ -312,9 +313,11 @@ static int
 unparse_bios_path(char *buffer, EFI_DEVICE_PATH *path)
 {
 	BIOS_BOOT_SPEC_DEVICE_PATH *bios = (BIOS_BOOT_SPEC_DEVICE_PATH *)path;
-	char *p = buffer, *q = (uint8_t *)path + 8;
+	char *p = buffer;
+	unsigned char *q = (uint8_t *)path + 8;
+	char a[16], b[16];
 	p += sprintf(p, "BIOS(%x,%x,",
-		     bios->device_type, bios->status_flag);
+		     get(a, bios->device_type), get(b, bios->status_flag));
 	p += unparse_raw(p, q, path->length - 8);
 	p += sprintf(p, ")");
 	return p - buffer;
