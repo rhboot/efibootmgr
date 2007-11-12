@@ -112,10 +112,13 @@ static int
 unparse_acpi_path(char *buffer, EFI_DEVICE_PATH *path)
 {
 	ACPI_DEVICE_PATH *acpi = (ACPI_DEVICE_PATH *)path;
+	char a[16], b[16];
 
 	switch (path->subtype) {
 	case 1:
-		return sprintf(buffer, "ACPI(%x,%x)", acpi->_HID, acpi->_UID);
+		return sprintf(buffer, "ACPI(%x,%x)",
+			       *(typeof(acpi->_HID) *)memcpy(a, &acpi->_HID, sizeof(acpi->_HID)),
+			       *(typeof(acpi->_UID) *)memcpy(b, &acpi->_UID, sizeof(acpi->_UID)));
 		break;
 	default:
 		return unparse_raw(buffer, (uint8_t *)path, path->length);
@@ -142,11 +145,13 @@ unparse_hardware_path(char *buffer, EFI_DEVICE_PATH *path)
 	PCCARD_DEVICE_PATH *pccard = (PCCARD_DEVICE_PATH *)path;
 	MEMORY_MAPPED_DEVICE_PATH *mm = (MEMORY_MAPPED_DEVICE_PATH *)path;
 	CONTROLLER_DEVICE_PATH *ctlr = (CONTROLLER_DEVICE_PATH *)path;
+	char a[16], b[16];
 
 	switch (path->subtype) {
 	case 1:
 		return sprintf(buffer, "PCI(%x,%x)",
-			       pci->device, pci->function);
+			       *(typeof(pci->device) *)memcpy(a, &pci->device, sizeof(pci->device)),
+			       *(typeof(pci->function) *)memcpy(b, &pci->function, sizeof(pci->function)));
 		break;
 	case 2:
 		return sprintf(buffer, "PCCARD(%x)", pccard->socket);
@@ -241,13 +246,15 @@ unparse_media_hard_drive_path(char *buffer, EFI_DEVICE_PATH *path)
 {
 	HARDDRIVE_DEVICE_PATH *hd = (HARDDRIVE_DEVICE_PATH *)path;
 	char text_uuid[40], *sig=text_uuid;
+	char a[16], b[16], c[16];
 	
 	switch (hd->signature_type) {
 	case 0x00:
 		sprintf(sig, "None");
 		break;
 	case 0x01:
-		sprintf(sig, "%08x", *(uint32_t *)hd->signature);
+		sprintf(sig, "%08x", *(uint32_t *)memcpy(a, &hd->signature,
+							 sizeof(hd->signature)));
 		break;
 	case 0x02: /* GPT */
                 efi_guid_unparse((efi_guid_t *)hd->signature, sig);
@@ -257,7 +264,10 @@ unparse_media_hard_drive_path(char *buffer, EFI_DEVICE_PATH *path)
 	}
 
 	return sprintf(buffer, "HD(%x,%" PRIx64 ",%" PRIx64 ",%s)",
-		       hd->part_num, hd->start, hd->size, sig);
+		       *(typeof(hd->part_num) *)memcpy(a, &hd->part_num, sizeof(hd->part_num)),
+		       *(typeof(hd->start) *)memcpy(b, &hd->start, sizeof(hd->start)),
+		       *(typeof(hd->size) *)memcpy(c, &hd->size, sizeof(hd->size)),
+		       sig);
 }
 
 
