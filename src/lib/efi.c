@@ -721,7 +721,7 @@ append_extra_args_file(void *data, unsigned long maxchars)
 
 	if (fd == -1) {
 		perror("Failed to open extra arguments file");
-		return 0;
+		exit(1);
 	}
 
 	do {

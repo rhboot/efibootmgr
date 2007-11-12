@@ -624,9 +624,8 @@ gpt_disk_get_partition_info(int fd,
 		memcpy(signature, &p->unique_partition_guid,
 		       sizeof (p->unique_partition_guid));
 	} else {
-		*start = 0;
-		*size = last_lba(fd) + 1;
-		memcpy(signature, &gpt->disk_guid, sizeof (gpt->disk_guid));
+		fprintf (stderr,"partition %d is not valid\n", num);
+		return 1;
 	}
 	return 0;
 }

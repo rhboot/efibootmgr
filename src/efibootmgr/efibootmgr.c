@@ -436,7 +436,10 @@ delete_boot_var(uint16_t num)
 		status = delete_variable(&var);
 	}
 
-	if (status) return status;
+	if (status) {
+		fprintf (stderr,"\nboot entry: %X not found\n\n",num);
+		return status;
+	}
 	list_for_each_safe(pos, n, &boot_entry_list) {
 		boot = list_entry(pos, var_entry_t, list);
 		if (boot->num == num) {
@@ -583,6 +586,21 @@ unparse_boot_order(uint16_t *order, int length)
 	printf("\n");
 }
 
+int
+is_current_boot_entry(int b)
+{
+	list_t *pos;
+	var_entry_t *boot;
+
+	list_for_each(pos, &boot_entry_list) {
+		boot = list_entry(pos, var_entry_t, list);
+		if (boot->num == b)
+			return 1;
+	}
+	return 0;
+}
+
+
 static int
 parse_boot_order(char *buffer, uint16_t *order, int length)
 {
@@ -592,6 +610,16 @@ parse_boot_order(char *buffer, uint16_t *order, int length)
 	for (i=0; i<length && *buffer; i++) {
 		rc = sscanf(buffer, "%x", &num);
 		if (rc == 1) order[i] = num & 0xFFFF;
+		else {
+			fprintf(stderr,"\nInvalid hex characters in boot order: %s\n\n",buffer);
+			return -1;
+		}
+		/* make sure this is an existing boot entry */
+		if (!is_current_boot_entry(order[i])) {
+			fprintf (stderr,"\nboot entry %X does not exist\n\n",order[i]);
+			return -1;
+		}
+
 		/* Advance to the comma */ 
 		while (*buffer && *buffer != ',') buffer++;
 		/* Advance through the comma(s) */
@@ -612,7 +640,10 @@ set_boot_order()
 	fill_var(&boot_order, "BootOrder");
 
 	boot_order.DataSize = parse_boot_order(opts.bootorder, n, 1024/sizeof(uint16_t)) * sizeof(uint16_t);
-	return create_or_edit_variable(&boot_order);
+	if (boot_order.DataSize < 0)
+		return 1;
+	else
+		return create_or_edit_variable(&boot_order);
 }
 
 static void
@@ -724,7 +755,9 @@ set_active_state()
 			}
 		}
 	}
-	return EFI_SUCCESS;
+	/* if we reach here then the bootnumber supplied was not found */
+	fprintf(stderr,"\nboot entry %x not found\n\n",opts.bootnum);
+	return EFI_NOT_FOUND;
 }
 
 
@@ -849,6 +882,10 @@ parse_opts(int argc, char **argv)
 		case 'b':
 			rc = sscanf(optarg, "%X", &num);
 			if (rc == 1) opts.bootnum = num;
+			else {
+				fprintf (stderr,"invalid hex value %s\n",optarg);
+				exit(1);
+			}
 			break;
 		case 'c':
 			opts.create = 1;
@@ -859,10 +896,18 @@ parse_opts(int argc, char **argv)
 		case 'e':
 			rc = sscanf(optarg, "%d", &num);
 			if (rc == 1) opts.edd_version = num;
+			else {
+				fprintf (stderr,"invalid numeric value %s\n",optarg);
+				exit(1);
+			}
 			break;
 		case 'E':
 			rc = sscanf(optarg, "%x", &num);
 			if (rc == 1) opts.edd10_devicenum = num;
+			else {
+				fprintf (stderr,"invalid hex value %s\n",optarg);
+				exit(1);
+			}
 			break;
 		case 'g':
 			opts.forcegpt = 1;
@@ -870,6 +915,10 @@ parse_opts(int argc, char **argv)
 		case 'H':
 			rc = sscanf(optarg, "%x", &num);
 			if (rc == 1) opts.acpi_hid = num;
+			else {
+				fprintf (stderr,"invalid hex value %s\n",optarg);
+				exit(1);
+			}
 			break;
 		case 'i':
 			opts.iface = optarg;
@@ -886,6 +935,10 @@ parse_opts(int argc, char **argv)
 		case 'n':
 			rc = sscanf(optarg, "%x", &num);
 			if (rc == 1) opts.bootnext = num;
+			else {
+				fprintf (stderr,"invalid hex value %s\n",optarg);
+				exit(1);
+			}
 			break;
 		case 'o':
 			opts.bootorder = optarg;
@@ -896,6 +949,10 @@ parse_opts(int argc, char **argv)
 		case 'p':
 			rc = sscanf(optarg, "%u", &num);
 			if (rc == 1) opts.part = num;
+			else {
+				fprintf (stderr,"invalid numeric value %s\n",optarg);
+				exit(1);
+			}
 			break;
 		case 'q':
 			opts.quiet = 1;
@@ -909,6 +966,10 @@ parse_opts(int argc, char **argv)
 				opts.timeout = num;
 				opts.set_timeout = 1;
 			}
+			else {
+				fprintf (stderr,"invalid numeric value %s\n",optarg);
+				exit(1);
+			}
 			break;
 		case 'T':
 			opts.delete_timeout = 1;
@@ -920,6 +981,10 @@ parse_opts(int argc, char **argv)
 		case 'U':
 			rc = sscanf(optarg, "%x", &num);
 			if (rc == 1) opts.acpi_uid = num;
+			else {
+				fprintf (stderr,"invalid hex value %s\n",optarg);
+				exit(1);
+			}
 			break;
 		case 'v':
 			opts.verbose = 1;
@@ -928,6 +993,10 @@ parse_opts(int argc, char **argv)
 				if (!strcmp(optarg, "vv")) opts.verbose = 3;
 				rc = sscanf(optarg, "%d", &num);
 				if (rc == 1)  opts.verbose = num;
+				else {
+					fprintf (stderr,"invalid numeric value %s\n",optarg);
+					exit(1);
+				}
 			}
 			break;
 		case 'V':
@@ -958,6 +1027,7 @@ main(int argc, char **argv)
 	struct dirent  **boot_names = NULL;
 	var_entry_t *new_boot = NULL;
 	int num, num_boot_names=0;
+	int ret=0;
 
 	set_default_opts();
 	parse_opts(argc, argv);
@@ -980,53 +1050,68 @@ main(int argc, char **argv)
 		set_var_nums("Boot%04X-%*s", &boot_entry_list);
 
 		if (opts.delete_boot) {
-			if (opts.bootnum == -1)
+			if (opts.bootnum == -1) {
 				fprintf(stderr, "\nYou must specify a boot entry to delete (see the -b option).\n\n");
+				return 1;
+			}
 			else
-				delete_boot_var(opts.bootnum);
+				ret = delete_boot_var(opts.bootnum);
 		}
 
 		if (opts.active >= 0) {
-			set_active_state();
+			if (opts.bootnum == -1) {
+				fprintf(stderr, "\nYou must specify a boot entry to delete (see the -b option).\n\n");
+				return 1;
+			}
+			else
+				ret=set_active_state();
 		}
 	}
 
 	if (opts.create) {
 		warn_duplicate_name(&boot_entry_list);
 		new_boot = make_boot_var(&boot_entry_list);
+		if (!new_boot)
+			return 1;
+
 		/* Put this boot var in the right BootOrder */
 		if (!opts.testfile && new_boot)
-			add_to_boot_order(new_boot->num);
+			ret=add_to_boot_order(new_boot->num);
 	}
 
 	if (!opts.testfile) {
 
 		if (opts.delete_bootorder) {
-			delete_var("BootOrder");
+			ret=delete_var("BootOrder");
 		}
 
 		if (opts.bootorder) {
-			set_boot_order();
+			ret=set_boot_order();
 		}
 
 
 		if (opts.delete_bootnext) {
-			delete_var("BootNext");
+			ret=delete_var("BootNext");
 		}
 
 		if (opts.delete_timeout) {
-			delete_var("Timeout");
+			ret=delete_var("Timeout");
 		}
 
 		if (opts.bootnext >= 0) {
-			set_boot_u16("BootNext", opts.bootnext & 0xFFFF);
+			if (!is_current_boot_entry(opts.bootnext & 0xFFFF)){
+				fprintf (stderr,"\n\nboot entry %X does not exist\n\n",
+					opts.bootnext);
+				return 1;
+			}
+			ret=set_boot_u16("BootNext", opts.bootnext & 0xFFFF);
 		}
 
 		if (opts.set_timeout) {
-			set_boot_u16("Timeout", opts.timeout);
+			ret=set_boot_u16("Timeout", opts.timeout);
 		}
 
-		if (!opts.quiet) {
+		if (!opts.quiet && ret == 0) {
 			num = read_boot_u16("BootNext");
 			if (num != -1 ) {
 				printf("BootNext: %04X\n", num);
@@ -1045,6 +1130,6 @@ main(int argc, char **argv)
 	}
 	free_dirents(boot_names, num_boot_names);
 	free_vars(&boot_entry_list);
-	return 0;
+	return ret;
 }
 
