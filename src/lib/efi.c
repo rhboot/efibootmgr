@@ -33,6 +33,7 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <linux/sockios.h>
+#include <linux/types.h>
 #include <net/if.h>
 #include <pci/pci.h>
 #include <asm/types.h>
