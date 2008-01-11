@@ -11,8 +11,8 @@ BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXXXX)
 ExclusiveArch: i386 x86_64 ia64
 
 # for RHEL / Fedora when efibootmgr was part of the elilo package
-Conflicts: elilo < 3.6-5
-Obsoletes: elilo < 3.6-5
+Conflicts: elilo < 3.6-6
+Obsoletes: elilo < 3.6-6
 
 Source0: http://linux.dell.com/%{name}/permalink/%{name}-%{version}.tar.gz
 
