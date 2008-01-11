@@ -1,3 +1,99 @@
+commit 6e6bf6fc7665851798a6c2c92893ebb629e42aff
+Author: Matt Domsch <Matt_Domsch@dell.com>
+Date:   Fri Jan 11 15:08:12 2008 -0600
+
+    replacing elilo < 3.6-6, not -5
+    
+    per conversation with clumens.
+
+commit 4c1fd35da4d0478074e08c10225eb590576acf91
+Author: Matt Domsch <Matt_Domsch@dell.com>
+Date:   Thu Jan 3 12:19:28 2008 -0600
+
+    RPM spec rewrite for Fedora inclusion
+    
+    efibootmgr is being split out of the elilo SRPM in Fedora, into its
+    own SRPM.
+
+commit 833cf4c1266ef72357948299008a22bfb80aa3f3
+Author: Matt Domsch <Matt_Domsch@dell.com>
+Date:   Thu Jan 3 12:18:31 2008 -0600
+
+    Makefile cleanups
+    
+    bump version
+    
+    take an EXTRA_CFLAGS argument so rpmbuild can give us it's CFLAGS
+    without overriding ours.
+    
+    exclude .git and *~ files from the tarball.
+
+commit f0a8b91ba45ff4cf251805cc29aed4f8672c1801
+Author: Matt Domsch <Matt_Domsch@dell.com>
+Date:   Thu Jan 3 12:16:35 2008 -0600
+
+    src/lib/efi.c: include linux/types.h
+    
+    patch from Fedora.
+
+commit f387d5c5bde5d7129e41638e92faa2d38b7ad5a1
+Author: Matt Domsch <Matt_Domsch@dell.com>
+Date:   Thu Jan 3 12:15:18 2008 -0600
+
+    make sure GPT_HEADER_SIGNATURE is a 64-bit value
+    
+    patch from Debian / Ubuntu 0.5.3-3ubuntu1.
+
+commit 7b53efa45112f28e97451bdc16e6c6a68740bd79
+Author: Matt Domsch <Matt_Domsch@dell.com>
+Date:   Mon Nov 12 13:31:32 2007 -0600
+
+    avoid more unaligned access warnings
+
+commit 048197821f9ae2ef9e0c2bd4065649e72332e2dc
+Author: Matt Domsch <Matt_Domsch@dell.com>
+Date:   Mon Nov 12 12:25:42 2007 -0600
+
+    cleanup a few unaligned access warnings
+
+commit fa3942b34f1533659af8fe3f6fffb3b4acf4ee10
+Author: Matt Domsch <Matt_Domsch@dell.com>
+Date:   Mon Nov 12 12:12:37 2007 -0600
+
+    cleanup exit values a little
+
+commit c7e236783a79b6977df0ba03db0f92fabffc4b31
+Author: Doug Chapman <doug.chapman@hp.com>
+Date:   Mon Nov 12 11:32:12 2007 -0500
+
+    patch to make efibootmgr have non-zero exit code on errors
+    
+    We have some automated tools that use efibootmgr which are having a hard
+    time detecting when efibootmgr fails since it exits with 0 on many
+    failures.  This patch catches (most) errors and exits with non-zero.  I
+    also added several error messages for to make it more obvious what was
+    wrong with the command line arguments.
+    
+    Signed-off-by: Matt Domsch <Matt_Domsch@dell.com>
+
+commit ecd3c24cb6bee5072ff6d1292456ee3b2cc91019
+Author: Matt Domsch <Matt_Domsch@dell.com>
+Date:   Mon Jul 9 16:47:50 2007 +0000
+
+    add -lz to libs, needed when libpci happens to need it
+
+commit e192a055e0803263b71f89db732de73d5cf4de9b
+Author: Matt Domsch <Matt_Domsch@dell.com>
+Date:   Mon Jul 9 16:23:34 2007 +0000
+
+    apply patch from Dave Jiang <djiang@mvista.com> to enable cross-building
+
+commit 0ee8ecc10109b91d0a77098d5596f56780c862d8
+Author: Matt Domsch <Matt_Domsch@dell.com>
+Date:   Thu Aug 11 17:37:04 2005 +0000
+
+    v0.5.2.2
+
 * Thu Aug 11 2005 Matt Domsch <Matt_Domsch@dell.com>
 - applied patch from Rogerio Timmers which adds a new option -@ <file>,
   which takes extra variable parameters from <file>, or - from stdin.
