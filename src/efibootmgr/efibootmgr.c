@@ -328,6 +328,7 @@ add_to_boot_order(uint16_t num)
 	/* Now new_data has what we need */
 	memcpy(&(boot_order.Data), new_data, new_data_size);
 	boot_order.DataSize = new_data_size;
+	free(new_data);
 	return create_or_edit_variable(&boot_order);
 }
 
