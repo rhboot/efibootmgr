@@ -55,7 +55,7 @@ disk_info_from_fd(int fd,
 		return 1;
 	}
 	major = buf.st_dev >> 8;
-	minor = buf.st_dev && 0xFF;
+	minor = buf.st_dev & 0xFF;
 
 	/* IDE disks can have up to 64 partitions, or 6 bits worth,
 	 * and have one bit for the disk number.
