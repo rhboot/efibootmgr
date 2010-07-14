@@ -65,6 +65,9 @@ enum _interface_type {interface_type_unknown,
 		      ata, atapi, scsi, usb,
 		      i1394, fibre, i2o, md};
 
+
+unsigned int lcm(unsigned int x, unsigned int y);
+
 int disk_get_pci(int fd,
 		 unsigned char *bus,
 		 unsigned char *device,

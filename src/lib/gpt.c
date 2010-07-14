@@ -215,26 +215,24 @@ read_lastoddsector(int fd, uint64_t lba, void *buffer, size_t count)
 static ssize_t
 read_lba(int fd, uint64_t lba, void *buffer, size_t bytes)
 {
-	int sector_size = get_sector_size(fd);
-	off_t offset = lba * sector_size;
+        int sector_size = get_sector_size(fd);
+        off_t offset = lba * sector_size;
         ssize_t bytesread;
-        void *aligned;
-        void *unaligned;
+        void *iobuf;
+        size_t iobuf_size;
+        int rc;
 
-        if (bytes % sector_size)
-                return EINVAL;
-
-	unaligned = malloc(bytes+sector_size-1);
-	aligned = (void *)
-		(((unsigned long)unaligned + sector_size - 1) &
-		 ~(unsigned long)(sector_size-1));
-	memset(aligned, 0, bytes);
+        iobuf_size = lcm(bytes, sector_size);
+        rc = posix_memalign(&iobuf, sector_size, iobuf_size);
+        if (rc)
+                return rc;
+        memset(iobuf, 0, bytes);
 
 
-	lseek(fd, offset, SEEK_SET);
-	bytesread = read(fd, aligned, bytes);
-        memcpy(buffer, aligned, bytesread);
-        free(unaligned);
+        lseek(fd, offset, SEEK_SET);
+        bytesread = read(fd, iobuf, iobuf_size);
+        memcpy(buffer, iobuf, bytes);
+        free(iobuf);
 
         /* Kludge.  This is necessary to read/write the last
            block of an odd-sized disk, until Linux 2.5.x kernel fixes.

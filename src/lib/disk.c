@@ -420,6 +420,27 @@ get_sector_size(int filedes)
 	return sector_size;
 }
 
+/************************************************************
+ * lcm
+ * Requires:
+ * - numbers of which to find the lowest common multiple
+ * Modifies: nothing
+ * Returns:
+ *  lowest common multiple of x and y
+ ************************************************************/
+unsigned int
+lcm(unsigned int x, unsigned int y)
+{
+	unsigned int m = x, n = y, o;
+
+	while ((o = m % n)) {
+		m = n;
+		n = o;
+	}
+
+	return (x / n) * y;
+}
+
 /**
  * disk_get_partition_info()
  *  @fd - open file descriptor to disk
@@ -442,26 +463,27 @@ disk_get_partition_info (int fd,
 			 uint8_t *mbr_type, uint8_t *signature_type)
 {
 	legacy_mbr *mbr;
-	void *mbr_unaligned;
+	void *mbr_sector;
+	size_t mbr_size;
 	off_t offset;
 	int this_bytes_read = 0;
 	int gpt_invalid=0, mbr_invalid=0;
 	int rc=0;
 	int sector_size = get_sector_size(fd);
 
-	if (sizeof(*mbr) != sector_size)
-		return 1;
-	mbr_unaligned = malloc(sizeof(*mbr)+sector_size-1);
-	mbr = (legacy_mbr *)
-		(((unsigned long)mbr_unaligned + sector_size - 1) &
-		 ~(unsigned long)(sector_size-1));
-	memset(mbr, 0, sizeof(*mbr));
+
+	mbr_size = lcm(sizeof(*mbr), sector_size);
+	if ((rc = posix_memalign(&mbr_sector, sector_size, mbr_size)) != 0)
+		goto error;
+	memset(mbr_sector, '\0', mbr_size);
+
 	offset = lseek(fd, 0, SEEK_SET);
-	this_bytes_read = read(fd, mbr, sizeof(*mbr));
+	this_bytes_read = read(fd, mbr_sector, mbr_size);
 	if (this_bytes_read < sizeof(*mbr)) {
 		rc=1;
 		goto error_free_mbr;
 	}
+	mbr = (legacy_mbr *)mbr_sector;
 	gpt_invalid = gpt_disk_get_partition_info(fd, num,
 						  start, size,
 						  signature,
@@ -479,7 +501,8 @@ disk_get_partition_info (int fd,
 		}
 	}
  error_free_mbr:
-	free(mbr_unaligned);
+	free(mbr_sector);
+ error:
 	return rc;
 }
 
