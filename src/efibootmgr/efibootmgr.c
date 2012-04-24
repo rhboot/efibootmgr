@@ -239,6 +239,7 @@ warn_duplicate_name(list_t *boot_list)
 static var_entry_t *
 make_boot_var(list_t *boot_list)
 {
+	efi_status_t status;
 	var_entry_t *boot;
 	int free_number;
 	list_t *pos;
@@ -271,7 +272,12 @@ make_boot_var(list_t *boot_list)
 		free(boot);
 		return NULL;
 	}
-	create_variable(&boot->var_data);
+
+	status = create_variable(&boot->var_data);
+	if (status != EFI_SUCCESS) {
+		free(boot);
+		return NULL;
+	}
 	list_add_tail(&boot->list, boot_list);
 	return boot;
 }
