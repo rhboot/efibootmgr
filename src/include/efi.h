@@ -294,7 +294,9 @@ typedef struct {
 	uint8_t  signature[16];
 	uint8_t  mbr_type;
 	uint8_t  signature_type;
+#ifdef __ia64
 	uint8_t  padding[6]; /* Emperically needed */
+#endif
 } __attribute__((packed)) HARDDRIVE_DEVICE_PATH;
 
 typedef struct {

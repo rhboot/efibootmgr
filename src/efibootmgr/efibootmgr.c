@@ -18,7 +18,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 
-  This must tie the EFI_DEVICE_PATH to /boot/efi/elilo.efi
+  This must tie the EFI_DEVICE_PATH to /boot/efi/EFI/redhat/grub.efi
   The  EFI_DEVICE_PATH will look something like:
     ACPI device path, length 12 bytes
     Hardware Device Path, PCI, length 6 bytes
@@ -786,7 +786,7 @@ usage()
 	printf("\t-g | --gpt            force disk with invalid PMBR to be treated as GPT\n");
 	printf("\t-H | --acpi_hid XXXX  set the ACPI HID (used with -i)\n");
 	printf("\t-i | --iface name     create a netboot entry for the named interface\n");
-	printf("\t-l | --loader name     (defaults to \\elilo.efi)\n");
+	printf("\t-l | --loader name     (defaults to \\EFI\\redhat\\grub.efi)\n");
 	printf("\t-L | --label label     Boot manager display label (defaults to \"Linux\")\n");
 	printf("\t-n | --bootnext XXXX   set BootNext to XXXX (hex)\n");
 	printf("\t-N | --delete-bootnext delete BootNext\n");
@@ -814,7 +814,7 @@ set_default_opts()
 	opts.active          = -1;   /* Don't set it */
 	opts.timeout         = -1;   /* Don't set it */
 	opts.edd10_devicenum = 0x80;
-	opts.loader          = "\\elilo.efi";
+	opts.loader          = "\\EFI\\redhat\\grub.efi";
 	opts.label           = "Linux";
 	opts.disk            = "/dev/sda";
 	opts.iface           = NULL;

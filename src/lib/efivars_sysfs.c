@@ -55,6 +55,10 @@ sysfs_read_variable(const char *name, efi_variable_t *var)
 		return EFI_INVALID_PARAMETER;
 	}
 	close(fd);
+	/* latest apple firmware sets high bit which appears invalid
+	   to the linux kernel if we write it back so lets zero it out
+	   if it is set since it would be invalid to set it anyway */
+	var->Attributes = var->Attributes & ~(1 << 31);
 	return var->Status;
 }
 
