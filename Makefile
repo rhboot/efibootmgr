@@ -1,9 +1,10 @@
   default: all
 
-  RELEASE_DATE := "03-Jan-2008"
+  SIGNING_KEY := jordan_hargrave
+  RELEASE_DATE := "23-Jan-2013"
   RELEASE_MAJOR := 0
-  RELEASE_MINOR := 5
-  RELEASE_SUBLEVEL := 4
+  RELEASE_MINOR := 6
+  RELEASE_SUBLEVEL := 0
   RELEASE_EXTRALEVEL :=
   RELEASE_NAME := efibootmgr
   RELEASE_STRING := $(RELEASE_NAME)-$(RELEASE_MAJOR).$(RELEASE_MINOR).$(RELEASE_SUBLEVEL)$(RELEASE_EXTRALEVEL)
@@ -59,6 +60,7 @@
 	cd ..; tar cvzf $(RELEASE_STRING).tar.gz --exclude=.git --exclude=\*~ $(RELEASE_STRING)
 	mv ../$(RELEASE_STRING).tar.gz .
 	rm -rf ../$(RELEASE_STRING)
+	gpg  -a -u $(SIGNING_KEY) --output $(RELEASE_STRING).tar.gz.sign --detach-sig $(RELEASE_STRING).tar.gz
 
 
 #The rest of the docs...
