@@ -803,6 +803,7 @@ usage()
 	printf("\t-V | --version          return version and exit\n");
 	printf("\t-w | --write-signature  write unique sig to MBR if needed\n");
 	printf("\t-@ | --append-binary-args file  append extra args from file (use \"-\" for stdin)\n");
+	printf("\t   | --help             show help/usage\n");
 }
 
 static void
@@ -863,6 +864,7 @@ parse_opts(int argc, char **argv)
 			{"version",                no_argument, 0, 'V'},
 			{"write-signature",        no_argument, 0, 'w'},
 			{"append-binary-args", required_argument, 0, '@'},
+			{"help",                   no_argument, 0,   2},
 			{0, 0, 0, 0}
 		};
 
@@ -1013,6 +1015,10 @@ parse_opts(int argc, char **argv)
 		case 'w':
 			opts.write_signature = 1;
 			break;
+
+		case 2:
+			usage();
+			exit(1);
 
 		default:
 			usage();

@@ -70,6 +70,16 @@ efi_guid_unparse(efi_guid_t *guid, char *out)
         return out;
 }
 
+char *
+tilt_slashes(char *s)
+{
+	char *p;
+	for (p = s; *p; p++)
+		if (*p == '/')
+			*p = '\\';
+	return s;
+}
+
 void
 set_fs_kernel_calls()
 {
@@ -535,7 +545,7 @@ char *make_disk_load_option(char *p, char *disk)
 				     signature,
 				     mbr_type, signature_type);
 
-    efichar_from_char(os_loader_path, opts.loader, sizeof(os_loader_path));
+    efichar_from_char(os_loader_path, tilt_slashes(opts.loader), sizeof(os_loader_path));
     p += make_file_path_device_path (p, os_loader_path);
     p += make_end_device_path       (p);
 
