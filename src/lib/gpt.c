@@ -397,32 +397,32 @@ compare_gpts(gpt_header *pgpt, gpt_header *agpt, uint64_t lastlba)
 		fprintf(stderr, 
 		       "GPT:Primary header LBA != Alt. header alternate_lba\n");
 		fprintf(stderr,  "GPT:0x%" PRIx64 " != 0x%" PRIx64 "\n",
-		       __le64_to_cpu(pgpt->my_lba),
-                       __le64_to_cpu(agpt->alternate_lba));
+		       (uint64_t)__le64_to_cpu(pgpt->my_lba),
+                       (uint64_t)__le64_to_cpu(agpt->alternate_lba));
 		error_found++;
 	}
 	if (__le64_to_cpu(pgpt->alternate_lba) != __le64_to_cpu(agpt->my_lba)) {
 		fprintf(stderr, 
 		       "GPT:Primary header alternate_lba != Alt. header my_lba\n");
 		fprintf(stderr,  "GPT:0x%" PRIx64 " != 0x%" PRIx64 "\n",
-		       __le64_to_cpu(pgpt->alternate_lba),
-                       __le64_to_cpu(agpt->my_lba));
+		       (uint64_t)__le64_to_cpu(pgpt->alternate_lba),
+                       (uint64_t)__le64_to_cpu(agpt->my_lba));
 		error_found++;
 	}
 	if (__le64_to_cpu(pgpt->first_usable_lba) !=
             __le64_to_cpu(agpt->first_usable_lba)) {
 		fprintf(stderr,  "GPT:first_usable_lbas don't match.\n");
 		fprintf(stderr,  "GPT:0x%" PRIx64 " != 0x%" PRIx64 "\n",
-		       __le64_to_cpu(pgpt->first_usable_lba),
-                       __le64_to_cpu(agpt->first_usable_lba));
+		       (uint64_t)__le64_to_cpu(pgpt->first_usable_lba),
+                       (uint64_t)__le64_to_cpu(agpt->first_usable_lba));
 		error_found++;
 	}
 	if (__le64_to_cpu(pgpt->last_usable_lba) !=
             __le64_to_cpu(agpt->last_usable_lba)) {
 		fprintf(stderr,  "GPT:last_usable_lbas don't match.\n");
 		fprintf(stderr,  "GPT:0x%" PRIx64 " != 0x%" PRIx64 "\n",
-		       __le64_to_cpu(pgpt->last_usable_lba),
-                       __le64_to_cpu(agpt->last_usable_lba));
+		       (uint64_t)__le64_to_cpu(pgpt->last_usable_lba),
+                       (uint64_t)__le64_to_cpu(agpt->last_usable_lba));
 		error_found++;
 	}
 	if (efi_guidcmp(pgpt->disk_guid, agpt->disk_guid)) {
@@ -459,7 +459,7 @@ compare_gpts(gpt_header *pgpt, gpt_header *agpt, uint64_t lastlba)
 		fprintf(stderr, 
 		       "GPT:Primary header thinks Alt. header is not at the end of the disk.\n");
 		fprintf(stderr,  "GPT:0x%" PRIx64 " != 0x%" PRIx64 "\n",
-		       __le64_to_cpu(pgpt->alternate_lba), lastlba);
+		       (uint64_t)__le64_to_cpu(pgpt->alternate_lba), lastlba);
 		error_found++;
 	}
 
@@ -467,7 +467,7 @@ compare_gpts(gpt_header *pgpt, gpt_header *agpt, uint64_t lastlba)
 		fprintf(stderr, 
 		       "GPT:Alternate GPT header not at the end of the disk.\n");
 		fprintf(stderr,  "GPT:0x%" PRIx64 " != 0x%" PRIx64 "\n",
-		       __le64_to_cpu(agpt->my_lba), lastlba);
+		       (uint64_t)__le64_to_cpu(agpt->my_lba), lastlba);
 		error_found++;
 	}
 

@@ -272,7 +272,7 @@ disk_get_ide_pci(int fd,
 	struct disk_info info;
 	unsigned int b=0, d=0;
 	char procname[80], infoline[80];
-	size_t read_count;
+	size_t read_count __attribute__((unused));
 	int rc;
 	
 	rc = disk_info_from_fd(fd, &info);
@@ -542,7 +542,7 @@ disk_get_partition_info (int fd,
 	legacy_mbr *mbr;
 	void *mbr_sector;
 	size_t mbr_size;
-	off_t offset;
+	off_t offset __attribute__((unused));
 	int this_bytes_read = 0;
 	int gpt_invalid=0, mbr_invalid=0;
 	int rc=0;

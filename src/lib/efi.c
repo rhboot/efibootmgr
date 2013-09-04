@@ -318,7 +318,7 @@ static struct device *
 is_parent_bridge(struct pci_dev *p, unsigned int target_bus)
 {
 	struct device *d;
- 	unsigned int primary, secondary;
+ 	unsigned int primary __attribute__((unused)), secondary;
 
 	if ( (pci_read_word(p, PCI_HEADER_TYPE) & 0x7f) != PCI_HEADER_TYPE_BRIDGE)
 		return NULL;
@@ -545,7 +545,7 @@ char *make_disk_load_option(char *p, char *disk)
 
     p += make_harddrive_device_path (p, opts.part,
 				     start, size,
-				     signature,
+				     (uint8_t *)signature,
 				     mbr_type, signature_type);
 
     efichar_from_char(os_loader_path, tilt_slashes(opts.loader), sizeof(os_loader_path));
