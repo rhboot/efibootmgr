@@ -1,0 +1,3 @@
+efibootmgr
+core.*
+.*.sw?
