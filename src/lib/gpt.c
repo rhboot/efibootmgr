@@ -425,7 +425,8 @@ compare_gpts(gpt_header *pgpt, gpt_header *agpt, uint64_t lastlba)
                        (uint64_t)__le64_to_cpu(agpt->last_usable_lba));
 		error_found++;
 	}
-	if (efi_guidcmp(pgpt->disk_guid, agpt->disk_guid)) {
+	if (memcmp(&pgpt->disk_guid, &agpt->disk_guid,
+			sizeof (pgpt->disk_guid))) {
 		fprintf(stderr,  "GPT:disk_guids don't match.\n");
 		error_found++;
 	}

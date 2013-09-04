@@ -29,19 +29,7 @@
 #include <stdint.h>
 #include <dirent.h>
 
-#define BITS_PER_LONG (sizeof(unsigned long) * 8)
-
-#define EFI_ERROR(x) ((x) | (1L << (BITS_PER_LONG - 1)))
-
-#define EFI_SUCCESS		0
-#define EFI_LOAD_ERROR          EFI_ERROR(1)
-#define EFI_INVALID_PARAMETER   EFI_ERROR(2)
-#define EFI_UNSUPPORTED		EFI_ERROR(3)
-#define EFI_BAD_BUFFER_SIZE     EFI_ERROR(4)
-#define EFI_BUFFER_TOO_SMALL	EFI_ERROR(5)
-#define EFI_NOT_FOUND           EFI_ERROR(14)
-#define EFI_OUT_OF_RESOURCES    EFI_ERROR(15)
-
+#include <efivar.h>
 
 /*******************************************************
  * Boot Option Attributes
@@ -49,61 +37,23 @@
 #define LOAD_OPTION_ACTIVE 0x00000001
 
 /******************************************************
- * EFI Variable Attributes
- ******************************************************/
-#define EFI_VARIABLE_NON_VOLATILE 0x0000000000000001
-#define EFI_VARIABLE_BOOTSERVICE_ACCESS 0x0000000000000002
-#define EFI_VARIABLE_RUNTIME_ACCESS 0x0000000000000004
-
-
-typedef struct {
-	uint8_t  b[16];
-} efi_guid_t;
-
-#define EFI_GUID(a,b,c,d0,d1,d2,d3,d4,d5,d6,d7) \
-((efi_guid_t) \
-{{ (a) & 0xff, ((a) >> 8) & 0xff, ((a) >> 16) & 0xff, ((a) >> 24) & 0xff, \
-  (b) & 0xff, ((b) >> 8) & 0xff, \
-  (c) & 0xff, ((c) >> 8) & 0xff, \
-  (d0), (d1), (d2), (d3), (d4), (d5), (d6), (d7) }})
-
-
-/******************************************************
  * GUIDs
  ******************************************************/
 #define DEVICE_PATH_PROTOCOL \
-EFI_GUID( 0x09576e91, 0x6d3f, 0x11d2, 0x8e, 0x39, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b)
+EFI_GUID( 0x09576e91, 0x6d3f, 0x11d2, 0x8e39, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b)
 #define EFI_GLOBAL_VARIABLE \
-EFI_GUID( 0x8BE4DF61, 0x93CA, 0x11d2, 0xAA, 0x0D, 0x00, 0xE0, 0x98, 0x03, 0x2B, 0x8C)
+EFI_GUID( 0x8BE4DF61, 0x93CA, 0x11d2, 0xAA0D, 0x00, 0xE0, 0x98, 0x03, 0x2B, 0x8C)
 #define EDD10_HARDWARE_VENDOR_PATH_GUID \
-EFI_GUID( 0xCF31FAC5, 0xC24E, 0x11d2, 0x85, 0xF3, 0x00, 0xA0, 0xC9, 0x3E, 0xC9, 0x3B)
+EFI_GUID( 0xCF31FAC5, 0xC24E, 0x11d2, 0x85F3, 0x00, 0xA0, 0xC9, 0x3E, 0xC9, 0x3B)
 #define BLKX_UNKNOWN_GUID \
-EFI_GUID( 0x47c7b225, 0xc42a, 0x11d2, 0x8e, 0x57, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b)
+EFI_GUID( 0x47c7b225, 0xc42a, 0x11d2, 0x8e57, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b)
 #define DIR_UNKNOWN_GUID \
-EFI_GUID( 0x47c7b227, 0xc42a, 0x11d2, 0x8e, 0x57, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b)
+EFI_GUID( 0x47c7b227, 0xc42a, 0x11d2, 0x8e57, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b)
 #define ESP_UNKNOWN_GUID \
-EFI_GUID( 0x47c7b226, 0xc42a, 0x11d2, 0x8e, 0x57, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b)
+EFI_GUID( 0x47c7b226, 0xc42a, 0x11d2, 0x8e57, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b)
 
-static inline int
-efi_guidcmp(efi_guid_t left, efi_guid_t right)
-{
-	return memcmp(&left, &right, sizeof (efi_guid_t));
-}
-
-
-typedef unsigned long efi_status_t;
 typedef uint8_t  efi_bool_t;
 typedef uint16_t efi_char16_t;		/* UNICODE character */
-
-typedef struct _efi_variable_t {
-        efi_char16_t  VariableName[1024/sizeof(efi_char16_t)];
-        efi_guid_t    VendorGuid;
-        unsigned long DataSize;
-        uint8_t          Data[1024];
-	efi_status_t  Status;
-        uint32_t         Attributes;
-} __attribute__((packed)) efi_variable_t;
-
 
 typedef struct {
 	uint8_t  type;
@@ -339,34 +289,16 @@ typedef struct {
 } __attribute__((packed)) END_DEVICE_PATH;
 
 
-struct efivar_kernel_calls {
-        efi_status_t (*read)(const char *name, efi_variable_t *var);
-        efi_status_t (*edit)(const char *name, efi_variable_t *var);
-        efi_status_t (*create)(efi_variable_t *var);
-        efi_status_t (*delete)(efi_variable_t *var);
-        char *path;
-};
-
-
 /* Used for ACPI _HID */
 #define EISAID_PNP0A03 0xa0341d0
 
 /* Exported functions */
 
-extern int make_linux_efi_variable(efi_variable_t *var,
-			    unsigned int free_number);
-extern char * efi_guid_unparse(efi_guid_t *guid, char *out);
 extern EFI_DEVICE_PATH *load_option_path(EFI_LOAD_OPTION *option);
 
-extern efi_status_t read_variable(const char *name, efi_variable_t *var);
-extern efi_status_t edit_variable(efi_variable_t *var);
-extern efi_status_t create_variable(efi_variable_t *var);
-extern efi_status_t delete_variable(efi_variable_t *var);
-extern efi_status_t create_or_edit_variable(efi_variable_t *var);
+extern int read_boot_var_names(char ***namelist);
+extern ssize_t make_linux_load_option(uint8_t **data, size_t *data_size);
+extern int append_extra_args(uint8_t **data, size_t *data_size);
 
-extern void set_fs_kernel_calls();
-extern int read_boot_var_names(struct dirent ***namelist);
-extern int variable_to_name(efi_variable_t *var, char *name);
-extern int var_name_to_path(const char *name, char *path);
 
 #endif /* EFI_H */

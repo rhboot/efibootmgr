@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <efivar.h>
 #include <errno.h>
 #include <stdint.h>
 #include <sys/stat.h>
@@ -43,11 +44,7 @@
 #include "scsi_ioctls.h"
 #include "disk.h"
 #include "efibootmgr.h"
-#include "efivars_procfs.h"
-#include "efivars_sysfs.h"
 #include "list.h"
-
-static struct efivar_kernel_calls *fs_kernel_calls;
 
 EFI_DEVICE_PATH *
 load_option_path(EFI_LOAD_OPTION *option)
@@ -59,155 +56,89 @@ load_option_path(EFI_LOAD_OPTION *option)
 		 + efichar_strsize(option->description)); /* Description */
 }
 
-char *
-efi_guid_unparse(efi_guid_t *guid, char *out)
-{
-	sprintf(out, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-		guid->b[3], guid->b[2], guid->b[1], guid->b[0],
-		guid->b[5], guid->b[4], guid->b[7], guid->b[6],
-		guid->b[8], guid->b[9], guid->b[10], guid->b[11],
-		guid->b[12], guid->b[13], guid->b[14], guid->b[15]);
-        return out;
-}
-
-char *
-tilt_slashes(char *s)
-{
-	char *p;
-	for (p = s; *p; p++)
-		if (*p == '/')
-			*p = '\\';
-	return s;
-}
-
-void
-set_fs_kernel_calls()
-{
-	char name[PATH_MAX];
-	DIR *dir;
-	snprintf(name, PATH_MAX, "%s", SYSFS_DIR_EFI_VARS);
-	dir = opendir(name);
-	if (dir) {
-		closedir(dir);
-		fs_kernel_calls = &sysfs_kernel_calls;
-		return;
-	}
-
-	snprintf(name, PATH_MAX, "%s", PROCFS_DIR_EFI_VARS);
-	dir = opendir(name);
-	if (dir) {
-		closedir(dir);
-		fs_kernel_calls = &procfs_kernel_calls;
-		return;
-	}
-	fprintf(stderr, "Fatal: Couldn't open either sysfs or procfs directories for accessing EFI variables.\n");
-	fprintf(stderr, "Try 'modprobe efivars' as root.\n");
-	exit(1);
-}
-
-
-
-static efi_status_t
-write_variable_to_file(efi_variable_t *var)
-{
-	int fd, byteswritten;
-	if (!var || !opts.testfile) return EFI_INVALID_PARAMETER;
-
-	printf("Test mode: Writing to %s\n", opts.testfile);
-	fd = creat(opts.testfile, S_IRWXU);
-	if (fd == -1) {
-		perror("Couldn't write to testfile");
-		return EFI_INVALID_PARAMETER;
-	}
-
-	byteswritten = write(fd, var, sizeof(*var));
-	if (byteswritten == -1) {
-		perror("Writing to testfile");
-
-	}
-	close(fd);
-	return EFI_SUCCESS;
-}
-
-efi_status_t
-read_variable(const char *name, efi_variable_t *var)
-{
-	if (!name || !var) return EFI_INVALID_PARAMETER;
-	return fs_kernel_calls->read(name, var);
-}
-
-efi_status_t
-create_variable(efi_variable_t *var)
-{
-	if (!var) return EFI_INVALID_PARAMETER;
-	if (opts.testfile) return write_variable_to_file(var);
-	return fs_kernel_calls->create(var);
-}
-
-efi_status_t
-delete_variable(efi_variable_t *var)
-{
-	if (!var) return EFI_INVALID_PARAMETER;
-	if (opts.testfile) return write_variable_to_file(var);
-	return fs_kernel_calls->delete(var);
-}
-
-
-efi_status_t
-edit_variable(efi_variable_t *var)
-{
-	char name[PATH_MAX];
-	if (!var) return EFI_INVALID_PARAMETER;
-	if (opts.testfile) return write_variable_to_file(var);
-
-	variable_to_name(var, name);
-	return fs_kernel_calls->edit(name, var);
-}
-
-efi_status_t
-create_or_edit_variable(efi_variable_t *var)
-{
-	efi_variable_t testvar;
-	char name[PATH_MAX];
-
-	memcpy(&testvar, var, sizeof(*var));
-	variable_to_name(var, name);
-
-	if (read_variable(name, &testvar) == EFI_SUCCESS)
-		return edit_variable(var);
-	else
-		return create_variable(var);
-}
-
 static int
-select_boot_var_names(const struct dirent *d)
+select_boot_var_names(const efi_guid_t *guid, const char *name)
 {
-	if (!strncmp(d->d_name, "Boot", 4) &&
-	    isxdigit(d->d_name[4]) && isxdigit(d->d_name[5]) &&
-	    isxdigit(d->d_name[6]) && isxdigit(d->d_name[7]) &&
-	    d->d_name[8] == '-')
+	efi_guid_t global = EFI_GLOBAL_GUID;
+	if (!strncmp(name, "Boot", 4) &&
+			isxdigit(name[4]) && isxdigit(name[5]) &&
+			isxdigit(name[6]) && isxdigit(name[7]) &&
+			!memcmp(guid, &global, sizeof (global)))
 		return 1;
 	return 0;
 }
+typedef __typeof__(select_boot_var_names) filter_t;
 
-int
-read_boot_var_names(struct dirent ***namelist)
+static int
+cmpstringp(const void *p1, const void *p2)
 {
-	if (!fs_kernel_calls || !namelist) return -1;
-	return scandir(fs_kernel_calls->path,
-		       namelist, select_boot_var_names,
-		       alphasort);
+	const char *s1 = *(const char **)p1;
+	const char *s2 = *(const char **)p2;
+	return strcoll(s1, s2);
 }
 
+static int
+read_var_names(filter_t filter, char ***namelist)
+{
+	int rc;
+	efi_guid_t *guid = NULL;
+	char *name = NULL;
+	char **newlist = NULL;
+	int nentries = 0;
+	int i;
+
+	rc = efi_variables_supported();
+	if (!rc)
+		return -1;
+
+	while ((rc = efi_get_next_variable_name(&guid, &name)) > 0) {
+		if (!filter(guid, name))
+			continue;
+
+		char *aname = strdup(name);
+		if (!aname) {
+			rc = -1;
+			break;
+		}
+
+		char **tmp = realloc(newlist, (++nentries + 1) * sizeof (*newlist));
+		if (!tmp) {
+			rc = -1;
+			break;
+		}
+
+		tmp[nentries] = NULL;
+		tmp[nentries-1] = aname;
+
+		newlist = tmp;
+	}
+	if (rc == 0) {
+		qsort(newlist, nentries, sizeof (char *), cmpstringp);
+		*namelist = newlist;
+	} else {
+		if (newlist) {
+			for (i = 0; newlist[i] != NULL; i++)
+				free(newlist[i]);
+			free(newlist);
+		}
+	}
+	return rc;
+}
+
+int
+read_boot_var_names(char ***namelist)
+{
+	return read_var_names(select_boot_var_names, namelist);
+}
 
 static int
 get_edd_version()
 {
-	efi_status_t status;
-	efi_variable_t var;
 	efi_guid_t guid = BLKX_UNKNOWN_GUID;
-	char name[80], text_guid[40];
-	ACPI_DEVICE_PATH *path = (ACPI_DEVICE_PATH *)&(var.Data);
+	uint8_t *data = NULL;
+	size_t data_size = 0;
+	uint32_t attributes;
+	ACPI_DEVICE_PATH *path;
 	int rc = 0;
 
 	/* Allow global user option override */
@@ -227,26 +158,22 @@ get_edd_version()
 		break;
 	}
 
+	rc = efi_get_variable(guid, "blk0", &data, &data_size, &attributes);
+	if (rc < 0)
+		return rc;
 
-	memset(&var, 0, sizeof(efi_variable_t));
-	efi_guid_unparse(&guid, text_guid);
-	sprintf(name, "blk0-%s", text_guid);
-
-	status = read_variable(name, &var);
-	if (status != EFI_SUCCESS) {
-		return 0;
-	}
-	if (path->type == 2 && path->subtype == 1) rc = 3;
-	else rc = 1;
-	return rc;
+	path = (ACPI_DEVICE_PATH *)data;
+	if (path->type == 2 && path->subtype == 1)
+		return 3;
+	return 1;
 }
 
 /*
   EFI_DEVICE_PATH, 0x01 (Hardware), 0x04 (Vendor), length 0x0018
   This needs to know what EFI device has the boot device.
 */
-static uint16_t
-make_edd10_device_path(void *dest, uint32_t hardware_device)
+static ssize_t
+make_edd10_device_path(uint32_t hardware_device, uint8_t *buf, size_t size)
 {
 	VENDOR_DEVICE_PATH *hw;
 	char buffer[EDD10_HARDWARE_VENDOR_PATH_LENGTH];
@@ -260,24 +187,26 @@ make_edd10_device_path(void *dest, uint32_t hardware_device)
 	hw->length = EDD10_HARDWARE_VENDOR_PATH_LENGTH;
 	memcpy(&(hw->vendor_guid), &guid, sizeof(guid));
 	*data = hardware_device;
-	memcpy(dest, buffer, hw->length);
+	if (size >= hw->length)
+		memcpy(buf, buffer, hw->length);
 	return hw->length;
 }
 
-static uint16_t
-make_end_device_path(void *dest)
+static ssize_t
+make_end_device_path(uint8_t *buf, size_t size)
 {
 	END_DEVICE_PATH p;
 	memset(&p, 0, sizeof(p));
 	p.type = 0x7F; /* End of Hardware Device Path */
 	p.subtype = 0xFF; /* End Entire Device Path */
 	p.length = sizeof(p);
-	memcpy(dest, &p, p.length);
+	if (size >= p.length)
+		memcpy(buf, &p, p.length);
 	return p.length;
 }
 
-static uint16_t
-make_acpi_device_path(void *dest, uint32_t _HID, uint32_t _UID)
+static ssize_t
+make_acpi_device_path(uint32_t _HID, uint32_t _UID, uint8_t *buf, size_t size)
 {
 	ACPI_DEVICE_PATH p;
 	memset(&p, 0, sizeof(p));
@@ -286,15 +215,15 @@ make_acpi_device_path(void *dest, uint32_t _HID, uint32_t _UID)
 	p.length = sizeof(p);
 	p._HID = _HID;
 	p._UID = _UID;
-	memcpy(dest, &p, p.length);
+	if (size >= p.length)
+		memcpy(buf, &p, p.length);
 	return p.length;
 }
 
-static uint16_t
-make_mac_addr_device_path(void *dest, char *mac, uint8_t iftype)
+static ssize_t
+make_mac_addr_device_path(char *mac, uint8_t iftype, uint8_t *buf, size_t size)
 {
-
-        int i;
+	int i;
 	MAC_ADDR_DEVICE_PATH p;
 	memset(&p, 0, sizeof(p));
 	p.type = 3;
@@ -304,7 +233,8 @@ make_mac_addr_device_path(void *dest, char *mac, uint8_t iftype)
 		p.macaddr[i] = mac[i];
 	}
 	p.iftype = iftype;
-	memcpy(dest, &p, p.length);
+	if (size >= p.length)
+		memcpy(buf, &p, p.length);
 	return p.length;
 }
 
@@ -355,8 +285,9 @@ find_parent(struct pci_access *pacc, unsigned int target_bus)
 	return NULL;
 }
 
-static uint16_t
-make_one_pci_device_path(void *dest, uint8_t device, uint8_t function)
+static ssize_t
+make_one_pci_device_path(uint8_t device, uint8_t function,
+			uint8_t *buf, size_t size)
 {
 	PCI_DEVICE_PATH p;
 	memset(&p, 0, sizeof(p));
@@ -365,18 +296,21 @@ make_one_pci_device_path(void *dest, uint8_t device, uint8_t function)
 	p.length   = sizeof(p);
 	p.device   = device;
 	p.function = function;
-	memcpy(dest, &p, p.length);
+	if (size >= p.length)
+		memcpy(buf, &p, p.length);
 	return p.length;
 }
 
-static uint16_t
-make_pci_device_path(void *dest, uint8_t bus, uint8_t device, uint8_t function)
+static ssize_t
+make_pci_device_path(uint8_t bus, uint8_t device, uint8_t function,
+			uint8_t *buf, size_t size)
 {
 	struct device *dev;
 	struct pci_access *pacc;
 	struct list_head *pos, *n;
 	LIST_HEAD(pci_parent_list);
-	char *p = dest;
+	size_t needed;
+	off_t buf_offset = 0;
 
 	pacc = pci_alloc();
 	if (!pacc)
@@ -393,25 +327,32 @@ make_pci_device_path(void *dest, uint8_t bus, uint8_t device, uint8_t function)
 		}
 	} while (dev && bus);
 
-
 	list_for_each_safe(pos, n, &pci_parent_list) {
 		dev = list_entry(pos, struct device, node);
-		p += make_one_pci_device_path(p,
-					      dev->pci_dev->dev,
-					      dev->pci_dev->func);
+		needed = make_one_pci_device_path(dev->pci_dev->dev,
+					dev->pci_dev->func,
+					buf + buf_offset,
+					size == 0 ? 0 : size - buf_offset);
+		if (needed < 0)
+			return -1;
+		buf_offset += needed;
 		list_del(&dev->node);
 		free(dev);
 	}
 
-	p += make_one_pci_device_path(p, device, function);
+	needed = make_one_pci_device_path(device, function, buf + buf_offset,
+					size == 0 ? 0 : size - buf_offset);
+	if (needed < 0)
+		return -1;
+	buf_offset += needed;
 
 	pci_cleanup(pacc);
 
-	return ((void *)p - dest);
+	return buf_offset;
 }
 
-static uint16_t
-make_scsi_device_path(void *dest, uint16_t id, uint16_t lun)
+static ssize_t
+make_scsi_device_path(uint16_t id, uint16_t lun, uint8_t *buf, size_t size)
 {
 	SCSI_DEVICE_PATH p;
 	memset(&p, 0, sizeof(p));
@@ -420,14 +361,16 @@ make_scsi_device_path(void *dest, uint16_t id, uint16_t lun)
 	p.length   = sizeof(p);
 	p.id       = id;
 	p.lun      = lun;
-	memcpy(dest, &p, p.length);
+	if (size >= p.length)
+		memcpy(buf, &p, p.length);
 	return p.length;
 }
 
-static uint16_t
-make_harddrive_device_path(void *dest, uint32_t num, uint64_t start, uint64_t size,
-			   uint8_t *signature,
-			   uint8_t mbr_type, uint8_t signature_type)
+static ssize_t
+make_harddrive_device_path(uint32_t num, uint64_t part_start,
+			uint64_t part_size, uint8_t *signature,
+			uint8_t mbr_type, uint8_t signature_type,
+			uint8_t *buf, size_t size)
 {
 	HARDDRIVE_DEVICE_PATH p;
 	memset(&p, 0, sizeof(p));
@@ -435,17 +378,18 @@ make_harddrive_device_path(void *dest, uint32_t num, uint64_t start, uint64_t si
 	p.subtype = 1;
 	p.length   = sizeof(p);
 	p.part_num = num;
-	p.start = start;
-	p.size = size;
+	p.start = part_start;
+	p.size = part_size;
 	if (signature) memcpy(p.signature, signature, 16);
 	p.mbr_type = mbr_type;
 	p.signature_type = signature_type;
-	memcpy(dest, &p, p.length);
+	if (size >= p.length)
+		memcpy(buf, &p, p.length);
 	return p.length;
 }
 
-static uint16_t
-make_file_path_device_path(void *dest, efi_char16_t *name)
+static ssize_t
+make_file_path_device_path(efi_char16_t *name, uint8_t *buf, size_t size)
 {
 	FILE_PATH_DEVICE_PATH *p;
 	char buffer[1024];
@@ -457,24 +401,22 @@ make_file_path_device_path(void *dest, efi_char16_t *name)
 	p->type      = 4;
 	p->subtype   = 4;
 	p->length    = 4 + namesize;
-	efichar_strncpy(p->path_name,
-			name, namelen);
+	efichar_strncpy(p->path_name, name, namelen);
 
-	memcpy(dest, buffer, p->length);
+	if (size >= p->length)
+		memcpy(buf, buffer, p->length);
 	return p->length;
-
 }
 
-
-
-static long
-make_edd30_device_path(int fd, void *buffer)
+static ssize_t
+make_edd30_device_path(int fd, uint8_t *buf, size_t size)
 {
 	int rc=0, interface_type;
 	unsigned char bus=0, device=0, function=0;
 	Scsi_Idlun idlun;
 	unsigned char host=0, channel=0, id=0, lun=0;
-	char *p = buffer;
+	size_t needed;
+	off_t buf_offset = 0;
 
 	rc = disk_get_pci(fd, &interface_type, &bus, &device, &function);
 	if (rc) return 0;
@@ -485,250 +427,364 @@ make_edd30_device_path(int fd, void *buffer)
 		idlun_to_components(&idlun, &host, &channel, &id, &lun);
 	}
 
-	p += make_acpi_device_path      (p, EISAID_PNP0A03, bus);
-	p += make_pci_device_path       (p, bus, device, function);
+	needed = make_acpi_device_path(EISAID_PNP0A03, bus, buf, size);
+	if (needed < 0)
+		return needed;
+	buf_offset += needed;
+
+	needed = make_pci_device_path(bus, device, function, buf + buf_offset,
+					size == 0 ? 0 : size - buf_offset);
+	if (needed < 0)
+		return needed;
+	buf_offset += needed;
+
 	if (interface_type != virtblk) {
-		p += make_scsi_device_path      (p, id, lun);
+		needed = make_scsi_device_path(id, lun, buf + buf_offset,
+					size == 0 ? 0 : size - buf_offset);
+		if (needed < 0)
+			return needed;
+		buf_offset += needed;
 	}
 
-	return ((void *)p - buffer);
+	return buf_offset;
+}
+
+char *
+tilt_slashes(char *s)
+{
+	char *p;
+	for (p = s; *p; p++)
+		if (*p == '/')
+			*p = '\\';
+	return s;
 }
 
 /**
  * make_disk_load_option()
  * @disk disk
+ * @buf - load option returned
+ * @size - size of buffer available
  *
- * Returns 0 on error, length of load option created on success.
+ * Returns -1 on error, length of load option created on success.
  */
-char *make_disk_load_option(char *p, char *disk)
+static ssize_t
+make_disk_load_option(char *disk, uint8_t *buf, size_t size)
 {
-    int disk_fd=0;
-    char buffer[80];
-    char signature[16];
-    int rc, edd_version=0;
-    uint8_t mbr_type=0, signature_type=0;
-    uint64_t start=0, size=0;
-    efi_char16_t os_loader_path[40];
+	int disk_fd=0;
+	char buffer[80];
+	char signature[16];
+	int rc, edd_version=0;
+	uint8_t mbr_type=0, signature_type=0;
+	uint64_t part_start=0, part_size=0;
+	efi_char16_t os_loader_path[40];
+	size_t needed;
+	off_t buf_offset = 0;
 
-    memset(signature, 0, sizeof(signature));
+	memset(signature, 0, sizeof(signature));
 
-    disk_fd = open(opts.disk, O_RDWR);
-    if (disk_fd == -1) {
-        sprintf(buffer, "Could not open disk %s", opts.disk);
-	perror(buffer);
-	return 0;
-    }
-
-    if (opts.edd_version) {
-        edd_version = get_edd_version();
-
-	if (edd_version == 3) {
-	    p += make_edd30_device_path(disk_fd, p);
+	disk_fd = open(opts.disk, O_RDWR);
+	if (disk_fd == -1) {
+		sprintf(buffer, "Could not open disk %s", opts.disk);
+		perror(buffer);
+		return -1;
 	}
-	else if (edd_version == 1) {
-	    p += make_edd10_device_path(p, opts.edd10_devicenum);
-	}
-    }
 
-    rc = disk_get_partition_info (disk_fd, opts.part,
-				  &start, &size, signature,
+	if (opts.edd_version) {
+		edd_version = get_edd_version();
+		if (edd_version == 3) {
+			needed = make_edd30_device_path(disk_fd, buf, size);
+		} else if (edd_version == 1) {
+			needed = make_edd10_device_path(opts.edd10_devicenum,
+							buf, size);
+		}
+		buf_offset += needed;
+	}
+
+	rc = disk_get_partition_info(disk_fd, opts.part,
+				  &part_start, &part_size, signature,
 				  &mbr_type, &signature_type);
+	close(disk_fd);
+	if (rc) {
+		fprintf(stderr, "Error: no partition information on disk %s.\n"
+			"       Cowardly refusing to create a boot option.\n",
+			opts.disk);
+		return -1;
+	}
 
-    close(disk_fd);
+	needed = make_harddrive_device_path(opts.part, part_start, part_size,
+					(uint8_t *)signature, mbr_type,
+					signature_type, buf + buf_offset,
+					size == 0 ? 0 : size - buf_offset);
+	if (needed < 0)
+		return needed;
+	buf_offset += needed;
 
-    if (rc) {
-        fprintf(stderr, "Error: no partition information on disk %s.\n"
-		"       Cowardly refusing to create a boot option.\n",
-		opts.disk);
-	return 0;
-    }
+	efichar_from_char(os_loader_path, tilt_slashes(opts.loader),
+			sizeof(os_loader_path));
+	needed = make_file_path_device_path(os_loader_path, buf + buf_offset,
+					size == 0 ? 0 : size - buf_offset);
+	if (needed < 0)
+		return needed;
+	buf_offset += needed;
 
-    p += make_harddrive_device_path (p, opts.part,
-				     start, size,
-				     (uint8_t *)signature,
-				     mbr_type, signature_type);
+	needed = make_end_device_path(buf + buf_offset,
+				size == 0 ? 0 : size - buf_offset);
+	if (needed < 0)
+		return needed;
+	buf_offset += needed;
 
-    efichar_from_char(os_loader_path, tilt_slashes(opts.loader), sizeof(os_loader_path));
-    p += make_file_path_device_path (p, os_loader_path);
-    p += make_end_device_path       (p);
-
-    return(p);
+	return buf_offset;
 }
 
 /**
  * make_net_load_option()
- * @data - load option returned
+ * @iface - interface name (input)
+ * @buf - buffer to write structure to
+ * @size - size of buf
  *
- * Returns NULL on error, or p advanced by length of load option
- * created on success.
+ * Returns -1 on error, size written on success, or size needed if size == 0.
  */
-char *make_net_load_option(char *p, char *iface)
+static ssize_t
+make_net_load_option(char *iface, uint8_t *buf, size_t size)
 {
-    /* copied pretty much verbatim from the ethtool source */
-    int fd = 0, err; 
-    int bus, slot, func;
-    struct ifreq ifr;
-    struct ethtool_drvinfo drvinfo;
+	/* copied pretty much verbatim from the ethtool source */
+	int fd = 0, err; 
+	int bus, slot, func;
+	struct ifreq ifr;
+	struct ethtool_drvinfo drvinfo;
+	size_t needed;
+	off_t buf_offset;
 
-    memset(&ifr, 0, sizeof(ifr));
-    strcpy(ifr.ifr_name, iface);
-    drvinfo.cmd = ETHTOOL_GDRVINFO;
-    ifr.ifr_data = (caddr_t)&drvinfo;
-    /* Open control socket */
-    fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (fd < 0) {
-        perror("Cannot get control socket");
-	goto out;
-    }
-    err = ioctl(fd, SIOCETHTOOL, &ifr);
-    if (err < 0) {
-        perror("Cannot get driver information");
-	goto out;
-    }
+	memset(&ifr, 0, sizeof(ifr));
+	strcpy(ifr.ifr_name, iface);
+	drvinfo.cmd = ETHTOOL_GDRVINFO;
+	ifr.ifr_data = (caddr_t)&drvinfo;
+	/* Open control socket */
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	if (fd < 0) {
+		perror("Cannot get control socket");
+		return -1;
+	}
+	err = ioctl(fd, SIOCETHTOOL, &ifr);
+	if (err < 0) {
+		perror("Cannot get driver information");
+		return -1;
+	}
 
-    /* The domain part was added in 2.6 kernels.  Test for that first. */
-    err = sscanf(drvinfo.bus_info, "%*x:%2x:%2x.%x", &bus, &slot, &func);
-    if (err != 3) {
-	    err = sscanf(drvinfo.bus_info, "%2x:%2x.%x", &bus, &slot, &func);
-	    if (err != 3) {
-		    perror("Couldn't parse device location string.");
-		    goto out;
-	    }
-    }
+	/* The domain part was added in 2.6 kernels.  Test for that first. */
+	err = sscanf(drvinfo.bus_info, "%*x:%2x:%2x.%x", &bus, &slot, &func);
+	if (err != 3) {
+		err = sscanf(drvinfo.bus_info, "%2x:%2x.%x", &bus, &slot, &func);
+		if (err != 3) {
+			perror("Couldn't parse device location string.");
+			return -1;
+		}
+	}
 
-    err = ioctl(fd, SIOCGIFHWADDR, &ifr);
-    if (err < 0) {
-        perror("Cannot get hardware address.");
-	goto out;
-    }
+	err = ioctl(fd, SIOCGIFHWADDR, &ifr);
+	if (err < 0) {
+		perror("Cannot get hardware address.");
+		return -1;
+	}
 
-    p += make_acpi_device_path(p, opts.acpi_hid, opts.acpi_uid);
-    p += make_pci_device_path(p, bus, (uint8_t)slot, (uint8_t)func);
-    p += make_mac_addr_device_path(p, ifr.ifr_ifru.ifru_hwaddr.sa_data, 0);
-    p += make_end_device_path       (p);
-    return(p);
- out:
-    return NULL;
+	buf_offset = 0;
+	needed = make_acpi_device_path(opts.acpi_hid, opts.acpi_uid, buf,
+					size == 0 ? 0 : size - buf_offset);
+	if (needed < 0)
+		return needed;
+	buf_offset += needed;
+
+	needed = make_pci_device_path(bus, (uint8_t)slot, (uint8_t)func,
+					buf + buf_offset,
+					size == 0 ? 0 : size - buf_offset);
+	if (needed < 0)
+		return needed;
+	buf_offset += needed;
+
+	needed = make_mac_addr_device_path(ifr.ifr_ifru.ifru_hwaddr.sa_data, 0,
+					buf + buf_offset,
+					size == 0 ? 0 : size - buf_offset);
+	if (needed < 0)
+		return needed;
+	buf_offset += needed;
+
+	needed = make_end_device_path(buf + buf_offset, 
+					size == 0 ? 0 : size - buf_offset);
+	if (needed < 0)
+		return needed;
+	buf_offset += needed;
+
+	return buf_offset;
 }
+
+#define extend(buf, oldsize, size) ({					\
+		typeof(buf) __tmp = realloc(buf, (oldsize) + (size));	\
+		if (!__tmp) {						\
+			free(buf);					\
+			return -1;					\
+		}							\
+		buf = __tmp;						\
+		(oldsize) += (size);					\
+	})
 
 /**
  * make_linux_load_option()
  * @data - load option returned
+ * *data_size - load option size returned
  *
  * Returns 0 on error, length of load option created on success.
  */
-static unsigned long
-make_linux_load_option(void *data)
+ssize_t
+make_linux_load_option(uint8_t **data, size_t *data_size)
 {
-	EFI_LOAD_OPTION *load_option = data;
-	char *p = data, *q;
+	EFI_LOAD_OPTION *load_option = NULL;
+	size_t load_option_size = sizeof (*load_option);
 	efi_char16_t description[64];
-	unsigned long datasize=0;
+	uint8_t *buf;
+	size_t needed;
+	off_t buf_offset = 0, desc_offset;
+
+	load_option = calloc(1, sizeof (load_option));
+	if (load_option == NULL)
+		return -1;
+	buf = (uint8_t *)load_option;
+	buf_offset = 0;
 
 	/* Write Attributes */
-	if (opts.active) load_option->attributes = LOAD_OPTION_ACTIVE;
-	else             load_option->attributes = 0;
+	if (opts.active)
+		load_option->attributes = LOAD_OPTION_ACTIVE;
+	else
+		load_option->attributes = 0;
+	buf_offset += sizeof(uint32_t);
 
-	p += sizeof(uint32_t);
 	/* skip writing file_path_list_length */
-	p += sizeof(uint16_t);
+	buf_offset += sizeof(uint16_t);
 	/* Write description.  This is the text that appears on the screen for the load option. */
 	memset(description, 0, sizeof(description));
 	efichar_from_char(description, opts.label, sizeof(description));
-	efichar_strncpy(load_option->description, description, sizeof(description));
-	p += efichar_strsize(load_option->description);
 
-	q = p;
+	needed = (strlen(opts.label) + 1) * 2;
+	extend(load_option, load_option_size, needed);
+	buf = (uint8_t *)load_option;
+
+	efichar_strncpy(load_option->description, description,
+			efichar_strlen(description, -1) + 1);
+	buf_offset += needed;
+	desc_offset = buf_offset;
 
 	if (opts.iface) {
-	      p = (char *)make_net_load_option(p, opts.iface);
+		needed = make_net_load_option(opts.iface, NULL, 0);
+		extend(load_option, load_option_size, needed);
+		buf = (uint8_t *)load_option;
+		make_net_load_option(opts.iface, buf + buf_offset, needed);
+		buf_offset += needed;
+	} else {
+		needed = make_disk_load_option(opts.iface, NULL, 0);
+		extend(load_option, load_option_size, needed);
+		buf = (uint8_t *)load_option;
+		make_disk_load_option(opts.iface, buf + buf_offset, needed);
+		buf_offset += needed;
 	}
-	else {
-	      p = (char *)make_disk_load_option(p, opts.iface);
-	}
-	if (p == NULL)
-		return 0;
 
-	load_option->file_path_list_length = p - q;
+	load_option->file_path_list_length = buf_offset - desc_offset;
 
-	datasize = (uint8_t *)p - (uint8_t *)data;
-	return datasize;
+	*data_size = buf_offset;
+	*data = (uint8_t *)load_option;
+	return *data_size;
 }
 
 /*
  * append_extra_args()
  * appends all arguments from argv[] not snarfed by getopt
- * as one long string onto data, up to maxchars.  allow for nulls
+ * as one long string onto data.
  */
-
-static unsigned long
-append_extra_args_ascii(void *data, unsigned long maxchars)
+static int
+append_extra_args_ascii(uint8_t **data, size_t *data_size)
 {
-	char *p = data;
-	int i, appended=0;
+	uint8_t *new_data = NULL;
+	char *p;
+	int i;
 	unsigned long usedchars=0;
-	if (!data) return 0;
 
+	if (!data)
+		return -1;
 
-	for (i=opts.optind; i < opts.argc && usedchars < maxchars; i++)	{
-		p = strncpy(p, opts.argv[i], maxchars-usedchars-1);
-		p += strlen(p);
-		appended=1;
-
-		usedchars = p - (char *)data;
-
+	for (i=opts.optind; i < opts.argc; i++)	{
+		int l = strlen(opts.argv[i]);
+		int space = (i < opts.argc - 1) ? 1: 0;
+		uint8_t *tmp = realloc(new_data, (usedchars + l + space));
+		if (tmp == NULL)
+			return -1;
+		new_data = tmp;
+		p = (char *)new_data + usedchars;
+		strcpy(p, opts.argv[i]);
+		usedchars += l;
+		p += l;
 		/* Put a space between args */
-		if (i < (opts.argc-1)) {
-
-			p = strncpy(p, " ", maxchars-usedchars-1);
-			p += strlen(p);
-			usedchars = p - (char *)data;
-		}
-
+		if (space)
+			p[usedchars++] = ' ';
+		else
+			p[usedchars++] = '\0';
 	}
-	/* Remember the NULL */
-	if (appended) return strlen(data) + 1;
+
+	if (*data)
+		free(*data);
+	*data = (uint8_t *)new_data;
+	*data_size = usedchars;
+
 	return 0;
 }
 
-static unsigned long
-append_extra_args_unicode(void *data, unsigned long maxchars)
+static int
+append_extra_args_unicode(uint8_t **data, size_t *data_size)
 {
-	char *p = data;
-	int i, appended=0;
+	uint16_t *new_data = NULL, *p;
+	int i;
 	unsigned long usedchars=0;
-	if (!data) return 0;
 
+	if (!data)
+		return -1;
 
-	for (i=opts.optind; i < opts.argc && usedchars < maxchars; i++)	{
-		p += efichar_from_char((efi_char16_t *)p, opts.argv[i],
-				       maxchars-usedchars);
-		usedchars = efichar_strsize(data) - sizeof(efi_char16_t);
-		appended=1;
-
+	for (i = opts.optind; i < opts.argc; i++) {
+		int l = strlen(opts.argv[i]);
+		int space = (i < opts.argc - 1) ? 1 : 0;
+		uint16_t *tmp = realloc(new_data, (usedchars + l + space)
+						  * sizeof (*new_data));
+		if (tmp == NULL)
+			return -1;
+		new_data = tmp;
+		p = new_data + usedchars;
+		usedchars += efichar_from_char((efi_char16_t *)p,
+						opts.argv[i], l);
+		p = new_data + usedchars;
 		/* Put a space between args */
-		if (i < (opts.argc-1)) {
-			p += efichar_from_char((efi_char16_t *)p, " ",
-					       maxchars-usedchars);
-			usedchars = efichar_strsize(data) -
-				sizeof(efi_char16_t);
-		}
+		if (space)
+			usedchars += efichar_from_char(
+						(efi_char16_t *)p, " ", 1);
 	}
 
-	if (appended) return efichar_strsize( (efi_char16_t *)data );
+	if (*data)
+		free(*data);
+	*data = (uint8_t *)new_data;
+	*data_size = usedchars * sizeof (*new_data);
+
 	return 0;
 }
 
-static unsigned long
-append_extra_args_file(void *data, unsigned long maxchars)
+static int
+append_extra_args_file(uint8_t **data, size_t *data_size)
 {
-	char *p = data;
 	char *file = opts.extra_opts_file;
 	int fd = STDIN_FILENO;
 	ssize_t num_read=0;
 	unsigned long appended=0;
+	size_t maxchars = 1024;
+	char *buffer; 
 
-	if (!data) return 0;
+	if (!data) {
+		fprintf(stderr, "internal error\n");
+		exit(1);
+	}
 
 	if (file && strncmp(file, "-", 1))
 		fd = open(file, O_RDONLY);
@@ -738,17 +794,25 @@ append_extra_args_file(void *data, unsigned long maxchars)
 		exit(1);
 	}
 
+	buffer = malloc(maxchars);
 	do {
-		num_read = read(fd, p, maxchars - appended);
+		if (maxchars - appended == 0) {
+			maxchars += 1024;
+			char *tmp = realloc(buffer, maxchars);
+			if (tmp == NULL) {
+				perror("Error reading extra arguments file");
+				exit(1);
+			}
+			buffer = tmp;
+		}
+		num_read = read(fd, buffer + appended, maxchars - appended);
 		if (num_read < 0) {
 			perror("Error reading extra arguments file");
-			break;
-		}
-		else if (num_read>0) {
+			exit(1);
+		} else if (num_read > 0) {
 			appended += num_read;
-			p += num_read;
 		}
-	} while (num_read > 0 && ((maxchars - appended) > 0));
+	} while (num_read > 0);
 
 	if (fd != STDIN_FILENO)
 		close(fd);
@@ -756,68 +820,54 @@ append_extra_args_file(void *data, unsigned long maxchars)
 	return appended;
 }
 
-
-static unsigned long
-append_extra_args(void *data, unsigned long maxchars)
+static int
+add_new_data(uint8_t **data, size_t *data_size,
+		uint8_t *new_data, size_t new_data_size)
 {
-	unsigned long bytes_written=0;
+	uint8_t *tmp = realloc(*data, *data_size + new_data_size);
+	if (tmp == NULL)
+		return -1;
+	memcpy(tmp, *data, *data_size);
+	memcpy(tmp + *data_size, new_data, new_data_size);
+	free(*data);
+	*data = tmp;
+	*data_size = *data_size + new_data_size;
+	return 0;
+}
 
-	if (opts.extra_opts_file)
-		bytes_written += append_extra_args_file(data, maxchars);
+int
+append_extra_args(uint8_t **data, size_t *data_size)
+{
+	int ret = 0;
+	uint8_t *new_data = NULL;
+	size_t new_data_size = 0;
+
+	if (opts.extra_opts_file) {
+		ret = append_extra_args_file(&new_data, &new_data_size);
+		if (ret < 0)
+			return -1;
+	}
+	if (new_data_size) {
+		ret = add_new_data(data, data_size, new_data, new_data_size);
+		free(new_data);
+		if (ret < 0)
+			return -1;
+		new_data_size = 0;
+	}
 
 	if  (opts.unicode)
-		bytes_written += append_extra_args_unicode(data, maxchars - bytes_written);
+		ret = append_extra_args_unicode(&new_data, &new_data_size);
 	else
-		bytes_written += append_extra_args_ascii(data, maxchars - bytes_written);
-	return bytes_written;
-}
+		ret = append_extra_args_ascii(&new_data, &new_data_size);
+	if (ret < 0)
+		return -1;
+	if (new_data_size) {
+		ret = add_new_data(data, data_size, new_data, new_data_size);
+		free(new_data);
+		if (ret < 0)
+			return -1;
+		new_data_size = 0;
+	}
 
-
-
-int
-make_linux_efi_variable(efi_variable_t *var,
-			unsigned int free_number)
-{
-	efi_guid_t guid = EFI_GLOBAL_VARIABLE;
-	char buffer[16];
-	unsigned char *optional_data=NULL;
-	unsigned long load_option_size = 0, opt_data_size=0;
-
-	memset(buffer,    0, sizeof(buffer));
-
-	/* VariableName needs to be BootXXXX */
-	sprintf(buffer, "Boot%04X", free_number);
-
-	efichar_from_char(var->VariableName, buffer, 1024);
-
-	memcpy(&(var->VendorGuid), &guid, sizeof(guid));
-	var->Attributes =
-		EFI_VARIABLE_NON_VOLATILE |
-		EFI_VARIABLE_BOOTSERVICE_ACCESS |
-		EFI_VARIABLE_RUNTIME_ACCESS;
-
-	/* Set Data[] and DataSize */
-
-	load_option_size =  make_linux_load_option(var->Data);
-
-	if (!load_option_size) return 0;
-
-	/* Set OptionalData (passed as binary to the called app) */
-	optional_data = var->Data + load_option_size;
-	opt_data_size = append_extra_args(optional_data,
-				  sizeof(var->Data) - load_option_size);
-	var->DataSize = load_option_size + opt_data_size;
-	return var->DataSize;
-}
-
-
-int
-variable_to_name(efi_variable_t *var, char *name)
-{
-	char *p = name;
-	efichar_to_char(p, var->VariableName, PATH_MAX);
-	p += strlen(p);
-	p += sprintf(p, "-");
-	efi_guid_unparse(&var->VendorGuid, p);
-	return strlen(name);
+	return 0;
 }

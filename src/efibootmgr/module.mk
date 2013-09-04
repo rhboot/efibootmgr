@@ -7,11 +7,11 @@ efibootmgr_FULLOBJECT :=  \
 	$(patsubst %, $(efibootmgr_SRCDIR)/%, $(efibootmgr_OBJECT))
 
 efibootmgr_LIBS    := crc32.o disk.o efi.o efichar.o gpt.o scsi_ioctls.o \
-                      unparse_path.o efivars_procfs.o efivars_sysfs.o
+                      unparse_path.o
 efibootmgr_LIBDIR  := src/lib
 efibootmgr_FULLLIB := \
 	$(patsubst %,$(efibootmgr_LIBDIR)/%,$(efibootmgr_LIBS))
-LIBS = -lpci -lz
+LIBS = -lpci -lz -lefivar
 
 ALLDEPS += $(efibootmgr_FULLTARGET)
 CLEANLIST += $(efibootmgr_FULLTARGET)

@@ -22,6 +22,7 @@
 #define __STDC_FORMAT_MACROS
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <inttypes.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -128,10 +129,15 @@ unparse_acpi_path(char *buffer, EFI_DEVICE_PATH *path)
 static int
 unparse_vendor_path(char *buffer, VENDOR_DEVICE_PATH *path)
 {
-	char text_guid[40], *p = buffer;
+	char *text_guid, *p = buffer;
 	unsigned char *q = (uint8_t *)path + 20;
-	efi_guid_unparse(&path->vendor_guid, text_guid);
+	int rc;
+
+	rc = efi_guid_to_str(&path->vendor_guid, &text_guid);
+	if (rc < 0)
+		return -1;
 	p += sprintf(p, "Vendor(%s,", text_guid);
+	free(text_guid);
 	p += unparse_raw(p, q, path->length - 20);
 	p += sprintf(p, ")");
 	return p - buffer;
@@ -247,6 +253,7 @@ unparse_media_hard_drive_path(char *buffer, EFI_DEVICE_PATH *path)
 	HARDDRIVE_DEVICE_PATH *hd = (HARDDRIVE_DEVICE_PATH *)path;
 	char text_uuid[40], *sig=text_uuid;
 	char a[16], b[16], c[16];
+	int rc = 0;
 	
 	switch (hd->signature_type) {
 	case 0x00:
@@ -257,17 +264,22 @@ unparse_media_hard_drive_path(char *buffer, EFI_DEVICE_PATH *path)
 							 sizeof(hd->signature)));
 		break;
 	case 0x02: /* GPT */
-                efi_guid_unparse((efi_guid_t *)hd->signature, sig);
+		rc = efi_guid_to_str((efi_guid_t *)hd->signature, &sig);
+		if (rc < 0)
+			return rc;
 		break;
 	default:
+		return -1;
 		break;
 	}
 
-	return sprintf(buffer, "HD(%x,%" PRIx64 ",%" PRIx64 ",%s)",
+	rc = sprintf(buffer, "HD(%x,%" PRIx64 ",%" PRIx64 ",%s)",
 		       get(a, hd->part_num),
 		       get(b, hd->start),
 		       get(c, hd->size),
 		       sig);
+	free(sig);
+	return rc;
 }
 
 
@@ -279,10 +291,11 @@ unparse_media_path(char *buffer, EFI_DEVICE_PATH *path)
 	CDROM_DEVICE_PATH *cdrom = (CDROM_DEVICE_PATH *)path;
 	MEDIA_PROTOCOL_DEVICE_PATH *media = (MEDIA_PROTOCOL_DEVICE_PATH *)path;
 	FILE_PATH_DEVICE_PATH *file = (FILE_PATH_DEVICE_PATH *)path;
-	char text_guid[40], *p = buffer;
+	char *text_guid, *p = buffer;
 	char file_name[80];
 	memset(file_name, 0, sizeof(file_name));
 	char a[16], b[16], c[16];
+	int rc;
 
 	switch (path->subtype) {
 	case 1:
@@ -300,10 +313,15 @@ unparse_media_path(char *buffer, EFI_DEVICE_PATH *path)
 		return sprintf(p, "File(%s)", file_name);
 		break;
 	case 5:
-		efi_guid_unparse(&media->guid, text_guid);
-		return sprintf(buffer, "Media(%s)", text_guid);
+		rc = efi_guid_to_str(&media->guid, &text_guid);
+		if (rc < 0)
+			return rc;
+		rc = sprintf(buffer, "Media(%s)", text_guid);
+		free(text_guid);
+		return rc;
 		break;
 	default:
+		return -1;
 		break;
 	}
 	return 0;
