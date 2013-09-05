@@ -258,15 +258,8 @@ make_boot_var(list_t *boot_list)
 	boot->num = free_number;
 	boot->guid = EFI_GLOBAL_VARIABLE;
 	rc = asprintf(&boot->name, "Boot%04X", free_number);
-	if (!rc) {
-err_boot_entry:
-		if (boot->name)
-			free(boot->name);
-		if (boot->data)
-			free(boot->data);
-		free(boot);
-		return NULL;
-	}
+	if (rc < 0)
+		goto err_boot_entry;
 	boot->attributes = EFI_VARIABLE_NON_VOLATILE |
 			    EFI_VARIABLE_BOOTSERVICE_ACCESS |
 			    EFI_VARIABLE_RUNTIME_ACCESS;
@@ -276,6 +269,13 @@ err_boot_entry:
 		goto err_boot_entry;
 	list_add_tail(&boot->list, boot_list);
 	return boot;
+err_boot_entry:
+	if (boot->name)
+		free(boot->name);
+	if (boot->data)
+		free(boot->data);
+	free(boot);
+	return NULL;
 }
 
 static int
