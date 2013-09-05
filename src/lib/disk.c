@@ -452,8 +452,7 @@ msdos_disk_get_partition_info (int fd, legacy_mbr *mbr,
 			
 		/* Write it to the disk */
 		lseek(fd, 0, SEEK_SET);
-		write(fd, mbr, sizeof(*mbr));
-
+		rc = write(fd, mbr, sizeof(*mbr));
 	}
 	*(uint32_t *)signature = mbr->unique_mbr_signature;
 		
