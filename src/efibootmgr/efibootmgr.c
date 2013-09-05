@@ -1057,7 +1057,7 @@ main(int argc, char **argv)
 
 	if (opts.active >= 0) {
 		if (opts.bootnum == -1) {
-			fprintf(stderr, "\nYou must specify a boot entry to delete (see the -b option).\n\n");
+			fprintf(stderr, "\nYou must specify a boot entry to activate (see the -b option).\n\n");
 			return 1;
 		}
 		else
