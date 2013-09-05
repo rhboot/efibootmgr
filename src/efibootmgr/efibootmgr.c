@@ -580,7 +580,7 @@ parse_boot_order(char *buffer, uint16_t **order, size_t *length)
 		fprintf(stderr, "\nInvalid boot order: %s\n\n", buffer);
 		return -1;
 	}
-	len = (len / 5) + (len % 5 == 4 ? 1: 0);
+	len = (len / 5) + 1;
 
 	data_size = len * sizeof (*data);
 	data = malloc(data_size);
