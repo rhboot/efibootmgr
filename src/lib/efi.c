@@ -477,7 +477,7 @@ make_disk_load_option(char *disk, uint8_t *buf, size_t size)
 	uint8_t mbr_type=0, signature_type=0;
 	uint64_t part_start=0, part_size=0;
 	efi_char16_t os_loader_path[40];
-	size_t needed;
+	size_t needed = 0;
 	off_t buf_offset = 0;
 
 	memset(signature, 0, sizeof(signature));
