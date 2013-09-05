@@ -317,7 +317,7 @@ add_to_boot_order(uint16_t num)
 static int
 remove_from_boot_order(uint16_t num)
 {
-	efi_variable_t *boot_order;
+	efi_variable_t *boot_order = NULL;
 	uint64_t new_data_size;
 	uint16_t *new_data, *old_data;
 	int old_i,new_i;
@@ -331,7 +331,7 @@ remove_from_boot_order(uint16_t num)
 	   boot order.  Simply copy the array, skipping the
 	   entry we're deleting.
 	*/
-	old_data = (uint16_t *)&(boot_order->data);
+	old_data = (uint16_t *)(boot_order->data);
 	/* Start with the same size */
 	new_data_size = boot_order->data_size - sizeof (*new_data);
 	new_data = malloc(new_data_size);
@@ -689,7 +689,7 @@ static void
 show_boot_order()
 {
 	int rc;
-	efi_variable_t *boot_order;
+	efi_variable_t *boot_order = NULL;
 	uint16_t *data;
 
 	rc = read_boot_order(&boot_order);
