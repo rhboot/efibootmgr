@@ -1,15 +1,13 @@
   default: all
 
   SIGNING_KEY := jordan_hargrave
-  RELEASE_DATE := "23-Jan-2013"
   RELEASE_MAJOR := 0
   RELEASE_MINOR := 6
   RELEASE_SUBLEVEL := 0
-  RELEASE_EXTRALEVEL :=
   RELEASE_NAME := efibootmgr
-  RELEASE_STRING := $(RELEASE_NAME)-$(RELEASE_MAJOR).$(RELEASE_MINOR).$(RELEASE_SUBLEVEL)$(RELEASE_EXTRALEVEL)
+  RELEASE_STRING := $(RELEASE_NAME)-$(RELEASE_MAJOR).$(RELEASE_MINOR).$(RELEASE_SUBLEVEL)
 
-  CFLAGS = $(EXTRA_CFLAGS) -DEFIBOOTMGR_VERSION=\"$(RELEASE_MAJOR).$(RELEASE_MINOR).$(RELEASE_SUBLEVEL)$(RELEASE_EXTRALEVEL)\" \
+  CFLAGS = $(EXTRA_CFLAGS) -DEFIBOOTMGR_VERSION=\"$(RELEASE_MAJOR).$(RELEASE_MINOR).$(RELEASE_SUBLEVEL)\" \
 	    -Wall -g -D_FILE_OFFSET_BITS=64
 
   MODULES := src
@@ -34,7 +32,7 @@
 #Include make rules from each submodule (subdirectory)
   include $(patsubst %,%/module.mk,$(MODULES))
 
-  .PHONY: all clean install_list install install_link post_install tarball echotree default
+  .PHONY: all clean install_list install install_link post_install tarball echotree default archive test-archive
 
   all:  $(ALLDEPS) 
   clean: clean_list $(CLEANDEPS) 
@@ -52,16 +50,30 @@
 
   post_install: 
 
-  tarball: clean
-	-rm $(RELEASE_NAME)*.tar.gz
-	cp -a ../$(RELEASE_NAME) ../$(RELEASE_STRING)
-	find ../$(RELEASE_STRING) -name CVS -type d -depth -exec rm -rf \{\} \;
-	sync; sync; sync;
-	cd ..; tar cvzf $(RELEASE_STRING).tar.gz --exclude=.git --exclude=\*~ $(RELEASE_STRING)
-	mv ../$(RELEASE_STRING).tar.gz .
-	rm -rf ../$(RELEASE_STRING)
-	gpg  -a -u $(SIGNING_KEY) --output $(RELEASE_STRING).tar.gz.sign --detach-sig $(RELEASE_STRING).tar.gz
+GITTAG = $(RELEASE_STRING)
 
+test-archive:
+	@rm -rf /tmp/$(RELEASE_STRING) /tmp/$(RELEASE_STRING)-tmp
+	@mkdir -p /tmp/$(RELEASE_STRING)-tmp
+	@git archive --format=tar $(shell git branch | awk '/^*/ { print $$2 }') | ( cd /tmp/$(RELEASE_STRING)-tmp/ ; tar x )
+	@git diff | ( cd /tmp/$(RELEASE_STRING)-tmp/ ; patch -s -p1 -b -z .gitdiff )
+	@mv /tmp/$(RELEASE_STRING)-tmp/ /tmp/$(RELEASE_STRING)/
+	@dir=$$PWD; cd /tmp; tar -c --bzip2 -f $$dir/$(RELEASE_STRING).tar.bz2 $(RELEASE_STRING)
+	@rm -rf /tmp/$(RELEASE_STRING)
+	@echo "The archive is in $(RELEASE_STRING).tar.bz2"
+
+archive:
+	git tag $(GITTAG) refs/heads/master
+	@rm -rf /tmp/$(RELEASE_STRING) /tmp/$(RELEASE_STRING)-tmp
+	@mkdir -p /tmp/$(RELEASE_STRING)-tmp
+	@git archive --format=tar $(GITTAG) | ( cd /tmp/$(RELEASE_STRING)-tmp/ ; tar x )
+	@mv /tmp/$(RELEASE_STRING)-tmp/ /tmp/$(RELEASE_STRING)/
+	@dir=$$PWD; cd /tmp; tar -c --bzip2 -f $$dir/$(RELEASE_STRING).tar.bz2 $(RELEASE_STRING)
+	@rm -rf /tmp/$(RELEASE_STRING)
+	gpg  -a -u $(SIGNING_KEY) --output $(RELEASE_STRING).tar.gz.sign --detach-sig $(RELEASE_STRING).tar.gz
+	@echo "The archive is in $(RELEASE_STRING).tar.bz2"
+
+tarball: archive
 
 #The rest of the docs...
   doc_TARGETS += COPYING README INSTALL
