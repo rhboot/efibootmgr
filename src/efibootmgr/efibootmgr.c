@@ -850,7 +850,7 @@ parse_opts(int argc, char **argv)
 			{"version",                no_argument, 0, 'V'},
 			{"write-signature",        no_argument, 0, 'w'},
 			{"append-binary-args", required_argument, 0, '@'},
-			{"help",                   no_argument, 0,   2},
+			{"help",                   no_argument, 0, 'h'},
 			{0, 0, 0, 0}
 		};
 
@@ -907,6 +907,12 @@ parse_opts(int argc, char **argv)
 		case 'g':
 			opts.forcegpt = 1;
 			break;
+
+		case 'h';
+			usage();
+			exit(0);
+			break;
+
 		case 'H':
 			rc = sscanf(optarg, "%x", &num);
 			if (rc == 1) opts.acpi_hid = num;
@@ -998,10 +1004,6 @@ parse_opts(int argc, char **argv)
 		case 'w':
 			opts.write_signature = 1;
 			break;
-
-		case 2:
-			usage();
-			exit(1);
 
 		default:
 			usage();
