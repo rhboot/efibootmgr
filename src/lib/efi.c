@@ -449,7 +449,7 @@ make_edd30_device_path(int fd, uint8_t *buf, size_t size)
 	return buf_offset;
 }
 
-char *
+static char *
 tilt_slashes(char *s)
 {
 	char *p;
