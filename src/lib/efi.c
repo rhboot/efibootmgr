@@ -541,6 +541,31 @@ make_disk_load_option(char *disk, uint8_t *buf, size_t size)
 	return buf_offset;
 }
 
+static int
+get_virt_pci(char *name, unsigned char *bus,
+		unsigned char *device, unsigned char *function)
+{
+	char inbuf[64], outbuf[128];
+	ssize_t lnksz;
+
+	if (snprintf(inbuf, sizeof inbuf, "/sys/bus/virtio/devices/%s",
+			name) >= sizeof inbuf) {
+		return -1;
+	}
+
+	lnksz = readlink(inbuf, outbuf, sizeof outbuf);
+	if (lnksz == -1 || lnksz == sizeof outbuf) {
+		return -1;
+	}
+
+	outbuf[lnksz] = '\0';
+	if (sscanf(outbuf, "../../../devices/pci0000:00/0000:%hhx:%hhx.%hhx",
+			bus, device, function) != 3) {
+		return -1;
+	}
+	return 0;
+}
+
 /**
  * make_net_load_option()
  * @iface - interface name (input)
@@ -554,7 +579,7 @@ make_net_load_option(char *iface, uint8_t *buf, size_t size)
 {
 	/* copied pretty much verbatim from the ethtool source */
 	int fd = 0, err; 
-	int bus, slot, func;
+	unsigned char bus, slot, func;
 	struct ifreq ifr;
 	struct ethtool_drvinfo drvinfo;
 	size_t needed;
@@ -576,13 +601,22 @@ make_net_load_option(char *iface, uint8_t *buf, size_t size)
 		return -1;
 	}
 
-	/* The domain part was added in 2.6 kernels.  Test for that first. */
-	err = sscanf(drvinfo.bus_info, "%*x:%2x:%2x.%x", &bus, &slot, &func);
-	if (err != 3) {
-		err = sscanf(drvinfo.bus_info, "%2x:%2x.%x", &bus, &slot, &func);
+	if (strncmp(drvinfo.bus_info, "virtio", 6) == 0) {
+		err = get_virt_pci(drvinfo.bus_info, &bus, &slot, &func);
+		if (err < 0)
+			return err;
+	} else {
+		/* The domain part was added in 2.6 kernels.
+		 * Test for that first. */
+		err = sscanf(drvinfo.bus_info, "%*x:%hhx:%hhx.%hhx",
+						&bus, &slot, &func);
 		if (err != 3) {
-			perror("Couldn't parse device location string.");
-			return -1;
+			err = sscanf(drvinfo.bus_info, "%hhx:%hhx.%hhx",
+						&bus, &slot, &func);
+			if (err != 3) {
+				perror("Couldn't parse device location string.");
+				return -1;
+			}
 		}
 	}
 
