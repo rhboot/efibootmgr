@@ -746,7 +746,7 @@ append_extra_args_unicode(uint8_t **data, size_t *data_size)
 		return -1;
 
 	for (i = opts.optind; i < opts.argc; i++) {
-		int l = strlen(opts.argv[i]);
+		int l = strlen(opts.argv[i]) + 1;
 		int space = (i < opts.argc - 1) ? 1 : 0;
 		uint16_t *tmp = realloc(new_data, (usedchars + l + space)
 						  * sizeof (*new_data));
@@ -755,12 +755,14 @@ append_extra_args_unicode(uint8_t **data, size_t *data_size)
 		new_data = tmp;
 		p = new_data + usedchars;
 		usedchars += efichar_from_char((efi_char16_t *)p,
-						opts.argv[i], l);
+						opts.argv[i], l * 2)
+				/ sizeof (*new_data);
 		p = new_data + usedchars;
 		/* Put a space between args */
 		if (space)
 			usedchars += efichar_from_char(
-						(efi_char16_t *)p, " ", 1);
+						(efi_char16_t *)p, " ", 2)
+				/ sizeof (*new_data);
 	}
 
 	if (*data)
