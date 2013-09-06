@@ -305,12 +305,34 @@ read_boot_order(efi_variable_t **boot_order)
 static int
 add_to_boot_order(uint16_t num)
 {
+	efi_variable_t *boot_order = NULL;
+	uint64_t new_data_size;
+	uint16_t *new_data, *old_data;
 	int rc;
 
-	rc = efi_append_variable(EFI_GLOBAL_VARIABLE, "BootOrder",
-		(uint8_t *)&num, sizeof (num),
-		EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_BOOTSERVICE_ACCESS |
-		EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_APPEND_WRITE);
+	rc = read_boot_order(&boot_order);
+	if (rc < 0)
+		return rc;
+
+	/* We've now got an array (in boot_order->data) of the
+	 * boot order.  First add our entry, then copy the old array.
+	 */
+	old_data = (uint16_t *)boot_order->data;
+	new_data_size = boot_order->data_size + sizeof(uint16_t);
+	new_data = malloc(new_data_size);
+
+	new_data[0] = num;
+	memcpy(new_data+1, old_data, boot_order->data_size);
+
+	/* Now new_data has what we need */
+	free(boot_order->data);
+	boot_order->data = (uint8_t *)new_data;
+	boot_order->data_size = new_data_size;
+
+	rc = efi_set_variable(EFI_GLOBAL_GUID, "BootOrder", boot_order->data,
+			boot_order->data_size, boot_order->attributes);
+	free(boot_order->data);
+	free(boot_order);
 	return rc;
 }
 
