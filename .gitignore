@@ -1,1 +1,6 @@
+.*.sw?
+*.E
+*.o
+*.S
+efibootmgr-*.tar.*
 core.*
