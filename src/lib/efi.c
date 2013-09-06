@@ -476,7 +476,7 @@ make_disk_load_option(char *disk, uint8_t *buf, size_t size)
 	int rc, edd_version=0;
 	uint8_t mbr_type=0, signature_type=0;
 	uint64_t part_start=0, part_size=0;
-	efi_char16_t os_loader_path[40];
+	efi_char16_t *os_loader_path;
 	size_t needed = 0;
 	off_t buf_offset = 0;
 
@@ -519,10 +519,15 @@ make_disk_load_option(char *disk, uint8_t *buf, size_t size)
 		return needed;
 	buf_offset += needed;
 
+	needed = (strlen(opts.loader) + 1) * sizeof (*os_loader_path);
+	os_loader_path = malloc(needed);
+	if (!os_loader_path)
+		return -1;
 	efichar_from_char(os_loader_path, tilt_slashes(opts.loader),
-			sizeof(os_loader_path));
+			needed);
 	needed = make_file_path_device_path(os_loader_path, buf + buf_offset,
 					size == 0 ? 0 : size - buf_offset);
+	free(os_loader_path);
 	if (needed < 0)
 		return needed;
 	buf_offset += needed;
