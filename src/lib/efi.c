@@ -827,9 +827,7 @@ add_new_data(uint8_t **data, size_t *data_size,
 	uint8_t *tmp = realloc(*data, *data_size + new_data_size);
 	if (tmp == NULL)
 		return -1;
-	memcpy(tmp, *data, *data_size);
 	memcpy(tmp + *data_size, new_data, new_data_size);
-	free(*data);
 	*data = tmp;
 	*data_size = *data_size + new_data_size;
 	return 0;
