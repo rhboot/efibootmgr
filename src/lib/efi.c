@@ -727,6 +727,9 @@ append_extra_args_ascii(uint8_t **data, size_t *data_size)
 			p[usedchars] = '\0';
 	}
 
+	if (!new_data)
+		return 0;
+
 	if (*data)
 		free(*data);
 	*data = (uint8_t *)new_data;
@@ -765,6 +768,9 @@ append_extra_args_unicode(uint8_t **data, size_t *data_size)
 				/ sizeof (*new_data);
 	}
 
+	if (!new_data)
+		return 0;
+
 	if (*data)
 		free(*data);
 	*data = (uint8_t *)new_data;
@@ -780,7 +786,7 @@ append_extra_args_file(uint8_t **data, size_t *data_size)
 	int fd = STDIN_FILENO;
 	ssize_t num_read=0;
 	unsigned long appended=0;
-	size_t maxchars = 1024;
+	size_t maxchars = 0;
 	char *buffer; 
 
 	if (!data) {
@@ -818,6 +824,9 @@ append_extra_args_file(uint8_t **data, size_t *data_size)
 
 	if (fd != STDIN_FILENO)
 		close(fd);
+
+	*data = (uint8_t *)buffer;
+	*data_size = appended;
 
 	return appended;
 }
