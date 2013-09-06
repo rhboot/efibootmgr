@@ -1,6 +1,7 @@
 .*.sw?
 *.E
 *.o
+*.patch
 *.S
 efibootmgr-*.tar.*
 core.*
