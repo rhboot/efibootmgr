@@ -370,7 +370,7 @@ read_boot_u16(const char *name)
 	if (rc < 0)
 		return rc;
 
-	rc = (data[0] & 0xff << 8) | (data[1] & 0xff);
+	rc = (data[0] & 0xff) | ((data[1] & 0xff) << 8);
 	return rc;
 }
 
