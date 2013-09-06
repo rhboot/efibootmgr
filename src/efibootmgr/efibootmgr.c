@@ -818,7 +818,7 @@ parse_opts(int argc, char **argv)
 			opts.forcegpt = 1;
 			break;
 
-		case 'h';
+		case 'h':
 			usage();
 			exit(0);
 			break;
