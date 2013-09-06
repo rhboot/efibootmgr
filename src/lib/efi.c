@@ -710,7 +710,7 @@ append_extra_args_ascii(uint8_t **data, size_t *data_size)
 		return -1;
 
 	for (i=opts.optind; i < opts.argc; i++)	{
-		int l = strlen(opts.argv[i]);
+		int l = strlen(opts.argv[i]) + 1;
 		int space = (i < opts.argc - 1) ? 1: 0;
 		uint8_t *tmp = realloc(new_data, (usedchars + l + space));
 		if (tmp == NULL)
@@ -724,7 +724,7 @@ append_extra_args_ascii(uint8_t **data, size_t *data_size)
 		if (space)
 			p[usedchars++] = ' ';
 		else
-			p[usedchars++] = '\0';
+			p[usedchars] = '\0';
 	}
 
 	if (*data)
