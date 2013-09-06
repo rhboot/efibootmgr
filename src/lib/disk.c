@@ -301,17 +301,6 @@ disk_get_ide_pci(int fd,
 	return 0;
 }
 
-
-
-#if 0
-/* this is a list of devices */
-static int
-disk_get_md_parts(int fd)
-{
-	return 0;
-}
-#endif
-
 int
 disk_get_pci(int fd,
 	     int *interface_type,
