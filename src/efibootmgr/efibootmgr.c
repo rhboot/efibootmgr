@@ -361,16 +361,21 @@ static int
 read_boot_u16(const char *name)
 {
 	efi_guid_t guid = EFI_GLOBAL_GUID;
-	uint8_t *data = NULL;
+	uint16_t *data = NULL;
 	size_t data_size = 0;
 	uint32_t attributes = 0;
 	int rc;
 
-	rc = efi_get_variable(guid, name, &data, &data_size, &attributes);
+	rc = efi_get_variable(guid, name, (uint8_t **)&data, &data_size,
+				&attributes);
 	if (rc < 0)
 		return rc;
+	if (data_size != 2) {
+		errno = EINVAL;
+		return -1;
+	}
 
-	rc = (data[0] & 0xff) | ((data[1] & 0xff) << 8);
+	rc = data[0];
 	return rc;
 }
 
