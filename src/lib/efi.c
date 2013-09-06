@@ -617,15 +617,15 @@ make_net_load_option(char *iface, uint8_t *buf, size_t size)
 	return buf_offset;
 }
 
-#define extend(buf, oldsize, size) ({					\
+#define extend(buf, oldsize, size) ((void *)({				\
 		typeof(buf) __tmp = realloc(buf, (oldsize) + (size));	\
 		if (!__tmp) {						\
 			free(buf);					\
 			return -1;					\
 		}							\
-		buf = __tmp;						\
 		(oldsize) += (size);					\
-	})
+		buf = __tmp;						\
+	}))
 
 /**
  * make_linux_load_option()
@@ -664,8 +664,7 @@ make_linux_load_option(uint8_t **data, size_t *data_size)
 	efichar_from_char(description, opts.label, sizeof(description));
 
 	needed = (strlen(opts.label) + 1) * 2;
-	extend(load_option, load_option_size, needed);
-	buf = (uint8_t *)load_option;
+	buf = extend(load_option, load_option_size, needed);
 
 	efichar_strncpy(load_option->description, description,
 			efichar_strlen(description, -1) + 1);
@@ -674,14 +673,12 @@ make_linux_load_option(uint8_t **data, size_t *data_size)
 
 	if (opts.iface) {
 		needed = make_net_load_option(opts.iface, NULL, 0);
-		extend(load_option, load_option_size, needed);
-		buf = (uint8_t *)load_option;
+		buf = extend(load_option, load_option_size, needed);
 		make_net_load_option(opts.iface, buf + buf_offset, needed);
 		buf_offset += needed;
 	} else {
 		needed = make_disk_load_option(opts.iface, NULL, 0);
-		extend(load_option, load_option_size, needed);
-		buf = (uint8_t *)load_option;
+		buf = extend(load_option, load_option_size, needed);
 		make_disk_load_option(opts.iface, buf + buf_offset, needed);
 		buf_offset += needed;
 	}
