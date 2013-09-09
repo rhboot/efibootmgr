@@ -727,7 +727,7 @@ usage()
 	printf("\t-V | --version          return version and exit\n");
 	printf("\t-w | --write-signature  write unique sig to MBR if needed\n");
 	printf("\t-@ | --append-binary-args file  append extra args from file (use \"-\" for stdin)\n");
-	printf("\t   | --help             show help/usage\n");
+	printf("\t-h | --help             show help/usage\n");
 }
 
 static void
@@ -792,7 +792,8 @@ parse_opts(int argc, char **argv)
 		};
 
 		c = getopt_long (argc, argv,
-				 "AaBb:cd:e:E:gH:i:l:L:n:No:Op:qt:TuU:v::Vw@:",
+				 "AaBb:cd:e:E:gH:i:l:L:n:No:Op:qt:TuU:v::Vw"
+				 "@:h",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
