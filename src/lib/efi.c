@@ -640,7 +640,8 @@ make_net_load_option(char *iface, uint8_t *buf, size_t size)
 		return needed;
 	buf_offset += needed;
 
-	needed = make_mac_addr_device_path(ifr.ifr_ifru.ifru_hwaddr.sa_data, 0,
+	needed = make_mac_addr_device_path(ifr.ifr_ifru.ifru_hwaddr.sa_data,
+					ifr.ifr_ifru.ifrw_hwaddr.sa_family,
 					buf + buf_offset,
 					size == 0 ? 0 : size - buf_offset);
 	if (needed < 0)
