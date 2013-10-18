@@ -22,11 +22,15 @@
 #define _SCSI_IOCTLS_H 
 
 #include <stdint.h>
+#include <stddef.h>
 
 
 /* Snagged from linux/include/scsi/scsi.h */
 #define SCSI_IOCTL_GET_IDLUN 0x5382
 #define SCSI_IOCTL_GET_PCI   0x5387
+
+/* see scsi_ioctl_get_pci() in linux/drivers/scsi/scsi_ioctl.c */
+#define SLOT_NAME_SIZE ((size_t)21)
 
 typedef struct scsi_idlun {
 	uint32_t dev_id;
@@ -35,7 +39,7 @@ typedef struct scsi_idlun {
 
 
 inline int get_scsi_idlun(int fd, Scsi_Idlun *idlun);
-inline int get_scsi_pci(int fd, char *slot_name);
+int get_scsi_pci(int fd, char *slot_name, size_t size);
 int idlun_to_components (Scsi_Idlun *idlun,
 			 unsigned char *host,
 			 unsigned char *channel,

@@ -49,10 +49,17 @@ get_scsi_idlun(int fd, Scsi_Idlun *idlun)
 	return ioctl(fd, SCSI_IOCTL_GET_IDLUN, idlun);
 }
 
-inline int 
-get_scsi_pci(int fd, char *slot_name)
+int 
+get_scsi_pci(int fd, char *slot_name, size_t size)
 {
-	return ioctl(fd, SCSI_IOCTL_GET_PCI, slot_name);
+	char buf[SLOT_NAME_SIZE] = "";
+	int rc;
+
+	rc = ioctl(fd, SCSI_IOCTL_GET_PCI, buf);
+	if (rc == 0) {
+		snprintf(slot_name, size, "%s", buf);
+	}
+	return rc;
 }
 
 
@@ -68,7 +75,7 @@ usage(char **argv)
 int main(int argc, char **argv)
 {
 	Scsi_Idlun idlun;
-	char slot_name[8];
+	char slot_name[SLOT_NAME_SIZE] = "unknown";
 	int fd = 0, rc = 0;
 
 	memset(&idlun, 0, sizeof(idlun));
@@ -81,7 +88,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	rc = get_scsi_pci(fd, slot_name);
+	rc = get_scsi_pci(fd, slot_name, sizeof slot_name);
 	if (rc) {
 		perror("Unable to get_scsi_pci()");
 	}

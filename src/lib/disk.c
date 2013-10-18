@@ -209,7 +209,7 @@ disk_get_scsi_pci(int fd,
 {
 	int rc, usefd=fd;
 	struct stat buf;
-	char slot_name[8];
+	char slot_name[SLOT_NAME_SIZE];
 	unsigned int b=0,d=0,f=0;
 	memset(&buf, 0, sizeof(buf));
 	rc = fstat(fd, &buf);
@@ -227,7 +227,7 @@ disk_get_scsi_pci(int fd,
 		return 1;
 	}
 
-	rc = get_scsi_pci(usefd, slot_name);
+	rc = get_scsi_pci(usefd, slot_name, sizeof slot_name);
 	if (rc) {
 		perror("get_scsi_pci");
 		return rc;
