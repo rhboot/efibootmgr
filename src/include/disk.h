@@ -69,6 +69,7 @@ enum _interface_type {interface_type_unknown,
 unsigned int lcm(unsigned int x, unsigned int y);
 
 int disk_get_pci(int fd,
+		 int *interface_type,
 		 unsigned char *bus,
 		 unsigned char *device,
 		 unsigned char *function);

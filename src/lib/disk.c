@@ -242,20 +242,21 @@ disk_get_md_parts(int fd)
 
 int
 disk_get_pci(int fd,
+	     int *interface_type,
 	     unsigned char *bus,
 	     unsigned char *device,
 	     unsigned char *function)
 {
-	int interface_type=interface_type_unknown;
 	unsigned int controllernum=0, disknum=0;
 	unsigned char part=0;
-	
+
+	*interface_type=interface_type_unknown;
 	disk_info_from_fd(fd,
-			  &interface_type,
-			  &controllernum, 
+			  interface_type,
+			  &controllernum,
 			  &disknum,
 			  &part);
-	switch (interface_type) {
+	switch (*interface_type) {
 	case ata:
 		return disk_get_ide_pci(fd, bus, device, function);
 		break;
@@ -516,11 +517,11 @@ disk_get_partition_info (int fd,
 int
 main (int argc, char *argv[])
 {
-	int fd, rc;
+	int fd, rc, interface_type;
 	unsigned char bus=0,device=0,func=0;
 	if (argc <= 1) return 1;
 	fd = open(argv[1], O_RDONLY|O_DIRECT);
-	rc = disk_get_pci(fd, &bus, &device, &func);
+	rc = disk_get_pci(fd, &interface_type, &bus, &device, &func);
 	if (!rc) {
 		printf("PCI %02x:%02x.%02x\n", bus, device, func);
 	}

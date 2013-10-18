@@ -470,14 +470,14 @@ make_file_path_device_path(void *dest, efi_char16_t *name)
 static long
 make_edd30_device_path(int fd, void *buffer)
 {
-	int rc=0;
+	int rc=0, interface_type;
 	unsigned char bus=0, device=0, function=0;
 	Scsi_Idlun idlun;
 	unsigned char host=0, channel=0, id=0, lun=0;
 	char *p = buffer;
 
 
-	rc = disk_get_pci(fd, &bus, &device, &function);
+	rc = disk_get_pci(fd, &interface_type, &bus, &device, &function);
 	if (rc) return 0;
 
 	memset(&idlun, 0, sizeof(idlun));
