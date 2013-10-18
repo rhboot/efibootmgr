@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <stdint.h>
+#include <inttypes.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <fcntl.h>
@@ -177,15 +177,14 @@ disk_info_from_fd(int fd, struct disk_info *info)
 }
 
 static int
-disk_get_virt_pci(unsigned disknum, unsigned part, unsigned char *bus,
+disk_get_virt_pci(const struct disk_info *info, unsigned char *bus,
 		  unsigned char *device, unsigned char *function)
 {
 	char inbuf[32], outbuf[128];
 	ssize_t lnksz;
 
-	if (snprintf(inbuf, sizeof inbuf, "/sys/dev/block/%d:%u",
-		     get_virtblk_major(),
-		     disknum << 4 | part) >= sizeof inbuf) {
+	if (snprintf(inbuf, sizeof inbuf, "/sys/dev/block/%" PRIu64 ":%u",
+		     info->major, info->minor) >= sizeof inbuf) {
 		return 1;
 	}
 
@@ -333,8 +332,7 @@ disk_get_pci(int fd,
 	case md:
 		break;
 	case virtblk:
-		return disk_get_virt_pci(info.disknum, info.part, bus, device,
-			     function);
+		return disk_get_virt_pci(&info, bus, device, function);
 	default:
 		break;
 	}
