@@ -26,12 +26,54 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
 #include "disk.h"
 #include "scsi_ioctls.h"
 #include "gpt.h"
 #include "efibootmgr.h"
 
 #define BLKSSZGET  _IO(0x12,104)	/* get block device sector size */
+
+/* The major device number for virtio-blk disks is decided on module load time.
+ */
+static int
+get_virtblk_major(void)
+{
+	static int cached;
+	FILE *f;
+	char line[256];
+
+	if (cached != 0) {
+		return cached;
+	}
+
+	cached = -1;
+	f = fopen("/proc/devices", "r");
+	if (f == NULL) {
+		fprintf(stderr, "%s: opening /proc/devices: %s\n", __func__,
+			strerror(errno));
+		return cached;
+	}
+	while (fgets(line, sizeof line, f) != NULL) {
+		size_t len = strlen(line);
+		int major, scanned;
+
+		if (len == 0 || line[len - 1] != '\n') {
+			break;
+		}
+		if (sscanf(line, "%d %n", &major, &scanned) == 1 &&
+		    strcmp(line + scanned, "virtblk\n") == 0) {
+			cached = major;
+			break;
+		}
+	}
+	fclose(f);
+	if (cached == -1) {
+		fprintf(stderr, "%s: virtio-blk driver unavailable\n",
+			__func__);
+	}
+	return cached;
+}
 
 int
 disk_info_from_fd(int fd, 
@@ -126,9 +168,42 @@ disk_info_from_fd(int fd,
 		*part    = (minor & 0xF);
 		return 0;
 	}
-	    
+
+	if (get_virtblk_major() != -1 && get_virtblk_major() == major) {
+		*interface_type = virtblk;
+		*disknum = minor >> 4;
+		*part = minor & 0xF;
+		return 0;
+	}
+
 	printf("Unknown interface type.\n");
 	return 1;
+}
+
+static int
+disk_get_virt_pci(unsigned disknum, unsigned part, unsigned char *bus,
+		  unsigned char *device, unsigned char *function)
+{
+	char inbuf[32], outbuf[128];
+	ssize_t lnksz;
+
+	if (snprintf(inbuf, sizeof inbuf, "/sys/dev/block/%d:%u",
+		     get_virtblk_major(),
+		     disknum << 4 | part) >= sizeof inbuf) {
+		return 1;
+	}
+
+	lnksz = readlink(inbuf, outbuf, sizeof outbuf);
+	if (lnksz == -1 || lnksz == sizeof outbuf) {
+		return 1;
+	}
+
+	outbuf[lnksz] = '\0';
+	if (sscanf(outbuf, "../../devices/pci0000:00/0000:%hhx:%hhx.%hhx",
+		   bus, device, function) != 3) {
+		return 1;
+	}
+	return 0;
 }
 
 static int
@@ -267,6 +342,8 @@ disk_get_pci(int fd,
 		break;
 	case md:
 		break;
+	case virtblk:
+		return disk_get_virt_pci(disknum, part, bus, device, function);
 	default:
 		break;
 	}

@@ -476,18 +476,21 @@ make_edd30_device_path(int fd, void *buffer)
 	unsigned char host=0, channel=0, id=0, lun=0;
 	char *p = buffer;
 
-
 	rc = disk_get_pci(fd, &interface_type, &bus, &device, &function);
 	if (rc) return 0;
-
-	memset(&idlun, 0, sizeof(idlun));
-	rc = get_scsi_idlun(fd, &idlun);
-	if (rc) return 0;
-	idlun_to_components(&idlun, &host, &channel, &id, &lun);
+	if (interface_type != virtblk) {
+		memset(&idlun, 0, sizeof(idlun));
+		rc = get_scsi_idlun(fd, &idlun);
+		if (rc) return 0;
+		idlun_to_components(&idlun, &host, &channel, &id, &lun);
+	}
 
 	p += make_acpi_device_path      (p, EISAID_PNP0A03, bus);
 	p += make_pci_device_path       (p, bus, device, function);
-	p += make_scsi_device_path      (p, id, lun);
+	if (interface_type != virtblk) {
+		p += make_scsi_device_path      (p, id, lun);
+	}
+
 	return ((void *)p - buffer);
 }
 

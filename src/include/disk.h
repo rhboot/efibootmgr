@@ -63,7 +63,8 @@
 enum _bus_type {bus_type_unknown, isa, pci};
 enum _interface_type {interface_type_unknown,
 		      ata, atapi, scsi, usb,
-		      i1394, fibre, i2o, md};
+		      i1394, fibre, i2o, md,
+		      virtblk};
 
 
 unsigned int lcm(unsigned int x, unsigned int y);
