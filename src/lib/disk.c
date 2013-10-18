@@ -203,6 +203,7 @@ disk_get_virt_pci(const struct disk_info *info, unsigned char *bus,
 
 static int
 disk_get_scsi_pci(int fd, 
+	     const struct disk_info *info,
 	     unsigned char *bus,
 	     unsigned char *device,
 	     unsigned char *function)
@@ -231,6 +232,9 @@ disk_get_scsi_pci(int fd,
 	if (rc) {
 		perror("get_scsi_pci");
 		return rc;
+	}
+	if (strncmp(slot_name, "virtio", 6) == 0) {
+		return disk_get_virt_pci(info, bus, device, function);
 	}
 	rc = sscanf(slot_name, "%x:%x.%x", &b,&d,&f);
 	if (rc != 3) {
@@ -325,7 +329,7 @@ disk_get_pci(int fd,
 		return disk_get_ide_pci(fd, bus, device, function);
 		break;
 	case scsi:
-		return disk_get_scsi_pci(fd, bus, device, function);
+		return disk_get_scsi_pci(fd, &info, bus, device, function);
 		break;
 	case i2o:
 		break;
