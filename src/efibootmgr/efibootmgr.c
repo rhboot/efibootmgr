@@ -327,6 +327,8 @@ add_to_boot_order(uint16_t num)
 	old_data = (uint16_t *)&(boot_order.Data);
 	new_data_size = boot_order.DataSize + sizeof(uint16_t);
 	new_data = malloc(new_data_size);
+	if (!new_data)
+		return EFI_OUT_OF_RESOURCES;
 
 	new_data[0] = num;
 	memcpy(new_data+1, old_data, boot_order.DataSize);
@@ -365,6 +367,8 @@ remove_from_boot_order(uint16_t num)
 	/* Start with the same size */
 	new_data_size = boot_order.DataSize;
 	new_data = malloc(new_data_size);
+	if (!new_data)
+		return EFI_OUT_OF_RESOURCES;
 	for (old_i=0,new_i=0;
 	     old_i < boot_order.DataSize / sizeof(uint16_t);
 	     old_i++) {
