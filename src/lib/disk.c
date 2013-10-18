@@ -76,16 +76,12 @@ get_virtblk_major(void)
 }
 
 int
-disk_info_from_fd(int fd, 
-		  int *interface_type,
-		  unsigned int *controllernum, 
-		  unsigned int *disknum,
-		  unsigned char *part)
+disk_info_from_fd(int fd, struct disk_info *info)
 {
 	struct stat buf;
 	int rc;
-	uint64_t major;
-	unsigned char minor;
+
+	memset(info, 0, sizeof *info);
 	memset(&buf, 0, sizeof(struct stat));
 	rc = fstat(fd, &buf);
 	if (rc == -1) {
@@ -93,12 +89,12 @@ disk_info_from_fd(int fd,
 		return 1;
 	}
 	if (S_ISBLK(buf.st_mode)) {
-		major = buf.st_rdev >> 8;
-		minor = buf.st_rdev & 0xFF;
+		info->major = buf.st_rdev >> 8;
+		info->minor = buf.st_rdev & 0xFF;
 	}
 	else if (S_ISREG(buf.st_mode)) {
-		major = buf.st_dev >> 8;
-		minor = buf.st_dev & 0xFF;
+		info->major = buf.st_dev >> 8;
+		info->minor = buf.st_dev & 0xFF;
 	}
 	else {
 		printf("Cannot stat non-block or non-regular file\n");
@@ -109,70 +105,70 @@ disk_info_from_fd(int fd,
 	 * and have one bit for the disk number.
 	 * This leaves an extra bit at the top.
 	 */
-	if (major == 3) {
-		*disknum = (minor >> 6) & 1;
-		*controllernum = (major - 3 + 0) + *disknum;
-		*interface_type = ata;
-		*part    = minor & 0x3F;
+	if (info->major == 3) {
+		info->disknum = (info->minor >> 6) & 1;
+		info->controllernum = (info->major - 3 + 0) + info->disknum;
+		info->interface_type = ata;
+		info->part    = info->minor & 0x3F;
 		return 0;
 	}
-	else if (major == 22) {
-		*disknum = (minor >> 6) & 1;
-		*controllernum = (major - 22 + 2) + *disknum;
-		*interface_type = ata;
-		*part    = minor & 0x3F;
+	else if (info->major == 22) {
+		info->disknum = (info->minor >> 6) & 1;
+		info->controllernum = (info->major - 22 + 2) + info->disknum;
+		info->interface_type = ata;
+		info->part    = info->minor & 0x3F;
 		return 0;
 	}
-	else if (major >= 33 && major <= 34) {
-		*disknum = (minor >> 6) & 1;
-		*controllernum = (major - 33 + 4) + *disknum;
-		*interface_type = ata;
-		*part    = minor & 0x3F;
+	else if (info->major >= 33 && info->major <= 34) {
+		info->disknum = (info->minor >> 6) & 1;
+		info->controllernum = (info->major - 33 + 4) + info->disknum;
+		info->interface_type = ata;
+		info->part    = info->minor & 0x3F;
 		return 0;
 	}
-	else if (major >= 56 && major <= 57) {
-		*disknum = (minor >> 6) & 1;
-		*controllernum = (major - 56 + 8) + *disknum;
-		*interface_type = ata;
-		*part    = minor & 0x3F;
+	else if (info->major >= 56 && info->major <= 57) {
+		info->disknum = (info->minor >> 6) & 1;
+		info->controllernum = (info->major - 56 + 8) + info->disknum;
+		info->interface_type = ata;
+		info->part    = info->minor & 0x3F;
 		return 0;
 	}
-	else if (major >= 88 && major <= 91) {
-		*disknum = (minor >> 6) & 1;
-		*controllernum = (major - 88 + 12) + *disknum;
-		*interface_type = ata;
-		*part    = minor & 0x3F;
+	else if (info->major >= 88 && info->major <= 91) {
+		info->disknum = (info->minor >> 6) & 1;
+		info->controllernum = (info->major - 88 + 12) + info->disknum;
+		info->interface_type = ata;
+		info->part    = info->minor & 0x3F;
 		return 0;
 	}
  	
         /* I2O disks can have up to 16 partitions, or 4 bits worth. */
-	if (major >= 80 && major <= 87) {
-		*interface_type = i2o;
-		*disknum = 16*(major-80) + (minor >> 4);
-		*part    = (minor & 0xF);
+	if (info->major >= 80 && info->major <= 87) {
+		info->interface_type = i2o;
+		info->disknum = 16*(info->major-80) + (info->minor >> 4);
+		info->part    = (info->minor & 0xF);
 		return 0;
 	}
 
 	/* SCSI disks can have up to 16 partitions, or 4 bits worth
 	 * and have one bit for the disk number.
 	 */
-	if (major == 8) {
-		*interface_type = scsi;
-		*disknum = (minor >> 4);
-		*part    = (minor & 0xF);
+	if (info->major == 8) {
+		info->interface_type = scsi;
+		info->disknum = (info->minor >> 4);
+		info->part    = (info->minor & 0xF);
 		return 0;
 	}
-	else  if ( major >= 65 && major <= 71) {
-		*interface_type = scsi;
-		*disknum = 16*(major-64) + (minor >> 4);
-		*part    = (minor & 0xF);
+	else  if ( info->major >= 65 && info->major <= 71) {
+		info->interface_type = scsi;
+		info->disknum = 16*(info->major-64) + (info->minor >> 4);
+		info->part    = (info->minor & 0xF);
 		return 0;
 	}
 
-	if (get_virtblk_major() != -1 && get_virtblk_major() == major) {
-		*interface_type = virtblk;
-		*disknum = minor >> 4;
-		*part = minor & 0xF;
+	if (get_virtblk_major() != -1 && get_virtblk_major() == info->major) {
+		info->interface_type = virtblk;
+		info->disknum = info->minor >> 4;
+		info->part = info->minor & 0xF;
 		return 0;
 	}
 
@@ -270,19 +266,17 @@ disk_get_ide_pci(int fd,
 	     unsigned char *function)
 {
 	int num_scanned, procfd;
-	unsigned int b=0,d=0,disknum=0, controllernum=0;
-	unsigned char part=0;
+	struct disk_info info;
+	unsigned int b=0, d=0;
 	char procname[80], infoline[80];
 	size_t read_count;
-	int interface_type;
 	int rc;
 	
-	rc = disk_info_from_fd(fd, &interface_type, &controllernum,
-			       &disknum, &part);
+	rc = disk_info_from_fd(fd, &info);
 	if (rc) return rc;
 
 
-	sprintf(procname, "/proc/ide/ide%d/config", controllernum);
+	sprintf(procname, "/proc/ide/ide%d/config", info.controllernum);
 	
 	procfd = open(procname, O_RDONLY);
 	if (!procfd) {
@@ -322,16 +316,12 @@ disk_get_pci(int fd,
 	     unsigned char *device,
 	     unsigned char *function)
 {
-	unsigned int controllernum=0, disknum=0;
-	unsigned char part=0;
+	struct disk_info info;
 
-	*interface_type=interface_type_unknown;
-	disk_info_from_fd(fd,
-			  interface_type,
-			  &controllernum,
-			  &disknum,
-			  &part);
-	switch (*interface_type) {
+	disk_info_from_fd(fd, &info);
+	*interface_type = info.interface_type;
+
+	switch (info.interface_type) {
 	case ata:
 		return disk_get_ide_pci(fd, bus, device, function);
 		break;
@@ -343,7 +333,8 @@ disk_get_pci(int fd,
 	case md:
 		break;
 	case virtblk:
-		return disk_get_virt_pci(disknum, part, bus, device, function);
+		return disk_get_virt_pci(info.disknum, info.part, bus, device,
+			     function);
 	default:
 		break;
 	}

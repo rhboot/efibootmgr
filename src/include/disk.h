@@ -22,6 +22,7 @@
 #define _DISK_H
 
 #include <sys/ioctl.h>
+#include <stdint.h>
 
 /* Snagged from linux/include/asm-ia64/ioctl.h */
 #define _IOC_NRBITS     8
@@ -75,11 +76,17 @@ int disk_get_pci(int fd,
 		 unsigned char *device,
 		 unsigned char *function);
 
-int disk_info_from_fd(int fd, 
-		      int *interface_type,
-		      unsigned int *controllernum, 
-		      unsigned int *disknum,
-		      unsigned char *part);
+struct disk_info {
+	int interface_type;
+	unsigned int controllernum;
+	unsigned int disknum;
+	unsigned char part;
+	uint64_t major;
+	unsigned char minor;
+};
+
+int disk_info_from_fd(int fd, struct disk_info *info);
+
 
 int disk_get_partition_info (int fd, 
 			     uint32_t num,
