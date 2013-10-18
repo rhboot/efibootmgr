@@ -50,12 +50,18 @@ disk_info_from_fd(int fd,
 		perror("stat");
 		return 1;
 	}
-	if (!(S_ISBLK(buf.st_mode) || S_ISREG(buf.st_mode))) {
+	if (S_ISBLK(buf.st_mode)) {
+		major = buf.st_rdev >> 8;
+		minor = buf.st_rdev & 0xFF;
+	}
+	else if (S_ISREG(buf.st_mode)) {
+		major = buf.st_dev >> 8;
+		minor = buf.st_dev & 0xFF;
+	}
+	else {
 		printf("Cannot stat non-block or non-regular file\n");
 		return 1;
 	}
-	major = buf.st_dev >> 8;
-	minor = buf.st_dev & 0xFF;
 
 	/* IDE disks can have up to 64 partitions, or 6 bits worth,
 	 * and have one bit for the disk number.
