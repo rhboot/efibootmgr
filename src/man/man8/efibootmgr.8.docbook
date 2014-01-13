@@ -302,7 +302,7 @@
           <title>Displaying the current settings (must be root).</title>
           
           <para>
-            <computeroutput>
+            <programlisting>
   [root@localhost ~]# efibootmgr
   BootCurrent: 0004
   BootNext: 0003
@@ -313,7 +313,7 @@
   Boot0002* Hard Drive(Device:80)/HD(Part1,Sig00112233)   
   Boot0003* PXE Boot: MAC(00D0B7C15D91)               
   Boot0004* Linux
-            </computeroutput>
+            </programlisting>
           </para>
           <para>This shows:</para>
           <itemizedlist>
