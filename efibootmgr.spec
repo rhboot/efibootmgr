@@ -4,7 +4,7 @@ Version: 0.5.4
 Release: 1%{?dist}
 Group: System Environment/Base
 License: GPLv2+
-URL: http://linux.dell.com/%{name}/
+URL: https://github.com/vathpela/%{name}/
 BuildRequires: pciutils-devel, zlib-devel
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXXXX)
 # EFI/UEFI don't exist on PPC
@@ -14,7 +14,7 @@ ExclusiveArch: i386 x86_64 ia64
 Conflicts: elilo < 3.6-6
 Obsoletes: elilo < 3.6-6
 
-Source0: http://linux.dell.com/%{name}/permalink/%{name}-%{version}.tar.gz
+Source0: https://github.com/vathpela/%{name}/archive/%{version}.tar.gz
 
 %description
 %{name} displays and allows the user to edit the Intel Extensible
@@ -44,6 +44,9 @@ rm -rf %{buildroot}
 %doc README INSTALL COPYING
     
 %changelog
+* Mon Jan 13 2014 Jared Dominguez <Jared_Dominguez@dell.com>
+- new home https://github.com/vathpela/efibootmgr
+
 * Thu Jan  3 2008 Matt Domsch <Matt_Domsch@dell.com> 0.5.4-1
 - split efibootmgr into its own RPM for Fedora/RHEL.
 
