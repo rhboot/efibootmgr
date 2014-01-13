@@ -429,7 +429,7 @@ msdos_disk_get_partition_info (int fd, legacy_mbr *mbr,
 		printf("******************************************************\n\n");
 		
 	}
-	else if (opts.write_signature) {
+	else if (!mbr->unique_mbr_signature && opts.write_signature) {
 		
 		/* MBR Signatures must be unique for the 
 		   EFI Boot Manager
