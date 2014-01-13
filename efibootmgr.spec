@@ -1,6 +1,6 @@
 Summary: EFI Boot Manager
 Name: efibootmgr
-Version: 0.5.4
+Version: 0.6.1
 Release: 1%{?dist}
 Group: System Environment/Base
 License: GPLv2+
@@ -44,6 +44,9 @@ rm -rf %{buildroot}
 %doc README INSTALL COPYING
     
 %changelog
+* Mon Jan 13 2014 Peter Jones <pjones@redhat.com> - 0.6.1-1
+- Release 0.6.1
+
 * Mon Jan 13 2014 Jared Dominguez <Jared_Dominguez@dell.com>
 - new home https://github.com/vathpela/efibootmgr
 
