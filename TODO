@@ -1,0 +1,8 @@
+For 0.7:
+
+- get rid of the rest of the places 1024-byte limits are enforced
+
+For 0.8:
+
+- support for setting hotkeys
+- support for driver variables, not just boot variables.
