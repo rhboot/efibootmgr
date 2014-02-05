@@ -392,11 +392,11 @@ static ssize_t
 make_file_path_device_path(efi_char16_t *name, uint8_t *buf, size_t size)
 {
 	FILE_PATH_DEVICE_PATH *p;
-	char buffer[1024];
 	int namelen  = efichar_strlen(name, -1);
 	int namesize = efichar_strsize(name);
+	char *buffer = calloc(1, namesize + 1);
 
-	memset(buffer, 0, sizeof(buffer));
+	memset(buffer, 0, namesize + 1);
 	p = (FILE_PATH_DEVICE_PATH *)buffer;
 	p->type      = 4;
 	p->subtype   = 4;
@@ -405,6 +405,7 @@ make_file_path_device_path(efi_char16_t *name, uint8_t *buf, size_t size)
 
 	if (size >= p->length)
 		memcpy(buf, buffer, p->length);
+	free(buffer);
 	return p->length;
 }
 
