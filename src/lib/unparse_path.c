@@ -379,14 +379,14 @@ unparse_media_path(char *buffer, size_t buffer_size, EFI_DEVICE_PATH *path)
 		rc = efi_guid_to_str(&media->guid, &text_guid);
 		if (rc < 0)
 			return rc;
-		rc = snprintf(buffer, buffer_size, "FBFILE(%s)", text_guid);
+		rc = snprintf(buffer, buffer_size, "FvFile(%s)", text_guid);
 		free(text_guid);
 		return rc > 0 ? rc + 1 : rc;
 	case 7:
 		rc = efi_guid_to_str(&media->guid, &text_guid);
 		if (rc < 0)
 			return rc;
-		rc = snprintf(buffer, buffer_size, "FBVOL(%s)", text_guid);
+		rc = snprintf(buffer, buffer_size, "FvVol(%s)", text_guid);
 		free(text_guid);
 		return rc > 0 ? rc + 1 : rc;
 	}
