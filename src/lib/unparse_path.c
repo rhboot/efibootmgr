@@ -69,82 +69,116 @@ dump_raw_data(void *data, uint64_t length)
 	}
 }
 
-
-
-unsigned long
-unparse_raw(char *buffer, uint8_t *p, uint64_t length)
+ssize_t
+unparse_raw(char *buffer, size_t buffer_size, uint8_t *p, uint64_t length)
 {
 	uint64_t i;
 	char a[1];
-	char *q = buffer;
-	for (i=0; i<length; i++) {
-		q += sprintf(q, "%02x", get(a, p[i]));
+
+	size_t needed;
+	off_t buf_offset = 0;
+
+	for (i=0; i < length; i++) {
+		needed = snprintf(buffer + buf_offset,
+			buffer_size == 0 ? 0 : buffer_size - buf_offset,
+			"%02x", get(a, p[i]));
+		if (needed < 0)
+			return -1;
+		buf_offset += needed;
 	}
-	return q - buffer;
+	return buf_offset;
 }
 
-unsigned long
-unparse_raw_text(char *buffer, uint8_t *p, uint64_t length)
+ssize_t
+unparse_raw_text(char *buffer, size_t buffer_size, uint8_t *p, uint64_t length)
 {
 	uint64_t i; unsigned char c;
-	char *q = buffer;
-	for (i=0; i<length; i++) {
+
+	size_t needed;
+	size_t buf_offset = 0;
+
+	for (i=0; i < length; i++) {
 		c = p[i];
 		if (c < 32 || c > 127) c = '.';
-		q += sprintf(q, "%c", c);
+		needed = snprintf(buffer + buf_offset,
+			buffer_size == 0 ? 0 : buffer_size - buf_offset,
+			"%c", c);
+		if (needed < 0)
+			return -1;
+		buf_offset += needed;
 	}
-	return q - buffer;
+	return buf_offset;
 }
 
-static int
-unparse_ipv4_port(char *buffer, uint32_t ipaddr, uint16_t port)
+static ssize_t
+unparse_ipv4_port(char *buffer, size_t buffer_size, uint32_t ipaddr,
+		uint16_t port)
 {
 	unsigned char *ip;
 //	ipaddr = nltoh(ipaddr);
 //	port = nstoh(port);
 	ip = (unsigned char *)&ipaddr;
-	return sprintf(buffer, "%hhu.%hhu.%hhu.%hhu:%hu",
-		       ip[0], ip[1], ip[2], ip[3], 
+	return snprintf(buffer, buffer_size, "%hhu.%hhu.%hhu.%hhu:%hu",
+		       ip[0], ip[1], ip[2], ip[3],
 		       port);
 }
 
-
 static int
-unparse_acpi_path(char *buffer, EFI_DEVICE_PATH *path)
+unparse_acpi_path(char *buffer, size_t buffer_size, EFI_DEVICE_PATH *path)
 {
 	ACPI_DEVICE_PATH *acpi = (ACPI_DEVICE_PATH *)path;
 	char a[16], b[16];
 
 	switch (path->subtype) {
 	case 1:
-		return sprintf(buffer, "ACPI(%x,%x)", get(a, acpi->_HID), get(b, acpi->_UID));
+		return snprintf(buffer, buffer_size, "ACPI(%x,%x)", get(a, acpi->_HID), get(b, acpi->_UID));
 		break;
 	default:
-		return unparse_raw(buffer, (uint8_t *)path, path->length);
+		return unparse_raw(buffer, buffer_size, (uint8_t *)path, path->length);
 		break;
 	}
 	return 0;
 }
 
-static int
-unparse_vendor_path(char *buffer, VENDOR_DEVICE_PATH *path)
+static ssize_t
+unparse_vendor_path(char *buffer, size_t buffer_size, VENDOR_DEVICE_PATH *path)
 {
-	char *text_guid, *p = buffer;
+	char *text_guid;
 	unsigned char *q = (uint8_t *)path + 20;
 	int rc;
+
+	size_t needed;
+	off_t buf_offset = 0;
 
 	rc = efi_guid_to_str(&path->vendor_guid, &text_guid);
 	if (rc < 0)
 		return -1;
-	p += sprintf(p, "Vendor(%s,", text_guid);
+
+	needed = snprintf(buffer, buffer_size, "Vendor(%s,", text_guid);
 	free(text_guid);
-	p += unparse_raw(p, q, path->length - 20);
-	p += sprintf(p, ")");
-	return p - buffer;
+	if (needed < 0)
+		return -1;
+	buf_offset += needed;
+
+	needed = unparse_raw(buffer + buf_offset,
+		buffer_size == 0 ? 0 : buffer_size - buf_offset,
+		q, path->length - 20);
+	if (needed < 0)
+		return -1;
+	buf_offset += needed;
+
+	needed = snprintf(buffer + buf_offset,
+		buffer_size == 0 ? 0 : buffer_size - buf_offset,
+		")");
+	if (needed < 0)
+		return -1;
+	buf_offset += needed;
+
+	return buf_offset;
 }
 
-static int
-unparse_hardware_path(char *buffer, EFI_DEVICE_PATH *path)
+static ssize_t
+unparse_hardware_path(char *buffer, size_t buffer_size, EFI_DEVICE_PATH *path)
 {
 	PCI_DEVICE_PATH *pci = (PCI_DEVICE_PATH *)path;
 	PCCARD_DEVICE_PATH *pccard = (PCCARD_DEVICE_PATH *)path;
@@ -154,34 +188,32 @@ unparse_hardware_path(char *buffer, EFI_DEVICE_PATH *path)
 
 	switch (path->subtype) {
 	case 1:
-		return sprintf(buffer, "PCI(%x,%x)", get(a, pci->device), get(b, pci->function));
-		break;
+		return snprintf(buffer, buffer_size, "PCI(%x,%x)",
+				get(a, pci->device), get(b, pci->function));
 	case 2:
-		return sprintf(buffer, "PCCARD(%x)", get(a, pccard->socket));
-		break;
+		return snprintf(buffer, buffer_size, "PCCARD(%x)",
+				get(a, pccard->socket));
 	case 3:
-		return sprintf(buffer, "MM(%x,%" PRIx64 ",%" PRIx64 ")",
-			       get(a, mm->memory_type),
-			       get(b, mm->start),
-			       get(c, mm->end));
-		break;
+		return snprintf(buffer, buffer_size,
+				"MM(%x,%" PRIx64 ",%" PRIx64 ")",
+				get(a, mm->memory_type),
+				get(b, mm->start),
+				get(c, mm->end));
 	case 4:
-		return unparse_vendor_path(buffer, (VENDOR_DEVICE_PATH *)path);
-		break;
-
+		return unparse_vendor_path(buffer, buffer_size,
+				(VENDOR_DEVICE_PATH *)path);
 	case 5:
-		return sprintf(buffer, "Controller(%x)", get(a, ctlr->controller));
-		break;
-
+		return snprintf(buffer, buffer_size, "Controller(%x)",
+				get(a, ctlr->controller));
 	default:
-		return unparse_raw(buffer, (uint8_t *)path, path->length);
+		return unparse_raw(buffer, buffer_size, (uint8_t *)path,
+				path->length);
 	}
 	return 0;
 }
 
-
-static int
-unparse_messaging_path(char *buffer, EFI_DEVICE_PATH *path)
+static ssize_t
+unparse_messaging_path(char *buffer, size_t buffer_size, EFI_DEVICE_PATH *path)
 {
 	ATAPI_DEVICE_PATH *atapi = (ATAPI_DEVICE_PATH *)path;
 	SCSI_DEVICE_PATH *scsi = (SCSI_DEVICE_PATH *)path;
@@ -190,78 +222,135 @@ unparse_messaging_path(char *buffer, EFI_DEVICE_PATH *path)
 	USB_DEVICE_PATH *usb = (USB_DEVICE_PATH *)path;
 	MAC_ADDR_DEVICE_PATH *mac = (MAC_ADDR_DEVICE_PATH *)path;
 	USB_CLASS_DEVICE_PATH *usbclass = (USB_CLASS_DEVICE_PATH *)path;
-	I2O_DEVICE_PATH *i2o = (I2O_DEVICE_PATH *)path; 
+	I2O_DEVICE_PATH *i2o = (I2O_DEVICE_PATH *)path;
 	IPv4_DEVICE_PATH *ipv4 = (IPv4_DEVICE_PATH *)path;
 /* 	IPv6_DEVICE_PATH *ipv6 = (IPv6_DEVICE_PATH *)path; */
-	char *p = buffer;
 	char a[16], b[16], c[16], d[16], e[16];
+
+	size_t needed;
+	off_t buf_offset = 0;
 
 	switch (path->subtype) {
 	case 1:
-		return sprintf(buffer, "ATAPI(%x,%x,%x)",
-			       get(a, atapi->primary_secondary),
-			       get(b, atapi->slave_master),
-			       get(c, atapi->lun));
-		break;
+		return snprintf(buffer, buffer_size, "ATAPI(%x,%x,%x)",
+				get(a, atapi->primary_secondary),
+				get(b, atapi->slave_master),
+				get(c, atapi->lun));
 	case 2:
-		return sprintf(buffer, "SCSI(%x,%x)", get(a, scsi->id), get(b, scsi->lun));
-		break;
-
+		return snprintf(buffer, buffer_size, "SCSI(%x,%x)",
+				get(a, scsi->id), get(b, scsi->lun));
 	case 3:
-		return sprintf(buffer, "FC(%" PRIx64 ",%" PRIx64 ")", get(a, fc->wwn), get(b, fc->lun));
-		break;
+		return snprintf(buffer, buffer_size,
+				"FC(%" PRIx64 ",%" PRIx64 ")",
+				get(a, fc->wwn), get(b, fc->lun));
 	case 4:
-		return sprintf(buffer, "1394(%" PRIx64 ")", get(a, i1394->guid));
-		break;
+		return snprintf(buffer, buffer_size, "1394(%" PRIx64 ")",
+				get(a, i1394->guid));
 	case 5:
-		return sprintf(buffer, "USB(%x,%x)", get(a, usb->port), get(b, usb->endpoint));
-		break;
+		return snprintf(buffer, buffer_size, "USB(%x,%x)",
+				get(a, usb->port), get(b, usb->endpoint));
 	case 6:
-		return sprintf(buffer, "I2O(%x)", get(a, i2o->tid));
-		break;
+		return snprintf(buffer, buffer_size, "I2O(%x)",
+				get(a, i2o->tid));
 	case 11:
-		p += sprintf(p, "MAC(");
-		p += unparse_raw(p, mac->macaddr, 6);
-		p += sprintf(p, ",%hhx)", get(a, mac->iftype));
-		return (int) (p - buffer);
-		break;
-	case 12:
-		p += sprintf(p, "IPv4(");
-		p += unparse_ipv4_port(p, ipv4->local_ip, ipv4->local_port);
-		p += sprintf(p, "<->");
-		p += unparse_ipv4_port(p, ipv4->remote_ip, ipv4->remote_port);
-		p += sprintf(p, ",%hx, %hhx", get(a, ipv4->protocol), get(b, ipv4->static_addr));
-		return (int) (p - buffer);
-		break;
+		needed = snprintf(buffer, buffer_size, "MAC(");
+		if (needed < 0)
+			return needed;
+		buf_offset += needed;
 
+		needed = snprintf(buffer + buf_offset,
+			buffer_size == 0 ? 0 : buffer_size - buf_offset,
+			"MAC(");
+		if (needed < 0)
+			return needed;
+		buf_offset += needed;
+
+		needed = unparse_raw(buffer + buf_offset,
+			buffer_size == 0 ? 0 : buffer_size - buf_offset,
+			mac->macaddr, 6);
+		if (needed < 0)
+			return needed;
+		buf_offset += needed;
+
+		needed = snprintf(buffer + buf_offset,
+			buffer_size == 0 ? 0 : buffer_size - buf_offset,
+			",%hhx)", get(a, mac->iftype));
+		if (needed < 0)
+			return needed;
+		buf_offset += needed;
+
+		return buf_offset;
+	case 12:
+		needed = snprintf(buffer, buf_offset, "IPv4(");
+		if (needed < 0)
+			return -1;
+		buf_offset += needed;
+
+		needed = unparse_ipv4_port(buffer + buf_offset,
+			buffer_size == 0 ? 0 : buffer_size - buf_offset,
+			ipv4->local_ip, ipv4->local_port);
+		if (needed < 0)
+			return -1;
+		buf_offset += needed;
+
+		needed = snprintf(buffer + buf_offset,
+			buffer_size == 0 ? 0 : buffer_size - buf_offset,
+			"<->");
+		if (needed < 0)
+			return -1;
+		buf_offset += needed;
+
+		needed = unparse_ipv4_port(buffer + buf_offset,
+			buffer_size == 0 ? 0 : buffer_size - buf_offset,
+			ipv4->remote_ip, ipv4->remote_port);
+		if (needed < 0)
+			return -1;
+		buf_offset += needed;
+
+		needed = snprintf(buffer + buf_offset,
+			buffer_size == 0 ? 0 : buffer_size - buf_offset,
+			",%hx, %hhx", get(a, ipv4->protocol),
+			get(b, ipv4->static_addr));
+		if (needed < 0)
+			return -1;
+		buf_offset += needed;
+
+		return buf_offset;
 	case 15:
-		return sprintf(buffer, "USBClass(%hx,%hx,%hhx,%hhx,%hhx)",
-			       get(a, usbclass->vendor), get(b, usbclass->product),
-			       get(c, usbclass->class), get(d, usbclass->subclass),
-			       get(e, usbclass->protocol));
-		break;
+		return snprintf(buffer, buffer_size,
+				"USBClass(%hx,%hx,%hhx,%hhx,%hhx)",
+				get(a, usbclass->vendor),
+				get(b, usbclass->product),
+				get(c, usbclass->class),
+				get(d, usbclass->subclass),
+				get(e, usbclass->protocol));
 	default:
-		return unparse_raw(buffer, (uint8_t *)path, path->length);
-		break;
+		return unparse_raw(buffer, buffer_size,
+				(uint8_t *)path, path->length);
 	}
 	return 0;
 }
 
-static int
-unparse_media_hard_drive_path(char *buffer, EFI_DEVICE_PATH *path)
+static ssize_t
+unparse_media_hard_drive_path(char *buffer, size_t buffer_size,
+				EFI_DEVICE_PATH *path)
 {
 	HARDDRIVE_DEVICE_PATH *hd = (HARDDRIVE_DEVICE_PATH *)path;
 	char text_uuid[40], *sig=text_uuid;
 	char a[16], b[16], c[16];
 	int rc = 0;
-	
+
 	switch (hd->signature_type) {
 	case 0x00:
-		sprintf(sig, "None");
+		rc = sprintf(sig, "None");
+		if (rc < 0)
+			return -1;
 		break;
 	case 0x01:
-		sprintf(sig, "%08x", *(uint32_t *)memcpy(a, &hd->signature,
-							 sizeof(hd->signature)));
+		rc = sprintf(sig, "%08x", *(uint32_t *)memcpy(a, &hd->signature,
+						 sizeof(hd->signature)));
+		if (rc < 0)
+			return -1;
 		break;
 	case 0x02: /* GPT */
 		rc = efi_guid_to_str((efi_guid_t *)hd->signature, &sig);
@@ -269,11 +358,10 @@ unparse_media_hard_drive_path(char *buffer, EFI_DEVICE_PATH *path)
 			return rc;
 		break;
 	default:
-		return -1;
-		break;
+		return 0;
 	}
 
-	rc = sprintf(buffer, "HD(%x,%" PRIx64 ",%" PRIx64 ",%s)",
+	rc = snprintf(buffer, buffer_size, "HD(%x,%" PRIx64 ",%" PRIx64 ",%s)",
 		       get(a, hd->part_num),
 		       get(b, hd->start),
 		       get(c, hd->size),
@@ -282,16 +370,14 @@ unparse_media_hard_drive_path(char *buffer, EFI_DEVICE_PATH *path)
 	return rc;
 }
 
-
-
-static int
-unparse_media_path(char *buffer, EFI_DEVICE_PATH *path)
+static ssize_t
+unparse_media_path(char *buffer, size_t buffer_size, EFI_DEVICE_PATH *path)
 {
 
 	CDROM_DEVICE_PATH *cdrom = (CDROM_DEVICE_PATH *)path;
 	MEDIA_PROTOCOL_DEVICE_PATH *media = (MEDIA_PROTOCOL_DEVICE_PATH *)path;
 	FILE_PATH_DEVICE_PATH *file = (FILE_PATH_DEVICE_PATH *)path;
-	char *text_guid, *p = buffer;
+	char *text_guid;
 	char file_name[80];
 	memset(file_name, 0, sizeof(file_name));
 	char a[16], b[16], c[16];
@@ -299,72 +385,116 @@ unparse_media_path(char *buffer, EFI_DEVICE_PATH *path)
 
 	switch (path->subtype) {
 	case 1:
-		return unparse_media_hard_drive_path(buffer, path);
-		break;
+		return unparse_media_hard_drive_path(buffer, buffer_size, path);
 	case 2:
-		return sprintf(buffer, "CD-ROM(%x,%" PRIx64 ",%" PRIx64 ")",
-			       get(a, cdrom->boot_entry), get(b, cdrom->start), get(c, cdrom->size));
-		break;
+		return snprintf(buffer, buffer_size,
+				"CD-ROM(%x,%" PRIx64 ",%" PRIx64 ")",
+				get(a, cdrom->boot_entry),
+				get(b, cdrom->start), get(c, cdrom->size));
 	case 3:
-		return unparse_vendor_path(buffer, (VENDOR_DEVICE_PATH *)path);
-		break;
+		return unparse_vendor_path(buffer, buffer_size,
+				(VENDOR_DEVICE_PATH *)path);
 	case 4:
 		efichar_to_char(file_name, file->path_name, 80);
-		return sprintf(p, "File(%s)", file_name);
-		break;
+		return snprintf(buffer, buffer_size, "File(%s)", file_name);
 	case 5:
 		rc = efi_guid_to_str(&media->guid, &text_guid);
 		if (rc < 0)
 			return rc;
-		rc = sprintf(buffer, "Media(%s)", text_guid);
+		rc = snprintf(buffer, buffer_size, "Media(%s)", text_guid);
 		free(text_guid);
 		return rc;
-		break;
-	default:
-		return -1;
-		break;
 	}
 	return 0;
 }
 
-static int
-unparse_bios_path(char *buffer, EFI_DEVICE_PATH *path)
+static ssize_t
+unparse_bios_path(char *buffer, size_t buffer_size, EFI_DEVICE_PATH *path)
 {
 	BIOS_BOOT_SPEC_DEVICE_PATH *bios = (BIOS_BOOT_SPEC_DEVICE_PATH *)path;
 	char *p = buffer;
 	unsigned char *q = (uint8_t *)path + 8;
 	char a[16], b[16];
-	p += sprintf(p, "BIOS(%x,%x,",
-		     get(a, bios->device_type), get(b, bios->status_flag));
-	p += unparse_raw(p, q, path->length - 8);
-	p += sprintf(p, ")");
-	return p - buffer;
+
+	size_t needed;
+	off_t buf_offset = 0;
+
+	needed = snprintf(p + buf_offset,
+			buffer_size == 0 ? 0 : buffer_size - buf_offset,
+			"BIOS(%x,%x,",
+			get(a, bios->device_type), get(b, bios->status_flag));
+	if (needed < 0)
+		return -1;
+	buf_offset += needed;
+
+	needed = unparse_raw(p + buf_offset,
+			buffer_size == 0 ? 0 : buffer_size - buf_offset,
+			q, path->length - 8);
+	if (needed < 0)
+		return -1;
+	buf_offset += needed;
+
+	needed = snprintf(p + buf_offset,
+			buffer_size == 0 ? 0 : buffer_size - buf_offset,
+			")");
+	if (needed < 0)
+		return -1;
+	buf_offset += needed;
+
+	return buf_offset;
 }
 
-
-uint64_t
-unparse_path(char *buffer, EFI_DEVICE_PATH *path, uint16_t pathsize)
+ssize_t
+unparse_path(char *buffer, size_t buffer_size,
+		EFI_DEVICE_PATH *path, uint16_t pathsize)
 {
 	uint16_t parsed_length = 0;
 	char *p = buffer;
+	size_t needed;
+	off_t buf_offset = 0;
 	int exit_now = 0;
 
 	while (parsed_length < pathsize && !exit_now) {
 		switch (path->type) {
 		case 0x01:
-			p += unparse_hardware_path(p, path);
+			needed = unparse_hardware_path(p + buf_offset,
+				buffer_size == 0 ? 0 : buffer_size - buf_offset,
+				path);
+			if (needed < 0)
+				return -1;
+			buf_offset += needed;
 			break;
 		case 0x02:
-			p += unparse_acpi_path(p, path);
+			needed = unparse_acpi_path(p + buf_offset,
+				buffer_size == 0 ? 0 : buffer_size - buf_offset,
+				path);
+			if (needed < 0)
+				return -1;
+			buf_offset += needed;
 			break;
 		case 0x03:
-			p += unparse_messaging_path(p, path);
+			needed = unparse_messaging_path(p + buf_offset,
+				buffer_size == 0 ? 0 : buffer_size - buf_offset,
+				path);
+			if (needed < 0)
+				return -1;
+			buf_offset += needed;
 			break;
 		case 0x04:
-			p += unparse_media_path(p, path);
+			needed = unparse_media_path(p + buf_offset,
+				buffer_size == 0 ? 0 : buffer_size - buf_offset,
+				path);
+			if (needed < 0)
+				return -1;
+			buf_offset += needed;
 			break;
 		case 0x05:
-			p += unparse_bios_path(p, path);
+			needed = unparse_bios_path(p + buf_offset,
+				buffer_size == 0 ? 0 : buffer_size - buf_offset,
+				path);
+			if (needed < 0)
+				return -1;
+			buf_offset += needed;
 			break;
 		case 0x7F:
 			exit_now = 1;
@@ -382,7 +512,7 @@ unparse_path(char *buffer, EFI_DEVICE_PATH *path, uint16_t pathsize)
 		path = (EFI_DEVICE_PATH *) ((uint8_t *)path + path->length);
 	}
 
-	return p - buffer;
+	return buf_offset;
 }
 
 #ifdef UNPARSE_PATH

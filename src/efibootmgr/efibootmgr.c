@@ -578,7 +578,6 @@ show_boot_vars()
 	char description[80];
 	EFI_LOAD_OPTION *load_option;
 	EFI_DEVICE_PATH *path;
-	char text_path[1024], *p;
 	unsigned long optional_data_len=0;
 
 	list_for_each(pos, &boot_entry_list) {
@@ -586,7 +585,6 @@ show_boot_vars()
 		load_option = (EFI_LOAD_OPTION *)boot->data;
 		efichar_to_char(description,
 				load_option->description, sizeof(description));
-		memset(text_path, 0, sizeof(text_path));
 		path = load_option_path(load_option);
 		if (boot->name)
 			printf("%.8s", boot->name);
@@ -599,28 +597,73 @@ show_boot_vars()
 		printf("%s", description);
 
 		if (opts.verbose) {
-			unparse_path(text_path, path,
+			char *text_path = NULL;
+			size_t text_path_len = 0;
+			ssize_t rc;
+
+			rc = unparse_path(text_path, text_path_len, path,
 				     load_option->file_path_list_length);
+			if (rc < 0) {
+				fprintf(stderr, "Could not parse device path: %m\n");
+				exit(1);
+			}
+			rc += 1;
+
+			text_path_len = rc;
+			text_path = calloc(1, rc);
+			if (!text_path) {
+				fprintf(stderr, "Could not parse device path: %m\n");
+				exit(1);
+			}
+			rc = unparse_path(text_path, text_path_len,
+				path, load_option->file_path_list_length);
+			if (rc < 0) {
+				fprintf(stderr, "Could not parse device path: %m\n");
+				exit(1);
+			}
+			printf("\t%s", text_path);
+			free(text_path);
+			text_path_len = 0;
 			/* Print optional data */
+
 			optional_data_len =
 				boot->data_size -
 				load_option->file_path_list_length -
 				((char *)path - (char *)load_option);
-			if (optional_data_len) {
-				p = text_path;
-				p += strlen(text_path);
-				unparse_raw_text(p, ((uint8_t *)path) +
-						 load_option->file_path_list_length,
-						 optional_data_len);
+			if (optional_data_len <= 0) {
+				printf("\n");
+				continue;
 			}
 
-			printf("\t%s", text_path);
+			rc = unparse_raw_text(text_path, text_path_len,
+				((uint8_t *)path)
+					+ load_option->file_path_list_length,
+				optional_data_len);
+			if (rc < 0) {
+				fprintf(stderr, "Could not parse device path: %m\n");
+				exit(1);
+			}
+			rc += 1;
+			text_path_len = rc;
+			text_path = calloc(1, rc);
+			if (!text_path) {
+				fprintf(stderr, "Could not parse device path: %m\n");
+				exit(1);
+			}
+			rc = unparse_raw_text(text_path, text_path_len,
+				((uint8_t *)path)
+					+ load_option->file_path_list_length,
+				optional_data_len);
+			if (rc < 0) {
+				fprintf(stderr, "Could not parse device path: %m\n");
+				exit(1);
+			}
+			printf("%s", text_path);
+			free(text_path);
 		}
 		printf("\n");
 	}
 }
-
-
 
 static void
 show_boot_order()

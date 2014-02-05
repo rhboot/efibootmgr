@@ -27,9 +27,12 @@
 #define OFFSET_OF(struct_type, member)    \
     ((unsigned long) ((char *) &((struct_type*) 0)->member))
 
-uint64_t unparse_path(char *buffer, EFI_DEVICE_PATH *path, uint16_t pathsize);
+ssize_t unparse_path(char *buffer, size_t buffer_size,
+			EFI_DEVICE_PATH *path, uint16_t pathsize);
 void dump_raw_data(void *data, uint64_t length);
-unsigned long unparse_raw(char *buffer, uint8_t *p, uint64_t length);
-unsigned long unparse_raw_text(char *buffer, uint8_t *p, uint64_t length);
+ssize_t unparse_raw(char *buffer, size_t buffer_size,
+			uint8_t *p, uint64_t length);
+ssize_t unparse_raw_text(char *buffer, size_t buffer_size,
+			uint8_t *p, uint64_t length);
 
 #endif
