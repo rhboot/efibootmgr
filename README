@@ -4,7 +4,7 @@ can create and destroy boot entries, change the boot order, change
 the next running boot option, and more.
 
 Details on the EFI Boot Manager are available from the EFI
-Specification, v1.02 or above, available from http://developer.intel.com.
+Specification, v1.02 or above, available from http://www.uefi.org.
 
 Note: efibootmgr requires that the kernel module efivars be loaded
 prior to use.  'modprobe efivars' should do the trick.
@@ -112,10 +112,6 @@ Typical usage:
 
 Many other uses may be found.
 
-Please direct any bugs, features, patches, etc. to Peter Jones
-<https://github.com/vathpela>.
-
-
-
-
+Please direct any bugs, features, patches, etc. to Peter Jones,
+https://github.com/vathpela/efibootmgr .
 
