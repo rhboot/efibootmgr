@@ -9,6 +9,8 @@ BuildRequires: pciutils-devel, zlib-devel
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXXXX)
 # EFI/UEFI don't exist on PPC
 ExclusiveArch: i386 x86_64 ia64
+Requires: efivar-libs
+BuildRequires: efivar-libs efivar-devel
 
 # for RHEL / Fedora when efibootmgr was part of the elilo package
 Conflicts: elilo < 3.6-6
