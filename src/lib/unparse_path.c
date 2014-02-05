@@ -21,6 +21,7 @@
 /* For PRIx64 */
 #define __STDC_FORMAT_MACROS
 
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
@@ -35,39 +36,6 @@
 
 /* Avoid unaligned access warnings */
 #define get(buf, obj) *(typeof(obj) *)memcpy(buf, &obj, sizeof(obj))
-
-
-void
-dump_raw_data(void *data, uint64_t length)
-{
-	char buffer1[80], buffer2[80], *b1, *b2, c;
-	unsigned char *p = data;
-	unsigned long column=0;
-	uint64_t length_printed = 0;
-	const char maxcolumn = 16;
-	while (length_printed < length) {
-		b1 = buffer1;
-		b2 = buffer2;
-		for (column = 0;
-		     column < maxcolumn && length_printed < length; 
-		     column ++) {
-			b1 += sprintf(b1, "%02x ",(unsigned int) *p);
-			if (*p < 32 || *p > 126) c = '.';
-			else c = *p;
-			b2 += sprintf(b2, "%c", c);
-			p++;
-			length_printed++;
-		}
-		/* pad out the line */
-		for (; column < maxcolumn; column++)
-		{
-			b1 += sprintf(b1, "   ");
-			b2 += sprintf(b2, " ");
-		}
-
-		printf("%s\t%s\n", buffer1, buffer2);
-	}
-}
 
 ssize_t
 unparse_raw(char *buffer, size_t buffer_size, uint8_t *p, uint64_t length)
@@ -520,8 +488,54 @@ unparse_path(char *buffer, size_t buffer_size,
 			exit_now = 1;
 			break;
 		default:
-			printf("\nwierd path");
-			dump_raw_data(path, 4);
+			needed = snprintf(p + buf_offset,
+				buffer_size == 0 ? 0 : buffer_size - buf_offset,
+				"Unknown(%d,%d,", path->type, path->subtype);
+			if (needed < 0)
+				return -1;
+			buf_offset += needed;
+
+			if (path->length + sizeof (END_DEVICE_PATH)
+					> pathsize - parsed_length) {
+				needed = snprintf(p + buf_offset,
+					buffer_size == 0
+						? 0
+						: buffer_size - buf_offset,
+					"invalid size)");
+				if (needed < 0)
+					return -1;
+				buf_offset += needed;
+				exit_now = 1;
+			} else {
+				needed = snprintf(p + buf_offset,
+					buffer_size == 0
+						? 0
+						: buffer_size - buf_offset,
+					"%d,", path->length);
+				if (needed < 0)
+					return -1;
+				buf_offset += needed;
+
+				needed = unparse_raw(p + buf_offset,
+					buffer_size == 0
+						? 0
+						: buffer_size - buf_offset,
+					(uint8_t *)path +
+						offsetof(EFI_DEVICE_PATH, data),
+					path->length);
+				if (needed < 0)
+					return -1;
+				buf_offset += needed;
+
+				needed = snprintf(p + buf_offset,
+					buffer_size == 0
+						? 0
+						: buffer_size - buf_offset,
+					")");
+				if (needed < 0)
+					return -1;
+				buf_offset += needed;
+			}
 			break;
 		}
 //		p += sprintf(p, "\\");
