@@ -70,7 +70,7 @@ archive:
 	@mv /tmp/$(RELEASE_STRING)-tmp/ /tmp/$(RELEASE_STRING)/
 	@dir=$$PWD; cd /tmp; tar -c --bzip2 -f $$dir/$(RELEASE_STRING).tar.bz2 $(RELEASE_STRING)
 	@rm -rf /tmp/$(RELEASE_STRING)
-	gpg  -a -u $(SIGNING_KEY) --output $(RELEASE_STRING).tar.gz.sign --detach-sig $(RELEASE_STRING).tar.gz
+	gpg  -a -u $(SIGNING_KEY) --output $(RELEASE_STRING).tar.bz2.sign --detach-sig $(RELEASE_STRING).tar.bz2
 	@echo "The archive is in $(RELEASE_STRING).tar.bz2"
 
 tarball: archive
