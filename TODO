@@ -1,8 +1,8 @@
-For 0.7:
-
-- get rid of the rest of the places 1024-byte limits are enforced
-
 For 0.8:
 
 - support for setting hotkeys
 - support for driver variables, not just boot variables.
+- support for arbitrary device paths with -c (including guid parsing)
+- audit for missing unparse_*_path() types.
+- maintain a list of known GUIDs and print {vendor} instead of the full GUID
+  - accept these for arbitrary paths as well.
