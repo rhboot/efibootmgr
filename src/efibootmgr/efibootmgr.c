@@ -634,7 +634,7 @@ show_boot_vars()
 				printf("\n");
 				continue;
 			}
-			if (optional_data_len > path->length) {
+			if (optional_data_len > path->length + 4) {
 				printf("(invalid optional data length)\n");
 				continue;
 			}
