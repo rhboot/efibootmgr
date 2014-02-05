@@ -109,7 +109,8 @@ unparse_acpi_path(char *buffer, size_t buffer_size, EFI_DEVICE_PATH *path)
 }
 
 static ssize_t
-unparse_vendor_path(char *buffer, size_t buffer_size, VENDOR_DEVICE_PATH *path)
+unparse_vendor_path(char *buffer, size_t buffer_size, char *prefix,
+	VENDOR_DEVICE_PATH *path)
 {
 	char *text_guid;
 	unsigned char *q = (uint8_t *)path + 20;
@@ -122,7 +123,8 @@ unparse_vendor_path(char *buffer, size_t buffer_size, VENDOR_DEVICE_PATH *path)
 	if (rc < 0)
 		return -1;
 
-	needed = snprintf(buffer, buffer_size, "Vendor(%s,", text_guid);
+	needed = snprintf(buffer, buffer_size, "%s(%s,",
+			prefix ? prefix : "Vendor", text_guid);
 	free(text_guid);
 	if (needed < 0)
 		return -1;
@@ -168,7 +170,7 @@ unparse_hardware_path(char *buffer, size_t buffer_size, EFI_DEVICE_PATH *path)
 				get(b, mm->start),
 				get(c, mm->end));
 	case 4:
-		return unparse_vendor_path(buffer, buffer_size,
+		return unparse_vendor_path(buffer, buffer_size, NULL,
 				(VENDOR_DEVICE_PATH *)path);
 	case 5:
 		return snprintf(buffer, buffer_size, "Controller(%x)",
@@ -221,7 +223,7 @@ unparse_messaging_path(char *buffer, size_t buffer_size, EFI_DEVICE_PATH *path)
 		return snprintf(buffer, buffer_size, "I2O(%x)",
 				get(a, i2o->tid));
 	case 10:
-		return unparse_vendor_path(buffer, buffer_size,
+		return unparse_vendor_path(buffer, buffer_size, "VenMsg",
 			(VENDOR_DEVICE_PATH *)path);
 	case 11:
 		needed = snprintf(buffer, buffer_size, "MAC(");
@@ -363,7 +365,7 @@ unparse_media_path(char *buffer, size_t buffer_size, EFI_DEVICE_PATH *path)
 				get(a, cdrom->boot_entry),
 				get(b, cdrom->start), get(c, cdrom->size));
 	case 3:
-		return unparse_vendor_path(buffer, buffer_size,
+		return unparse_vendor_path(buffer, buffer_size, NULL,
 				(VENDOR_DEVICE_PATH *)path);
 	case 4:
 		efichar_to_char(file_name, file->path_name, 80);
