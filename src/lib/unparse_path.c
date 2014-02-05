@@ -252,6 +252,9 @@ unparse_messaging_path(char *buffer, size_t buffer_size, EFI_DEVICE_PATH *path)
 	case 6:
 		return snprintf(buffer, buffer_size, "I2O(%x)",
 				get(a, i2o->tid));
+	case 10:
+		return unparse_vendor_path(buffer, buffer_size,
+			(VENDOR_DEVICE_PATH *)path);
 	case 11:
 		needed = snprintf(buffer, buffer_size, "MAC(");
 		if (needed < 0)
@@ -404,6 +407,20 @@ unparse_media_path(char *buffer, size_t buffer_size, EFI_DEVICE_PATH *path)
 		rc = snprintf(buffer, buffer_size, "Media(%s)", text_guid);
 		free(text_guid);
 		return rc;
+	case 6:
+		rc = efi_guid_to_str(&media->guid, &text_guid);
+		if (rc < 0)
+			return rc;
+		rc = snprintf(buffer, buffer_size, "FBFILE(%s)", text_guid);
+		free(text_guid);
+		return rc > 0 ? rc + 1 : rc;
+	case 7:
+		rc = efi_guid_to_str(&media->guid, &text_guid);
+		if (rc < 0)
+			return rc;
+		rc = snprintf(buffer, buffer_size, "FBVOL(%s)", text_guid);
+		free(text_guid);
+		return rc > 0 ? rc + 1 : rc;
 	}
 	return 0;
 }
