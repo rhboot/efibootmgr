@@ -186,6 +186,7 @@ static ssize_t
 unparse_messaging_path(char *buffer, size_t buffer_size, EFI_DEVICE_PATH *path)
 {
 	ATAPI_DEVICE_PATH *atapi = (ATAPI_DEVICE_PATH *)path;
+	SATA_DEVICE_PATH *sata = (SATA_DEVICE_PATH *)path;
 	SCSI_DEVICE_PATH *scsi = (SCSI_DEVICE_PATH *)path;
 	FIBRE_CHANNEL_DEVICE_PATH *fc = (FIBRE_CHANNEL_DEVICE_PATH *)path;
 	I1394_DEVICE_PATH *i1394 = (I1394_DEVICE_PATH *)path;
@@ -297,6 +298,12 @@ unparse_messaging_path(char *buffer, size_t buffer_size, EFI_DEVICE_PATH *path)
 				get(c, usbclass->class),
 				get(d, usbclass->subclass),
 				get(e, usbclass->protocol));
+	case 18:
+		return snprintf(buffer, buffer_size,
+				"SATA(%hx,%hx,%hx)",
+				get(a, sata->port),
+				get(b, sata->port_multiplier),
+				get(c, sata->lun));
 	default:
 		return unparse_raw(buffer, buffer_size,
 				(uint8_t *)path, path->length);

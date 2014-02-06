@@ -166,6 +166,15 @@ typedef struct {
 	uint8_t type;
 	uint8_t subtype;
 	uint16_t length;
+	uint16_t port;
+	uint16_t port_multiplier;
+	uint16_t lun;
+} __attribute__((packed)) SATA_DEVICE_PATH;
+
+typedef struct {
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
 	uint16_t vendor;
 	uint16_t product;
 	uint8_t  class;
