@@ -30,6 +30,7 @@ typedef struct {
 	char *loader;
 	char *label;
 	char *bootorder;
+	int keep_old_entries;
 	char *testfile;
 	char *extra_opts_file;
 	uint32_t part;

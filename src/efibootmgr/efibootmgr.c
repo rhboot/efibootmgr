@@ -551,7 +551,65 @@ parse_boot_order(char *buffer, uint16_t **order, size_t *length)
 }
 
 static int
-set_boot_order()
+construct_boot_order(char *bootorder, int keep,
+			uint16_t **ret_data, size_t *ret_data_size)
+{
+	efi_variable_t bo;
+	int rc;
+	uint16_t *data = NULL;
+	size_t data_size = 0;
+
+	rc = parse_boot_order(bootorder, (uint16_t **)&data, &data_size);
+	if (rc < 0 || data_size <= 0)
+		return rc;
+
+	if (!keep) {
+		*ret_data = data;
+		*ret_data_size = data_size;
+		return 0;
+	}
+
+	rc = efi_get_variable(EFI_GLOBAL_GUID, "BootOrder",
+				&bo.data, &bo.data_size, &bo.attributes);
+	if (rc < 0) {
+		*ret_data = data;
+		*ret_data_size = data_size;
+		return 0;
+	}
+
+	size_t new_data_size = data_size + bo.data_size;
+	uint16_t *new_data = calloc(1, new_data_size);
+	if (!new_data)
+		return -1;
+
+	memcpy(new_data, data, data_size);
+	memcpy(new_data + (data_size / sizeof (*new_data)), bo.data,
+			bo.data_size);
+
+	free(bo.data);
+	free(data);
+
+	int new_data_start = data_size / sizeof (uint16_t);
+	int new_data_end = new_data_size / sizeof (uint16_t);
+	int i;
+	for (i = 0; i < new_data_start; i++) {
+		int j;
+		for (j = new_data_start; j < new_data_end; j++) {
+			if (new_data[i] == new_data[j]) {
+				memcpy(new_data + j, new_data + j + 1,
+					sizeof (uint16_t) * (new_data_end-j+1));
+				new_data_end -= 1;
+				break;
+			}
+		}
+	}
+	*ret_data = new_data;
+	*ret_data_size = new_data_end * sizeof (uint16_t);
+	return 0;
+}
+
+static int
+set_boot_order(int keep_old_entries)
 {
 	uint8_t *data = NULL;
 	size_t data_size = 0;
@@ -560,8 +618,9 @@ set_boot_order()
 	if (!opts.bootorder)
 		return 0;
 
-	rc = parse_boot_order(opts.bootorder, (uint16_t **)&data, &data_size);
-	if (rc < 0 || data_size <= 0)
+	rc = construct_boot_order(opts.bootorder, keep_old_entries,
+				(uint16_t **)&data, &data_size);
+	if (rc < 0 || data_size < 0)
 		return rc;
 
 	return efi_set_variable(EFI_GLOBAL_GUID, "BootOrder", data, data_size,
@@ -817,6 +876,7 @@ parse_opts(int argc, char **argv)
 			{"edd-device",       required_argument, 0, 'E'},
 			{"edd30",            required_argument, 0, 'e'},
 			{"gpt",                    no_argument, 0, 'g'},
+			{"keep",                   no_argument, 0, 'k'},
 			{"loader",           required_argument, 0, 'l'},
 			{"label",            required_argument, 0, 'L'},
 			{"bootnext",         required_argument, 0, 'n'},
@@ -909,6 +969,9 @@ parse_opts(int argc, char **argv)
 			break;
 		case 'i':
 			opts.iface = optarg;
+			break;
+		case 'k':
+			opts.keep_old_entries = 1;
 			break;
 		case 'l':
 			opts.loader = optarg;
@@ -1070,7 +1133,7 @@ main(int argc, char **argv)
 	}
 
 	if (opts.bootorder) {
-		ret = set_boot_order();
+		ret = set_boot_order(opts.keep_old_entries);
 	}
 
 
