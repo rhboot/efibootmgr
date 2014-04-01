@@ -1,7 +1,7 @@
 Summary: EFI Boot Manager
 Name: efibootmgr
-Version: 0.6.1
-Release: 1%{?dist}
+Version: 0.7.0
+Release: 0.3%{?dist}
 Group: System Environment/Base
 License: GPLv2+
 URL: https://github.com/vathpela/%{name}/
@@ -16,7 +16,7 @@ BuildRequires: efivar-libs efivar-devel
 Conflicts: elilo < 3.6-6
 Obsoletes: elilo < 3.6-6
 
-Source0: https://github.com/vathpela/%{name}/archive/%{version}.tar.gz
+Source0: https://github.com/vathpela/%{name}/archive/%{version}.tar.bz2
 
 %description
 %{name} displays and allows the user to edit the Intel Extensible
