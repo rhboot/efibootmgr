@@ -16,7 +16,7 @@ BuildRequires: efivar-libs efivar-devel
 Conflicts: elilo < 3.6-6
 Obsoletes: elilo < 3.6-6
 
-Source0: https://github.com/vathpela/%{name}/archive/%{version}.tar.bz2
+Source0: https://github.com/vathpela/%{name}/archive/%{name}-%{version}.tar.bz2
 
 %description
 %{name} displays and allows the user to edit the Intel Extensible
