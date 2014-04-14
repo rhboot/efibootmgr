@@ -557,7 +557,7 @@ get_virt_pci(char *name, unsigned char *bus,
 	ssize_t lnksz;
 
 	if (snprintf(inbuf, sizeof inbuf, "/sys/bus/virtio/devices/%s",
-			name) >= sizeof inbuf) {
+			name) >= (ssize_t)(sizeof inbuf)) {
 		return -1;
 	}
 

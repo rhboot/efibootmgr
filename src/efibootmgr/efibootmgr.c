@@ -342,7 +342,7 @@ remove_from_boot_order(uint16_t num)
 	efi_variable_t *boot_order = NULL;
 	uint64_t new_data_size;
 	uint16_t *new_data, *old_data;
-	int old_i,new_i;
+	unsigned int old_i,new_i;
 	int rc;
 
 	rc = read_boot_order(&boot_order);
@@ -693,7 +693,7 @@ show_boot_vars()
 				printf("\n");
 				continue;
 			}
-			if (optional_data_len > path->length + 4) {
+			if (optional_data_len > (uint64_t)(path->length + 4)) {
 				printf("(invalid optional data length)\n");
 				continue;
 			}
@@ -1083,7 +1083,10 @@ main(int argc, char **argv)
 		return 0;
 	}
 
-	if (opts.iface && opts.acpi_hid == -1 && opts.acpi_uid == -1) {
+	if (opts.iface && (
+			opts.acpi_hid < 0 || opts.acpi_uid < 0 ||
+			opts.acpi_hid > UINT32_MAX ||
+			opts.acpi_uid > UINT32_MAX)) {
 		fprintf(stderr, "\nYou must specify the ACPI HID and UID when using -i.\n\n");
 		return 1;
 	}

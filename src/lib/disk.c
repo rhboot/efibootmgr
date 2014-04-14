@@ -165,7 +165,8 @@ disk_info_from_fd(int fd, struct disk_info *info)
 		return 0;
 	}
 
-	if (get_virtblk_major() != -1 && get_virtblk_major() == info->major) {
+	if (get_virtblk_major() >= 0 &&
+			(uint64_t)get_virtblk_major() == info->major) {
 		info->interface_type = virtblk;
 		info->disknum = info->minor >> 4;
 		info->part = info->minor & 0xF;
@@ -184,7 +185,7 @@ disk_get_virt_pci(const struct disk_info *info, unsigned char *bus,
 	ssize_t lnksz;
 
 	if (snprintf(inbuf, sizeof inbuf, "/sys/dev/block/%" PRIu64 ":%u",
-		     info->major, info->minor) >= sizeof inbuf) {
+		     info->major, info->minor) >= (ssize_t)(sizeof inbuf)) {
 		return 1;
 	}
 
@@ -544,7 +545,7 @@ disk_get_partition_info (int fd,
 
 	offset = lseek(fd, 0, SEEK_SET);
 	this_bytes_read = read(fd, mbr_sector, mbr_size);
-	if (this_bytes_read < sizeof(*mbr)) {
+	if (this_bytes_read < (ssize_t)sizeof(*mbr)) {
 		rc=1;
 		goto error_free_mbr;
 	}

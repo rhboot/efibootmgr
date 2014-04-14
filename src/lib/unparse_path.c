@@ -505,7 +505,7 @@ unparse_path(char *buffer, size_t buffer_size,
 			buf_offset += needed;
 
 			if (path->length + sizeof (END_DEVICE_PATH)
-					> pathsize - parsed_length) {
+					> (uint64_t)(pathsize - parsed_length)){
 				needed = snprintf(p + buf_offset,
 					buffer_size == 0
 						? 0
