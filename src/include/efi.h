@@ -225,6 +225,14 @@ typedef struct {
 	uint8_t type;
 	uint8_t subtype;
 	uint16_t length;
+	uint32_t namespace_id;
+	uint64_t ieee_extended_unique_identifier;
+} __attribute__((packed)) NVME_DEVICE_PATH;
+
+typedef struct {
+	uint8_t type;
+	uint8_t subtype;
+	uint16_t length;
 	uint32_t reserved;
 	uint64_t node_guid;
 	uint64_t ioc_guid;

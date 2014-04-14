@@ -196,6 +196,7 @@ unparse_messaging_path(char *buffer, size_t buffer_size, EFI_DEVICE_PATH *path)
 	I2O_DEVICE_PATH *i2o = (I2O_DEVICE_PATH *)path;
 	IPv4_DEVICE_PATH *ipv4 = (IPv4_DEVICE_PATH *)path;
 /* 	IPv6_DEVICE_PATH *ipv6 = (IPv6_DEVICE_PATH *)path; */
+	NVME_DEVICE_PATH *nvme = (NVME_DEVICE_PATH *)path;
 	char a[16], b[16], c[16], d[16], e[16];
 
 	size_t needed;
@@ -304,6 +305,11 @@ unparse_messaging_path(char *buffer, size_t buffer_size, EFI_DEVICE_PATH *path)
 				get(a, sata->port),
 				get(b, sata->port_multiplier),
 				get(c, sata->lun));
+	case 23:
+		return snprintf(buffer, buffer_size,
+				"NVME(%x,%lx)",
+				get(a, nvme->namespace_id),
+				get(b, nvme->ieee_extended_unique_identifier));
 	default:
 		return unparse_raw(buffer, buffer_size,
 				(uint8_t *)path, path->length);
