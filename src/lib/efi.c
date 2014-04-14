@@ -352,6 +352,20 @@ make_pci_device_path(uint8_t bus, uint8_t device, uint8_t function,
 }
 
 static ssize_t
+make_nvme_device_path(uint32_t ns_id, uint8_t *buf, size_t size)
+{
+	NVME_DEVICE_PATH p;
+	memset(&p, 0, sizeof(p));
+	p.type = 3;
+	p.subtype = 23;
+	p.length = sizeof(p);
+	p.namespace_id = ns_id;
+	if (size >= p.length)
+		memcpy(buf, &p, p.length);
+	return p.length;
+}
+
+static ssize_t
 make_scsi_device_path(uint16_t id, uint16_t lun, uint8_t *buf, size_t size)
 {
 	SCSI_DEVICE_PATH p;
@@ -420,13 +434,18 @@ make_edd30_device_path(int fd, uint8_t *buf, size_t size)
 	int rc=0, interface_type;
 	unsigned char bus=0, device=0, function=0;
 	Scsi_Idlun idlun;
+	uint32_t ns_id;
 	unsigned char host=0, channel=0, id=0, lun=0;
 	size_t needed;
 	off_t buf_offset = 0;
 
 	rc = disk_get_pci(fd, &interface_type, &bus, &device, &function);
 	if (rc) return 0;
-	if (interface_type != virtblk) {
+	if (interface_type == nvme) {
+		rc = get_nvme_ns_id(fd, &ns_id);
+		if (rc)
+			return 0;
+	} else if (interface_type != virtblk) {
 		memset(&idlun, 0, sizeof(idlun));
 		rc = get_scsi_idlun(fd, &idlun);
 		if (rc) return 0;
@@ -444,7 +463,13 @@ make_edd30_device_path(int fd, uint8_t *buf, size_t size)
 		return needed;
 	buf_offset += needed;
 
-	if (interface_type != virtblk) {
+	if (interface_type == nvme) {
+		needed = make_nvme_device_path(ns_id, buf + buf_offset,
+					size == 0 ? 0 : size - buf_offset);
+		if (needed < 0)
+			return needed;
+		buf_offset += needed;
+	} else if (interface_type != virtblk) {
 		needed = make_scsi_device_path(id, lun, buf + buf_offset,
 					size == 0 ? 0 : size - buf_offset);
 		if (needed < 0)

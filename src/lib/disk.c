@@ -75,6 +75,45 @@ get_virtblk_major(void)
 	return cached;
 }
 
+static int
+get_nvme_major(void)
+{
+	static int cached;
+	FILE *f;
+	char line[256];
+
+	if (cached != 0) {
+		return cached;
+	}
+
+	cached = -1;
+	f = fopen("/proc/devices", "r");
+	if (f == NULL) {
+		fprintf(stderr, "%s: opening /proc/devices: %s\n", __func__,
+			strerror(errno));
+		return cached;
+	}
+	while (fgets(line, sizeof line, f) != NULL) {
+		size_t len = strlen(line);
+		int major, scanned;
+
+		if (len == 0 || line[len - 1] != '\n') {
+			break;
+		}
+		if (sscanf(line, "%d %n", &major, &scanned) == 1 &&
+		    strcmp(line + scanned, "nvme\n") == 0) {
+			cached = major;
+			break;
+		}
+	}
+	fclose(f);
+	if (cached == -1) {
+		fprintf(stderr, "%s: nvme driver unavailable\n",
+			__func__);
+	}
+	return cached;
+}
+
 int
 disk_info_from_fd(int fd, struct disk_info *info)
 {
@@ -162,6 +201,12 @@ disk_info_from_fd(int fd, struct disk_info *info)
 		info->interface_type = scsi;
 		info->disknum = 16*(info->major-64) + (info->minor >> 4);
 		info->part    = (info->minor & 0xF);
+		return 0;
+	}
+
+	if (get_nvme_major() >= 0 &&
+			(uint64_t)get_nvme_major() == info->major) {
+		info->interface_type = nvme;
 		return 0;
 	}
 

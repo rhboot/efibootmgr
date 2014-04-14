@@ -38,6 +38,7 @@ typedef struct scsi_idlun {
 } Scsi_Idlun;
 
 
+int get_nvme_ns_id(int fd, uint32_t *ns_id);
 inline int get_scsi_idlun(int fd, Scsi_Idlun *idlun);
 int get_scsi_pci(int fd, char *slot_name, size_t size);
 int idlun_to_components (Scsi_Idlun *idlun,

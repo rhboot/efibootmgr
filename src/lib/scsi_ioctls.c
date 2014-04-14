@@ -24,7 +24,14 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#include <linux/nvme.h>
 #include "scsi_ioctls.h"
+
+int
+get_nvme_ns_id(int fd, uint32_t *ns_id)
+{
+	return ioctl(fd, NVME_IOCTL_ID, &ns_id);
+}
 
 int
 idlun_to_components (Scsi_Idlun *idlun,
