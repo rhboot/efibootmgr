@@ -693,10 +693,6 @@ show_boot_vars()
 				printf("\n");
 				continue;
 			}
-			if (optional_data_len > (uint64_t)(path->length + 4)) {
-				printf("(invalid optional data length)\n");
-				continue;
-			}
 
 			rc = unparse_raw_text(text_path, text_path_len,
 				((uint8_t *)path)
