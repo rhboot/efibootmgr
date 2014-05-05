@@ -352,7 +352,8 @@ unparse_media_hard_drive_path(char *buffer, size_t buffer_size,
 		       get(b, hd->start),
 		       get(c, hd->size),
 		       sig);
-	free(sig);
+	if (hd->signature_type == 0x02)
+		free(sig);
 	return rc;
 }
 
