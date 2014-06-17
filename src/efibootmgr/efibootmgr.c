@@ -115,6 +115,13 @@ read_vars(char **namelist,
 					       &entry->attributes);
 			if (rc < 0)
 				goto err;
+
+			/* latest apple firmware sets high bit which appears
+			 * invalid to the linux kernel if we write it back so
+			 * lets zero it out if it is set since it would be
+			 * invalid to set it anyway */
+			entry->attributes = entry->attributes & ~(1 << 31);
+
 			entry->name = namelist[i];
 			list_add_tail(&entry->list, head);
 		}
@@ -299,6 +306,11 @@ read_boot_order(efi_variable_t **boot_order)
 		free(new);
 		*boot_order = NULL;
 	}
+
+	/* latest apple firmware sets high bit which appears invalid
+	 * to the linux kernel if we write it back so lets zero it out
+	 * if it is set since it would be invalid to set it anyway */
+	bo->attributes = bo->attributes & ~(1 << 31);
 	return rc;
 }
 
@@ -404,7 +416,7 @@ read_boot_u16(const char *name)
 static int
 set_boot_u16(const char *name, uint16_t num)
 {
-	return efi_set_variable(EFI_GLOBAL_GUID, name, (uint8_t *)&num, 
+	return efi_set_variable(EFI_GLOBAL_GUID, name, (uint8_t *)&num,
 				sizeof (num), EFI_VARIABLE_NON_VOLATILE |
 					      EFI_VARIABLE_BOOTSERVICE_ACCESS |
 					      EFI_VARIABLE_RUNTIME_ACCESS);
@@ -576,6 +588,11 @@ construct_boot_order(char *bootorder, int keep,
 		*ret_data_size = data_size;
 		return 0;
 	}
+
+	/* latest apple firmware sets high bit which appears invalid
+	 * to the linux kernel if we write it back so lets zero it out
+	 * if it is set since it would be invalid to set it anyway */
+	bo.attributes = bo.attributes & ~(1 << 31);
 
 	size_t new_data_size = data_size + bo.data_size;
 	uint16_t *new_data = calloc(1, new_data_size);
