@@ -149,7 +149,7 @@ compare(const void *a, const void *b)
 	memcpy(&n2, b, sizeof(n2));
 	if (n1 < n2) rc = -1;
 	if (n1 == n2) rc = 0;
-	if (n2 > n2) rc = 1;
+	if (n1 > n2) rc = 1;
 	return rc;
 }
 
