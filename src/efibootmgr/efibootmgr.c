@@ -566,7 +566,7 @@ construct_boot_order(char *bootorder, int keep,
 	size_t data_size = 0;
 
 	rc = parse_boot_order(bootorder, (uint16_t **)&data, &data_size);
-	if (rc < 0 || data_size <= 0)
+	if (rc < 0 || data_size == 0)
 		return rc;
 
 	if (!keep) {
@@ -631,7 +631,7 @@ set_boot_order(int keep_old_entries)
 
 	rc = construct_boot_order(opts.bootorder, keep_old_entries,
 				(uint16_t **)&data, &data_size);
-	if (rc < 0 || data_size < 0)
+	if (rc < 0 || data_size == 0)
 		return rc;
 
 	return efi_set_variable(EFI_GLOBAL_GUID, "BootOrder", data, data_size,
