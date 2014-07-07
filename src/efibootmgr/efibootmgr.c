@@ -72,12 +72,6 @@ static	LIST_HEAD(boot_entry_list);
 static	LIST_HEAD(blk_list);
 efibootmgr_opt_t opts;
 
-static inline void
-var_num_from_name(const char *pattern, char *name, uint16_t *num)
-{
-	sscanf(name, pattern, num);
-}
-
 static void
 free_vars(list_t *head)
 {
