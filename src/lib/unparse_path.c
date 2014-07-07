@@ -43,7 +43,7 @@ unparse_raw(char *buffer, size_t buffer_size, uint8_t *p, uint64_t length)
 	uint64_t i;
 	char a[1];
 
-	size_t needed;
+	ssize_t needed;
 	off_t buf_offset = 0;
 
 	for (i=0; i < length; i++) {
@@ -62,7 +62,7 @@ unparse_raw_text(char *buffer, size_t buffer_size, uint8_t *p, uint64_t length)
 {
 	uint64_t i; unsigned char c;
 
-	size_t needed;
+	ssize_t needed;
 	size_t buf_offset = 0;
 
 	for (i=0; i < length; i++) {
@@ -116,7 +116,7 @@ unparse_vendor_path(char *buffer, size_t buffer_size, char *prefix,
 	unsigned char *q = (uint8_t *)path + 20;
 	int rc;
 
-	size_t needed;
+	ssize_t needed;
 	off_t buf_offset = 0;
 
 	rc = efi_guid_to_str(&path->vendor_guid, &text_guid);
@@ -199,7 +199,7 @@ unparse_messaging_path(char *buffer, size_t buffer_size, EFI_DEVICE_PATH *path)
 	NVME_DEVICE_PATH *nvme = (NVME_DEVICE_PATH *)path;
 	char a[16], b[16], c[16], d[16], e[16];
 
-	size_t needed;
+	ssize_t needed;
 	off_t buf_offset = 0;
 
 	switch (path->subtype) {
@@ -417,7 +417,7 @@ unparse_bios_path(char *buffer, size_t buffer_size, EFI_DEVICE_PATH *path)
 	unsigned char *q = (uint8_t *)path + 8;
 	char a[16], b[16];
 
-	size_t needed;
+	ssize_t needed;
 	off_t buf_offset = 0;
 
 	needed = snprintf(p + buf_offset,
@@ -451,7 +451,7 @@ unparse_path(char *buffer, size_t buffer_size,
 {
 	uint16_t parsed_length = 0;
 	char *p = buffer;
-	size_t needed;
+	ssize_t needed;
 	off_t buf_offset = 0;
 	int exit_now = 0;
 

@@ -309,7 +309,7 @@ make_pci_device_path(uint8_t bus, uint8_t device, uint8_t function,
 	struct pci_access *pacc;
 	struct list_head *pos, *n;
 	LIST_HEAD(pci_parent_list);
-	size_t needed;
+	ssize_t needed;
 	off_t buf_offset = 0;
 
 	pacc = pci_alloc();
@@ -436,7 +436,7 @@ make_edd30_device_path(int fd, uint8_t *buf, size_t size)
 	Scsi_Idlun idlun;
 	uint32_t ns_id;
 	unsigned char host=0, channel=0, id=0, lun=0;
-	size_t needed;
+	ssize_t needed;
 	off_t buf_offset = 0;
 
 	rc = disk_get_pci(fd, &interface_type, &bus, &device, &function);
@@ -508,7 +508,7 @@ make_disk_load_option(char *disk, uint8_t *buf, size_t size)
 	uint8_t mbr_type=0, signature_type=0;
 	uint64_t part_start=0, part_size=0;
 	efi_char16_t *os_loader_path;
-	size_t needed = 0;
+	ssize_t needed = 0;
 	off_t buf_offset = 0;
 
 	memset(signature, 0, sizeof(signature));
@@ -615,7 +615,7 @@ make_net_load_option(char *iface, uint8_t *buf, size_t size)
 	unsigned char bus, slot, func;
 	struct ifreq ifr;
 	struct ethtool_drvinfo drvinfo;
-	size_t needed;
+	ssize_t needed;
 	off_t buf_offset;
 
 	memset(&ifr, 0, sizeof(ifr));
