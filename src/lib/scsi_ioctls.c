@@ -50,7 +50,7 @@ idlun_to_components (Scsi_Idlun *idlun,
 }
 
 
-inline int
+int
 get_scsi_idlun(int fd, Scsi_Idlun *idlun)
 {
 	return ioctl(fd, SCSI_IOCTL_GET_IDLUN, idlun);
