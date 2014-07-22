@@ -307,7 +307,7 @@ unparse_messaging_path(char *buffer, size_t buffer_size, EFI_DEVICE_PATH *path)
 				get(c, sata->lun));
 	case 23:
 		return snprintf(buffer, buffer_size,
-				"NVME(%x,%lx)",
+				"NVME(%x,%" PRIx64 ")",
 				get(a, nvme->namespace_id),
 				get(b, nvme->ieee_extended_unique_identifier));
 	default:
