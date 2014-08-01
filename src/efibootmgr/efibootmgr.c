@@ -452,7 +452,7 @@ delete_boot_var(uint16_t num)
 
 
 static void
-set_var_nums(const char *pattern, list_t *list)
+set_var_nums(list_t *list)
 {
 	list_t *pos;
 	efi_variable_t *var;
@@ -462,7 +462,7 @@ set_var_nums(const char *pattern, list_t *list)
 
 	list_for_each(pos, list) {
 		var = list_entry(pos, efi_variable_t, list);
-		rc = sscanf(var->name, pattern, &num);
+		rc = sscanf(var->name, "Boot%04X-%*s", &num);
 		if (rc == 1) {
 			var->num = num;
 			name = var->name; /* shorter name */
@@ -1105,7 +1105,7 @@ main(int argc, char **argv)
 
 	read_boot_var_names(&boot_names);
 	read_vars(boot_names, &boot_entry_list);
-	set_var_nums("Boot%04X-%*s", &boot_entry_list);
+	set_var_nums(&boot_entry_list);
 
 	if (opts.delete_boot) {
 		if (opts.bootnum == -1) {
