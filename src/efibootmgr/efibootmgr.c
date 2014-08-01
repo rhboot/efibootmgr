@@ -381,8 +381,10 @@ remove_from_boot_order(uint16_t num)
 	boot_order->data = (uint8_t *)new_data;
 	boot_order->data_size = new_data_size;
 	efi_del_variable(EFI_GLOBAL_GUID, "BootOrder");
-	return efi_set_variable(EFI_GLOBAL_GUID, "BootOrder", boot_order->data,
+	rc = efi_set_variable(EFI_GLOBAL_GUID, "BootOrder", boot_order->data,
 				boot_order->data_size, boot_order->attributes);
+	free(boot_order->data);
+	return rc;
 }
 
 static int
