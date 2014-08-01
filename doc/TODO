@@ -1,9 +1,10 @@
-For 0.8:
+For 0.9:
 
 - support for setting hotkeys
 - support for driver variables, not just boot variables.
 - support for arbitrary device paths with -c (including guid parsing)
 - audit for missing unparse_*_path() types.
+  - verify/debug NVME code
 - maintain a list of known GUIDs and print {vendor} instead of the full GUID
   - accept these for arbitrary paths as well.
 - MS-DOS style extended partitions
