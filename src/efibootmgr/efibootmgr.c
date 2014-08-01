@@ -44,6 +44,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <efivar.h>
+#include <inttypes.h>
 #include "list.h"
 #include "efi.h"
 #include "efichar.h"
@@ -283,7 +284,7 @@ static int
 read_boot_order(efi_variable_t **boot_order)
 {
 	int rc;
-	efi_variable_t *new = NULL, *bo;
+	efi_variable_t *new = NULL, *bo = NULL;
 
 	if (*boot_order == NULL) {
 		new = calloc(1, sizeof (**boot_order));
@@ -299,12 +300,15 @@ read_boot_order(efi_variable_t **boot_order)
 	if (rc < 0 && new != NULL) {
 		free(new);
 		*boot_order = NULL;
+		bo = NULL;
 	}
 
-	/* latest apple firmware sets high bit which appears invalid
-	 * to the linux kernel if we write it back so lets zero it out
-	 * if it is set since it would be invalid to set it anyway */
-	bo->attributes = bo->attributes & ~(1 << 31);
+	if (bo) {
+		/* latest apple firmware sets high bit which appears invalid
+		 * to the linux kernel if we write it back so lets zero it out
+		 * if it is set since it would be invalid to set it anyway */
+		bo->attributes = bo->attributes & ~(1 << 31);
+	}
 	return rc;
 }
 
@@ -401,11 +405,15 @@ read_boot_u16(const char *name)
 	if (rc < 0)
 		return rc;
 	if (data_size != 2) {
+		if (data != NULL)
+			free(data);
 		errno = EINVAL;
 		return -1;
 	}
 
 	rc = data[0];
+	if (data != NULL)
+		free(data);
 	return rc;
 }
 
@@ -746,6 +754,11 @@ show_boot_order()
 
 	rc = read_boot_order(&boot_order);
 
+	if (rc < 0 && errno == ENOENT) {
+		boot_order = calloc(1, sizeof (*boot_order));
+		rc = boot_order ? 0 : -1;
+	}
+
 	if (rc < 0) {
 		perror("show_boot_order()");
 		return;
@@ -755,9 +768,11 @@ show_boot_order()
 	   boot order.  First add our entry, then copy the old array.
 	*/
 	data = (uint16_t *)boot_order->data;
-	if (boot_order->data_size)
+	if (boot_order->data_size) {
 		unparse_boot_order(data, boot_order->data_size / sizeof(uint16_t));
-
+		free(boot_order->data);
+	}
+	free(boot_order);
 }
 
 static int
