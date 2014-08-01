@@ -236,7 +236,7 @@ typedef struct {
 	uint32_t reserved;
 	uint64_t node_guid;
 	uint64_t ioc_guid;
-	uint64_t id; 
+	uint64_t id;
 } __attribute__((packed)) INFINIBAND_DEVICE_PATH;
 
 typedef struct {

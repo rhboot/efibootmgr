@@ -1,8 +1,8 @@
 /*
   disk.[ch]
- 
+
   Copyright (C) 2001 Dell Computer Corporation <Matt_Domsch@dell.com>
- 
+
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
@@ -179,7 +179,7 @@ disk_info_from_fd(int fd, struct disk_info *info)
 		info->part    = info->minor & 0x3F;
 		return 0;
 	}
- 	
+
         /* I2O disks can have up to 16 partitions, or 4 bits worth. */
 	if (info->major >= 80 && info->major <= 87) {
 		info->interface_type = i2o;
@@ -248,7 +248,7 @@ disk_get_virt_pci(const struct disk_info *info, unsigned char *bus,
 }
 
 static int
-disk_get_scsi_pci(int fd, 
+disk_get_scsi_pci(int fd,
 	     const struct disk_info *info,
 	     unsigned char *bus,
 	     unsigned char *device,
@@ -265,7 +265,7 @@ disk_get_scsi_pci(int fd,
 		return 1;
 	}
 	if (S_ISREG(buf.st_mode)) {
-		/* can't call ioctl() on this file and have it succeed.  
+		/* can't call ioctl() on this file and have it succeed.
 		 * instead, need to open the block device
 		 * from /dev/.
 		 */
@@ -320,13 +320,13 @@ disk_get_ide_pci(int fd,
 	char procname[80], infoline[80];
 	size_t read_count __attribute__((unused));
 	int rc;
-	
+
 	rc = disk_info_from_fd(fd, &info);
 	if (rc) return rc;
 
 
 	sprintf(procname, "/proc/ide/ide%d/config", info.controllernum);
-	
+
 	procfd = open(procname, O_RDONLY);
 	if (!procfd) {
 		perror("opening /proc/ide/ide*/config");
@@ -334,11 +334,11 @@ disk_get_ide_pci(int fd,
 	}
 	read_count = read(procfd, infoline, sizeof(infoline)-1);
 	close(procfd);
-	
+
 	num_scanned = sscanf(infoline,
 			     "pci bus %x device %x vid %*x did %*x channel %*x",
 			     &b, &d);
-	
+
 	if (num_scanned == 2) {
 		*bus      = b;
 		*device   = PCI_SLOT(d);
@@ -376,7 +376,7 @@ disk_get_pci(int fd,
 		break;
 	}
 	return 1;
-}	
+}
 
 int
 disk_get_size(int fd, long *size)
@@ -441,12 +441,12 @@ msdos_disk_get_partition_info (int fd, legacy_mbr *mbr,
 			       uint64_t *start, uint64_t *size,
 			       char *signature,
 			       uint8_t *mbr_type, uint8_t *signature_type)
-{	
+{
 	int rc;
 	long disk_size=0;
 	struct stat stat;
 	struct timeval tv;
-	
+
 	if (!mbr) return 1;
 	if (!is_mbr_valid(mbr)) return 1;
 
@@ -454,7 +454,6 @@ msdos_disk_get_partition_info (int fd, legacy_mbr *mbr,
 	*signature_type = 0x01;
 
 	if (!mbr->unique_mbr_signature && !opts.write_signature) {
-		
 		printf("\n\n******************************************************\n");
 		printf("Warning! This MBR disk does not have a unique signature.\n");
 		printf("If this is not the first disk found by EFI, you may not be able\n");
@@ -462,14 +461,11 @@ msdos_disk_get_partition_info (int fd, legacy_mbr *mbr,
 		printf("Run efibootmgr with the -w flag to write a unique signature\n");
 		printf("to the disk.\n");
 		printf("******************************************************\n\n");
-		
 	}
 	else if (!mbr->unique_mbr_signature && opts.write_signature) {
-		
-		/* MBR Signatures must be unique for the 
+		/* MBR Signatures must be unique for the
 		   EFI Boot Manager
 		   to find the right disk to boot from */
-		
 		rc = fstat(fd, &stat);
 		if (rc == -1) {
 			perror("stat disk");
@@ -479,19 +475,18 @@ msdos_disk_get_partition_info (int fd, legacy_mbr *mbr,
 		if (rc == -1) {
 			perror("gettimeofday");
 		}
-		
+
 		/* Write the device type to the signature.
 		   This should be unique per disk per system */
 		mbr->unique_mbr_signature =  tv.tv_usec << 16;
 		mbr->unique_mbr_signature |= stat.st_rdev & 0xFFFF;
-			
+
 		/* Write it to the disk */
 		lseek(fd, 0, SEEK_SET);
 		rc = write(fd, mbr, sizeof(*mbr));
 	}
 	*(uint32_t *)signature = mbr->unique_mbr_signature;
-		
-		
+
         if (num > 4) {
 		/* Extended partition */
                 return msdos_disk_get_extended_partition_info(fd, mbr, num,
@@ -507,7 +502,6 @@ msdos_disk_get_partition_info (int fd, legacy_mbr *mbr,
 		/* Primary partition */
                 *start = mbr->partition[num-1].starting_lba;
                 *size  = mbr->partition[num-1].size_in_lba;
-                
 	}
 	return 0;
 }
@@ -561,13 +555,13 @@ lcm(unsigned int x, unsigned int y)
  *  @signature - partition signature returned
  *  @mbr_type  - partition type returned
  *  @signature_type - signature type returned
- * 
+ *
  *  Description: Finds partition table info for given partition on given disk.
  *               Both GPT and MSDOS partition tables are tested for.
  *  Returns 0 on success, non-zero on failure
  */
 int
-disk_get_partition_info (int fd, 
+disk_get_partition_info (int fd,
 			 uint32_t num,
 			 uint64_t *start, uint64_t *size,
 			 char *signature,

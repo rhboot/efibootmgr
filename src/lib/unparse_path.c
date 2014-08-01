@@ -1,8 +1,8 @@
 /*
   unparse_path.[ch]
- 
+
   Copyright (C) 2001 Dell Computer Corporation <Matt_Domsch@dell.com>
- 
+
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
@@ -582,7 +582,6 @@ main(int argc, char **argv)
 		exit(-1);
 	}
 
-	
 	fd = open(argv[1], O_RDONLY);
 	if (fd == -1) {
 		perror("Failed to open file.");
@@ -595,8 +594,7 @@ main(int argc, char **argv)
 		exit(-1);
 	}
 	unparse_var(&var);
-	
-		
+
 	return 0;
 }
 #endif

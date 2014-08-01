@@ -611,7 +611,7 @@ static ssize_t
 make_net_load_option(char *iface, uint8_t *buf, size_t size)
 {
 	/* copied pretty much verbatim from the ethtool source */
-	int fd = 0, err; 
+	int fd = 0, err;
 	unsigned char bus, slot, func;
 	struct ifreq ifr;
 	struct ethtool_drvinfo drvinfo;
@@ -681,7 +681,7 @@ make_net_load_option(char *iface, uint8_t *buf, size_t size)
 		return needed;
 	buf_offset += needed;
 
-	needed = make_end_device_path(buf + buf_offset, 
+	needed = make_end_device_path(buf + buf_offset,
 					size == 0 ? 0 : size - buf_offset);
 	if (needed < 0)
 		return needed;
@@ -857,7 +857,7 @@ append_extra_args_file(uint8_t **data, size_t *data_size)
 	ssize_t num_read=0;
 	unsigned long appended=0;
 	size_t maxchars = 0;
-	char *buffer; 
+	char *buffer;
 
 	if (!data) {
 		fprintf(stderr, "internal error\n");
