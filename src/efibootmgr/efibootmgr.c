@@ -347,6 +347,57 @@ add_to_boot_order(uint16_t num)
 }
 
 static int
+remove_dupes_from_boot_order(void)
+{
+	efi_variable_t *boot_order = NULL;
+	uint64_t new_data_size;
+	uint16_t *new_data, *old_data;
+	unsigned int old_i,new_i;
+	int rc;
+
+	rc = read_boot_order(&boot_order);
+	if (rc < 0)
+		return rc;
+
+	old_data = (uint16_t *)(boot_order->data);
+	/* Start with the same size */
+	new_data_size = boot_order->data_size;
+	new_data = malloc(new_data_size);
+	if (!new_data)
+		return -1;
+
+	unsigned int old_max = boot_order->data_size / sizeof(*new_data);
+	for (old_i = 0, new_i = 0; old_i < old_max; old_i++) {
+		int copies = 0;
+		unsigned int j;
+		for (j = 0; j < new_i; j++) {
+			if (new_data[j] == old_data[old_i]) {
+				copies++;
+				break;
+			}
+		}
+		if (copies == 0) {
+			/* Copy this value */
+			new_data[new_i] = old_data[old_i];
+			new_i++;
+		}
+	}
+	/* Adjust the size if we didn't copy everything. */
+	new_data_size = sizeof(new_data[0]) * new_i;
+
+	/* Now new_data has what we need */
+	free(boot_order->data);
+	boot_order->data = (uint8_t *)new_data;
+	boot_order->data_size = new_data_size;
+	efi_del_variable(EFI_GLOBAL_GUID, "BootOrder");
+	rc = efi_set_variable(EFI_GLOBAL_GUID, "BootOrder", boot_order->data,
+				boot_order->data_size, boot_order->attributes);
+	free(boot_order->data);
+	free(boot_order);
+	return rc;
+}
+
+static int
 remove_from_boot_order(uint16_t num)
 {
 	efi_variable_t *boot_order = NULL;
@@ -835,6 +886,7 @@ usage()
 	printf("\t-b | --bootnum XXXX   modify BootXXXX (hex)\n");
 	printf("\t-B | --delete-bootnum delete bootnum (hex)\n");
 	printf("\t-c | --create         create new variable bootnum and add to bootorder\n");
+	printf("\t-D | --remove-dups	remove duplicate values from BootOrder\n");
 	printf("\t-d | --disk disk       (defaults to /dev/sda) containing loader\n");
 	printf("\t-e | --edd [1|3|-1]   force EDD 1.0 or 3.0 creation variables, or guess\n");
 	printf("\t-E | --device num      EDD 1.0 device number (defaults to 0x80)\n");
@@ -894,6 +946,7 @@ parse_opts(int argc, char **argv)
 			{"bootnum",          required_argument, 0, 'b'},
 			{"delete-bootnum",         no_argument, 0, 'B'},
 			{"create",                 no_argument, 0, 'c'},
+			{"remove-dups",            no_argument, 0, 'D'},
 			{"disk",             required_argument, 0, 'd'},
 			{"iface",            required_argument, 0, 'i'},
 			{"acpi_hid",         required_argument, 0, 'H'},
@@ -923,7 +976,7 @@ parse_opts(int argc, char **argv)
 		};
 
 		c = getopt_long (argc, argv,
-				 "AaBb:cd:e:E:gH:i:l:L:n:No:Op:qt:TuU:v::Vw"
+				 "AaBb:cDd:e:E:gH:i:l:L:n:No:Op:qt:TuU:v::Vw"
 				 "@:h",
 				 long_options, &option_index);
 		if (c == -1)
@@ -954,6 +1007,9 @@ parse_opts(int argc, char **argv)
 			break;
 		case 'c':
 			opts.create = 1;
+			break;
+		case 'D':
+			opts.deduplicate = 1;
 			break;
 		case 'd':
 			opts.disk = optarg;
@@ -1163,6 +1219,9 @@ main(int argc, char **argv)
 		ret = set_boot_order(opts.keep_old_entries);
 	}
 
+	if (opts.deduplicate) {
+		ret = remove_dupes_from_boot_order();
+	}
 
 	if (opts.delete_bootnext) {
 		ret = efi_del_variable(EFI_GLOBAL_GUID, "BootNext");
