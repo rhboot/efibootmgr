@@ -933,7 +933,8 @@ set_default_opts()
 static void
 parse_opts(int argc, char **argv)
 {
-	int c, num, rc;
+	int c, rc;
+	unsigned int num;
 	int option_index = 0;
 
 	while (1)
@@ -1015,7 +1016,7 @@ parse_opts(int argc, char **argv)
 			opts.disk = optarg;
 			break;
 		case 'e':
-			rc = sscanf(optarg, "%d", &num);
+			rc = sscanf(optarg, "%u", &num);
 			if (rc == 1) opts.edd_version = num;
 			else {
 				fprintf (stderr,"invalid numeric value %s\n",optarg);
@@ -1118,7 +1119,7 @@ parse_opts(int argc, char **argv)
 			if (optarg) {
 				if (!strcmp(optarg, "v"))  opts.verbose = 2;
 				if (!strcmp(optarg, "vv")) opts.verbose = 3;
-				rc = sscanf(optarg, "%d", &num);
+				rc = sscanf(optarg, "%u", &num);
 				if (rc == 1)  opts.verbose = num;
 				else {
 					fprintf (stderr,"invalid numeric value %s\n",optarg);
