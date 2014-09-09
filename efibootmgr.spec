@@ -1,22 +1,21 @@
 Summary: EFI Boot Manager
 Name: efibootmgr
-Version: 0.7.0
-Release: 0.3%{?dist}
+Version: 0.8.0
+Release: 1%{?dist}
 Group: System Environment/Base
 License: GPLv2+
-URL: https://github.com/vathpela/%{name}/
-BuildRequires: pciutils-devel, zlib-devel
+URL: http://github.com/vathpela/%{name}/
+BuildRequires: pciutils-devel, zlib-devel, git
+BuildRequires: efivar-libs, efivar-devel
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXXXX)
 # EFI/UEFI don't exist on PPC
-ExclusiveArch: i386 x86_64 ia64
-Requires: efivar-libs
-BuildRequires: efivar-libs efivar-devel
+ExclusiveArch: %{ix86} x86_64 aarch64
 
 # for RHEL / Fedora when efibootmgr was part of the elilo package
-Conflicts: elilo < 3.6-6
-Obsoletes: elilo < 3.6-6
+Conflicts: elilo <= 3.6-6
+Obsoletes: elilo <= 3.6-6
 
-Source0: https://github.com/vathpela/%{name}/archive/%{name}-%{version}.tar.bz2
+Source0: https://github.com/vathpela/%{name}/releases/download/%{name}-%{version}/%{name}-%{version}.tar.bz2
 
 %description
 %{name} displays and allows the user to edit the Intel Extensible
@@ -26,8 +25,16 @@ http://developer.intel.com/technology/efi/efi.htm and http://uefi.org/.
 
 %prep
 %setup -q
+git init
+git config user.email "example@example.com"
+git config user.name "RHEL Ninjas"
+git add .
+git commit -a -q -m "%{version} baseline."
+git am %{patches} </dev/null
+
 %build
 make %{?_smp_mflags} EXTRA_CFLAGS='%{optflags}'
+
 %install
 rm -rf %{buildroot}
 mkdir -p %{buildroot}%{_sbindir} %{buildroot}%{_mandir}/man8
@@ -46,6 +53,9 @@ rm -rf %{buildroot}
 %doc README INSTALL COPYING
     
 %changelog
+* Tue Sep 09 2014 Peter Jones <pjones@redhat.com> - 0.8.0-1
+- Release 0.8.0
+
 * Mon Jan 13 2014 Peter Jones <pjones@redhat.com> - 0.6.1-1
 - Release 0.6.1
 
