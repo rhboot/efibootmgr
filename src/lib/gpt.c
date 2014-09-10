@@ -221,6 +221,7 @@ read_lba(int fd, uint64_t lba, void *buffer, size_t bytes)
         void *iobuf;
         size_t iobuf_size;
         int rc;
+	off_t new_offset;
 
         iobuf_size = lcm(bytes, sector_size);
         rc = posix_memalign(&iobuf, sector_size, iobuf_size);
@@ -228,8 +229,11 @@ read_lba(int fd, uint64_t lba, void *buffer, size_t bytes)
                 return rc;
         memset(iobuf, 0, bytes);
 
-
-        lseek(fd, offset, SEEK_SET);
+        new_offset = lseek(fd, offset, SEEK_SET);
+	if (new_offset == (off_t)-1) {
+		free(iobuf);
+		return 0;
+	}
         bytesread = read(fd, iobuf, iobuf_size);
         memcpy(buffer, iobuf, bytes);
         free(iobuf);
