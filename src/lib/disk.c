@@ -328,7 +328,7 @@ disk_get_ide_pci(int fd,
 	sprintf(procname, "/proc/ide/ide%d/config", info.controllernum);
 
 	procfd = open(procname, O_RDONLY);
-	if (!procfd) {
+	if (procfd < 0) {
 		perror("opening /proc/ide/ide*/config");
 		return 1;
 	}
