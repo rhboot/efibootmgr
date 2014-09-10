@@ -112,7 +112,7 @@ read_var_names(filter_t filter, char ***namelist)
 
 		newlist = tmp;
 	}
-	if (rc == 0) {
+	if (rc == 0 && newlist) {
 		qsort(newlist, nentries, sizeof (char *), cmpstringp);
 		*namelist = newlist;
 	} else {
