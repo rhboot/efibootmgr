@@ -627,8 +627,11 @@ construct_boot_order(char *bootorder, int keep,
 	size_t data_size = 0;
 
 	rc = parse_boot_order(bootorder, (uint16_t **)&data, &data_size);
-	if (rc < 0 || data_size == 0)
+	if (rc < 0 || data_size == 0) {
+		if (data) /* this can't actually happen, but covscan believes */
+			free(data);
 		return rc;
+	}
 
 	if (!keep) {
 		*ret_data = data;
@@ -651,8 +654,11 @@ construct_boot_order(char *bootorder, int keep,
 
 	size_t new_data_size = data_size + bo.data_size;
 	uint16_t *new_data = calloc(1, new_data_size);
-	if (!new_data)
+	if (!new_data) {
+		if (data)
+			free(data);
 		return -1;
+	}
 
 	memcpy(new_data, data, data_size);
 	memcpy(new_data + (data_size / sizeof (*new_data)), bo.data,
