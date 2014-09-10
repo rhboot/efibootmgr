@@ -805,14 +805,17 @@ show_boot_order()
 
 	rc = read_boot_order(&boot_order);
 
-	if (rc < 0 && errno == ENOENT) {
-		boot_order = calloc(1, sizeof (*boot_order));
-		rc = boot_order ? 0 : -1;
-	}
-
 	if (rc < 0) {
-		perror("show_boot_order()");
-		return;
+		if (errno == ENOENT) {
+			boot_order = calloc(1, sizeof (*boot_order));
+			if (!boot_order) {
+				perror("show_boot_order()");
+				return;
+			}
+		} else {
+			perror("show_boot_order()");
+			return;
+		}
 	}
 
 	/* We've now got an array (in boot_order->data) of the
