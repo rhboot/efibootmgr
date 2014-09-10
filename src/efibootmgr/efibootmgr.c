@@ -463,8 +463,7 @@ read_boot_u16(const char *name)
 	}
 
 	rc = data[0];
-	if (data != NULL)
-		free(data);
+	free(data);
 	return rc;
 }
 
