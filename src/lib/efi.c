@@ -792,7 +792,7 @@ append_extra_args_ascii(uint8_t **data, size_t *data_size)
 	int i;
 	unsigned long usedchars=0;
 
-	if (!data)
+	if (!data || *data)
 		return -1;
 
 	for (i=opts.optind; i < opts.argc; i++)	{
@@ -816,8 +816,6 @@ append_extra_args_ascii(uint8_t **data, size_t *data_size)
 	if (!new_data)
 		return 0;
 
-	if (*data)
-		free(*data);
 	*data = (uint8_t *)new_data;
 	*data_size = usedchars;
 
@@ -831,7 +829,7 @@ append_extra_args_unicode(uint8_t **data, size_t *data_size)
 	int i;
 	unsigned long usedchars=0;
 
-	if (!data)
+	if (!data || *data)
 		return -1;
 
 	for (i = opts.optind; i < opts.argc; i++) {
@@ -857,8 +855,6 @@ append_extra_args_unicode(uint8_t **data, size_t *data_size)
 	if (!new_data)
 		return 0;
 
-	if (*data)
-		free(*data);
 	*data = (uint8_t *)new_data;
 	*data_size = usedchars * sizeof (*new_data);
 
