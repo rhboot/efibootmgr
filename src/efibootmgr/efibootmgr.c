@@ -330,6 +330,8 @@ add_to_boot_order(uint16_t num)
 	old_data = (uint16_t *)boot_order->data;
 	new_data_size = boot_order->data_size + sizeof(uint16_t);
 	new_data = malloc(new_data_size);
+	if (!new_data)
+		return -1;
 
 	new_data[0] = num;
 	memcpy(new_data+1, old_data, boot_order->data_size);
