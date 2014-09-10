@@ -56,7 +56,7 @@ get_virtblk_major(void)
 	}
 	while (fgets(line, sizeof line, f) != NULL) {
 		size_t len = strlen(line);
-		int major, scanned;
+		int major, scanned = 0;
 
 		if (len == 0 || line[len - 1] != '\n') {
 			break;
@@ -95,7 +95,7 @@ get_nvme_major(void)
 	}
 	while (fgets(line, sizeof line, f) != NULL) {
 		size_t len = strlen(line);
-		int major, scanned;
+		int major, scanned = 0;
 
 		if (len == 0 || line[len - 1] != '\n') {
 			break;
