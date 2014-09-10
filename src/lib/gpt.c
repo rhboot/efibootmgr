@@ -612,6 +612,7 @@ gpt_disk_get_partition_info(int fd,
 {
 	gpt_header *gpt = NULL;
 	gpt_entry *ptes = NULL, *p;
+	int rc = 0;
 
 	if (!find_valid_gpt(fd, &gpt, &ptes))
 		return 1;
@@ -628,9 +629,14 @@ gpt_disk_get_partition_info(int fd,
 		       sizeof (p->unique_partition_guid));
 	} else {
 		fprintf (stderr,"partition %d is not valid\n", num);
-		return 1;
+		rc = 1;
 	}
-	return 0;
+	if (ptes)
+		free(ptes);
+	if (gpt)
+		free(gpt);
+
+	return rc;
 }
 
 /*
