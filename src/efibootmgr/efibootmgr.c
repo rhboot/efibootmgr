@@ -1008,7 +1008,7 @@ parse_opts(int argc, char **argv)
 			break;
 		case 'b':
 			rc = sscanf(optarg, "%X", &num);
-			if (rc == 1 && num >= 0 && num < 0xffff) {
+			if (rc == 1 && num < 0xffff) {
 				opts.bootnum = num;
 			} else {
 				fprintf (stderr,"invalid hex value %s\n",optarg);
