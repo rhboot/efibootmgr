@@ -939,6 +939,7 @@ append_extra_args(uint8_t **data, size_t *data_size)
 		free(new_data);
 		if (ret < 0)
 			return -1;
+		new_data = NULL;
 		new_data_size = 0;
 	}
 
@@ -946,15 +947,21 @@ append_extra_args(uint8_t **data, size_t *data_size)
 		ret = append_extra_args_unicode(&new_data, &new_data_size);
 	else
 		ret = append_extra_args_ascii(&new_data, &new_data_size);
-	if (ret < 0)
+	if (ret < 0) {
+		if (new_data) /* this can't happen, but covscan believes */
+			free(new_data);
 		return -1;
+	}
 	if (new_data_size) {
 		ret = add_new_data(data, data_size, new_data, new_data_size);
 		free(new_data);
+		new_data = NULL;
 		if (ret < 0)
 			return -1;
 		new_data_size = 0;
 	}
 
+	if (new_data) /* once again, this can't happen, but covscan believes */
+		free(new_data);
 	return 0;
 }
