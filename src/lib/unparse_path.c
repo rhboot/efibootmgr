@@ -325,6 +325,7 @@ unparse_media_hard_drive_path(char *buffer, size_t buffer_size,
 	char text_uuid[40], *sig=text_uuid;
 	char a[16], b[16], c[16];
 	int rc = 0;
+	char *sig_allocated = NULL;
 
 	switch (hd->signature_type) {
 	case 0x00:
@@ -339,9 +340,11 @@ unparse_media_hard_drive_path(char *buffer, size_t buffer_size,
 			return -1;
 		break;
 	case 0x02: /* GPT */
-		rc = efi_guid_to_str((efi_guid_t *)hd->signature, &sig);
+		rc = efi_guid_to_str((efi_guid_t *)hd->signature,
+					&sig_allocated);
 		if (rc < 0)
 			return rc;
+		sig = sig_allocated;
 		break;
 	default:
 		return 0;
@@ -352,8 +355,8 @@ unparse_media_hard_drive_path(char *buffer, size_t buffer_size,
 		       get(b, hd->start),
 		       get(c, hd->size),
 		       sig);
-	if (hd->signature_type == 0x02)
-		free(sig);
+	if (sig_allocated)
+		free(sig_allocated);
 	return rc;
 }
 
