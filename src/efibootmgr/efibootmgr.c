@@ -772,7 +772,7 @@ show_boot_vars()
 				continue;
 			}
 
-			rc = unparse_raw_text(text_path, text_path_len,
+			rc = unparse_raw_text(NULL, 0,
 				((uint8_t *)path)
 					+ load_option->file_path_list_length,
 				optional_data_len);
