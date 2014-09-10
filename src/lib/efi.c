@@ -717,7 +717,7 @@ make_linux_load_option(uint8_t **data, size_t *data_size)
 	size_t needed;
 	off_t buf_offset = 0, desc_offset;
 
-	load_option = calloc(1, sizeof (load_option));
+	load_option = calloc(1, sizeof (*load_option));
 	if (load_option == NULL)
 		return -1;
 	buf = (uint8_t *)load_option;
