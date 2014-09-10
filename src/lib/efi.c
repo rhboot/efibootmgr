@@ -528,8 +528,10 @@ make_disk_load_option(char *disk, uint8_t *buf, size_t size)
 			needed = make_edd10_device_path(opts.edd10_devicenum,
 							buf, size);
 		}
-		if (needed < 0)
+		if (needed < 0) {
+			close(disk_fd);
 			return needed;
+		}
 		buf_offset += needed;
 	}
 
