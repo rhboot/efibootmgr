@@ -722,7 +722,7 @@ make_linux_load_option(uint8_t **data, size_t *data_size)
 	size_t load_option_size = sizeof (*load_option);
 	efi_char16_t description[64];
 	uint8_t *buf;
-	size_t needed;
+	ssize_t needed;
 	off_t buf_offset = 0, desc_offset;
 
 	load_option = calloc(1, sizeof (*load_option));
@@ -754,11 +754,19 @@ make_linux_load_option(uint8_t **data, size_t *data_size)
 
 	if (opts.iface) {
 		needed = make_net_load_option(opts.iface, NULL, 0);
+		if (needed < 0) {
+			free(buf);
+			return needed;
+		}
 		buf = extend(load_option, load_option_size, needed);
 		make_net_load_option(opts.iface, buf + buf_offset, needed);
 		buf_offset += needed;
 	} else {
 		needed = make_disk_load_option(opts.iface, NULL, 0);
+		if (needed < 0) {
+			free(buf);
+			return needed;
+		}
 		buf = extend(load_option, load_option_size, needed);
 		make_disk_load_option(opts.iface, buf + buf_offset, needed);
 		buf_offset += needed;
