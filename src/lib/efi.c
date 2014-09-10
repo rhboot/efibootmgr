@@ -631,13 +631,16 @@ make_net_load_option(char *iface, uint8_t *buf, size_t size)
 	err = ioctl(fd, SIOCETHTOOL, &ifr);
 	if (err < 0) {
 		perror("Cannot get driver information");
+		close(fd);
 		return -1;
 	}
 
 	if (strncmp(drvinfo.bus_info, "virtio", 6) == 0) {
 		err = get_virt_pci(drvinfo.bus_info, &bus, &slot, &func);
-		if (err < 0)
+		if (err < 0) {
+			close(fd);
 			return err;
+		}
 	} else {
 		/* The domain part was added in 2.6 kernels.
 		 * Test for that first. */
@@ -648,6 +651,7 @@ make_net_load_option(char *iface, uint8_t *buf, size_t size)
 						&bus, &slot, &func);
 			if (err != 3) {
 				perror("Couldn't parse device location string.");
+				close(fd);
 				return -1;
 			}
 		}
@@ -655,9 +659,11 @@ make_net_load_option(char *iface, uint8_t *buf, size_t size)
 
 	err = ioctl(fd, SIOCGIFHWADDR, &ifr);
 	if (err < 0) {
+		close(fd);
 		perror("Cannot get hardware address.");
 		return -1;
 	}
+	close(fd);
 
 	buf_offset = 0;
 	needed = make_acpi_device_path(opts.acpi_hid, opts.acpi_uid, buf,
