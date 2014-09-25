@@ -112,7 +112,7 @@ static ssize_t
 unparse_vendor_path(char *buffer, size_t buffer_size, char *prefix,
 	VENDOR_DEVICE_PATH *path)
 {
-	char *text_guid;
+	char *text_guid = NULL;
 	unsigned char *q = (uint8_t *)path + 20;
 	int rc;
 
@@ -367,7 +367,7 @@ unparse_media_path(char *buffer, size_t buffer_size, EFI_DEVICE_PATH *path)
 	CDROM_DEVICE_PATH *cdrom = (CDROM_DEVICE_PATH *)path;
 	MEDIA_PROTOCOL_DEVICE_PATH *media = (MEDIA_PROTOCOL_DEVICE_PATH *)path;
 	FILE_PATH_DEVICE_PATH *file = (FILE_PATH_DEVICE_PATH *)path;
-	char *text_guid;
+	char *text_guid = NULL;
 	char file_name[80];
 	memset(file_name, 0, sizeof(file_name));
 	char a[16], b[16], c[16];
