@@ -2,7 +2,7 @@
 
   SIGNING_KEY := pjones
   RELEASE_MAJOR := 0
-  RELEASE_MINOR := 8
+  RELEASE_MINOR := 9
   RELEASE_SUBLEVEL := 0
   RELEASE_NAME := efibootmgr
   RELEASE_STRING := $(RELEASE_NAME)-$(RELEASE_MAJOR).$(RELEASE_MINOR).$(RELEASE_SUBLEVEL)
@@ -63,7 +63,7 @@ test-archive:
 	@echo "The archive is in $(RELEASE_STRING).tar.bz2"
 
 archive:
-	git tag $(GITTAG) refs/heads/master
+	git tag -s $(GITTAG) refs/heads/master
 	@rm -rf /tmp/$(RELEASE_STRING) /tmp/$(RELEASE_STRING)-tmp
 	@mkdir -p /tmp/$(RELEASE_STRING)-tmp
 	@git archive --format=tar $(GITTAG) | ( cd /tmp/$(RELEASE_STRING)-tmp/ ; tar x )
