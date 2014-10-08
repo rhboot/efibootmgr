@@ -82,7 +82,7 @@ Set BootNext to XXXX (hex)
 Delete BootNext
 .TP
 \fB-o | --bootorder \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR
-Explicitly set BootOrder (hex)
+Explicitly set BootOrder (hex).  Any value from 0 to FFFF is accepted so long as it corresponds to an existing Boot#### variable, and zero padding is not required.
 .TP
 \fB-O | --delete-bootorder\fR
 Delete BootOrder
