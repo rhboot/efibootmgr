@@ -110,17 +110,21 @@ kernel_has_blkgetsize64(void)
 
         memset(&u, 0, sizeof(u));
         rc = uname(&u);
-        if (rc) return 0;
+        if (rc)
+		return 0;
 
         parsed = sscanf(u.release, "%d.%d.%d", &major, &minor, &patch);
-        if (parsed < 3) return 0;
-        if (major > 2) return 1;
-        if (major == 2 && minor > 5) return 1;
-        if (major == 2 && minor == 5 && patch >= 4) return 1;
-        if (major == 2 && minor == 4 && patch >= 18) return 1;
-        return 0;
-}
+	/* If the kernel is 2.4.15-2.4.18 and 2.5.0-2.5.3, i.e. the problem
+	 * kernels, then this will get 3 answers.  If it doesn't, it isn't. */
+	if (parsed != 3)
+		return 1;
 
+	if (major == 2 && minor == 5 && patch < 4)
+		return 0;
+	if (major == 2 && minor == 4 && patch >= 15 && patch <= 18)
+		return 0;
+	return 1;
+}
 
 /************************************************************
  * _get_num_sectors
@@ -128,7 +132,7 @@ kernel_has_blkgetsize64(void)
  *  - filedes is an open file descriptor, suitable for reading
  * Modifies: nothing
  * Returns:
- *  Last LBA value on success 
+ *  Last LBA value on success
  *  0 on error
  *
  * Try getting BLKGETSIZE64 and BLKSSZGET first,
@@ -152,7 +156,7 @@ _get_num_sectors(int filedes)
         rc = ioctl(filedes, BLKGETSIZE, &sectors);
         if (rc)
                 return 0;
-        
+
 	return sectors;
 }
 
