@@ -32,8 +32,6 @@
 #include "gpt.h"
 #include "efibootmgr.h"
 
-#define BLKSSZGET  _IO(0x12,104)	/* get block device sector size */
-
 /* The major device number for virtio-blk disks is decided on module load time.
  */
 static int

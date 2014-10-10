@@ -23,42 +23,21 @@
 
 #include <sys/ioctl.h>
 #include <stdint.h>
+#include <asm/ioctl.h>
+#include <linux/fs.h>
 
-/* Snagged from linux/include/asm-ia64/ioctl.h */
-#define _IOC_NRBITS     8
-#define _IOC_TYPEBITS   8
-#define _IOC_SIZEBITS   14
-#define _IOC_DIRBITS    2
-
-#define _IOC_NRMASK     ((1 << _IOC_NRBITS)-1)
-#define _IOC_TYPEMASK   ((1 << _IOC_TYPEBITS)-1)
-#define _IOC_SIZEMASK   ((1 << _IOC_SIZEBITS)-1)
-#define _IOC_DIRMASK    ((1 << _IOC_DIRBITS)-1)
-
-#define _IOC_NRSHIFT    0
-#define _IOC_TYPESHIFT  (_IOC_NRSHIFT+_IOC_NRBITS)
-#define _IOC_SIZESHIFT  (_IOC_TYPESHIFT+_IOC_TYPEBITS)
-#define _IOC_DIRSHIFT   (_IOC_SIZESHIFT+_IOC_SIZEBITS)
-
-/*
- * Direction bits.
- */
-#define _IOC_NONE       0U
-#define _IOC_WRITE      1U
-#define _IOC_READ       2U
-
-#define _IOC(dir,type,nr,size) \
-        (((dir)  << _IOC_DIRSHIFT) | \
-         ((type) << _IOC_TYPESHIFT) | \
-         ((nr)   << _IOC_NRSHIFT) | \
-         ((size) << _IOC_SIZESHIFT))
-
-/* used to create numbers */
-#define _IO(type,nr)            _IOC(_IOC_NONE,(type),(nr),0)
-
-
-/* Snagged from linux/include/linux/fs.h */
+#ifndef BLKGETSIZE
 #define BLKGETSIZE _IO(0x12,96)      /* return device size */
+#endif
+#ifndef BLKSZGET
+#define BLKSSZGET  _IO(0x12,104)       /* get block device sector size */
+#endif
+#ifndef BLKGETSIZE64
+#define BLKGETSIZE64 _IOR(0x12,114,uint64_t)   /* return device size in bytes (u64 *arg) */
+#endif
+#ifndef BLKGETLASTSECT
+#define BLKGETLASTSECT _IO(0x12,108) /* get last sector of block device */
+#endif
 
 
 enum _bus_type {bus_type_unknown, isa, pci};
