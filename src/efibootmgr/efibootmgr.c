@@ -281,6 +281,8 @@ err_boot_entry:
 	if (boot->name) {
 		fprintf(stderr, "Could not set variable %s: %m\n", boot->name);
 		free(boot->name);
+	} else {
+		fprintf(stderr, "Could not set variable: %m\n");
 	}
 	if (boot->data)
 		free(boot->data);
