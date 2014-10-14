@@ -242,16 +242,20 @@ make_boot_var(list_t *boot_list)
 		free_number = opts.bootnum;
 	}
 
-	if (free_number == -1)
+	if (free_number == -1) {
+		fprintf(stderr, "efibootmgr: no available boot variables\n");
 		return NULL;
+	}
 
 	/* Create a new efi_variable_t object
 	   and populate it.
 	*/
 
 	boot = calloc(1, sizeof(*boot));
-	if (!boot)
+	if (!boot) {
+		fprintf(stderr, "efibootmgr: %m\n");
 		return NULL;
+	}
 	if (make_linux_load_option(&boot->data, &boot->data_size) < 0)
 		goto err_boot_entry;
 	if (append_extra_args(&boot->data, &boot->data_size) < 0)
@@ -260,8 +264,10 @@ make_boot_var(list_t *boot_list)
 	boot->num = free_number;
 	boot->guid = EFI_GLOBAL_VARIABLE;
 	rc = asprintf(&boot->name, "Boot%04X", free_number);
-	if (rc < 0)
+	if (rc < 0) {
+		fprintf(stderr, "efibootmgr: %m\n");
 		goto err_boot_entry;
+	}
 	boot->attributes = EFI_VARIABLE_NON_VOLATILE |
 			    EFI_VARIABLE_BOOTSERVICE_ACCESS |
 			    EFI_VARIABLE_RUNTIME_ACCESS;
@@ -272,8 +278,10 @@ make_boot_var(list_t *boot_list)
 	list_add_tail(&boot->list, boot_list);
 	return boot;
 err_boot_entry:
-	if (boot->name)
+	if (boot->name) {
+		fprintf(stderr, "Could not set variable %s: %m\n", boot->name);
 		free(boot->name);
+	}
 	if (boot->data)
 		free(boot->data);
 	free(boot);

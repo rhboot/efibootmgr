@@ -724,10 +724,13 @@ make_linux_load_option(uint8_t **data, size_t *data_size)
 	uint8_t *buf;
 	ssize_t needed;
 	off_t buf_offset = 0, desc_offset;
+	int rc;
 
 	load_option = calloc(1, sizeof (*load_option));
-	if (load_option == NULL)
+	if (load_option == NULL) {
+		fprintf(stderr, "efibootmgr: %m\n");
 		return -1;
+	}
 	buf = (uint8_t *)load_option;
 	buf_offset = 0;
 
@@ -755,21 +758,33 @@ make_linux_load_option(uint8_t **data, size_t *data_size)
 	if (opts.iface) {
 		needed = make_net_load_option(opts.iface, NULL, 0);
 		if (needed < 0) {
+			fprintf(stderr, "efibootmgr: could not create load option: %m\n");
 			free(buf);
 			return needed;
 		}
 		buf = extend(load_option, load_option_size, needed);
-		make_net_load_option(opts.iface, buf + buf_offset, needed);
+		rc = make_net_load_option(opts.iface, buf + buf_offset, needed);
 		buf_offset += needed;
+		if (rc < 0) {
+			fprintf(stderr, "efibootmgr: could not create load option: %m\n");
+			free(buf);
+			return rc;
+		}
 	} else {
 		needed = make_disk_load_option(opts.iface, NULL, 0);
 		if (needed < 0) {
+			fprintf(stderr, "efibootmgr: could not create load option: %m\n");
 			free(buf);
 			return needed;
 		}
 		buf = extend(load_option, load_option_size, needed);
-		make_disk_load_option(opts.iface, buf + buf_offset, needed);
+		rc = make_disk_load_option(opts.iface, buf + buf_offset, needed);
 		buf_offset += needed;
+		if (rc < 0) {
+			fprintf(stderr, "efibootmgr: could not create load option: %m\n");
+			free(buf);
+			return rc;
+		}
 	}
 
 	load_option->file_path_list_length = buf_offset - desc_offset;
@@ -792,8 +807,10 @@ append_extra_args_ascii(uint8_t **data, size_t *data_size)
 	int i;
 	unsigned long usedchars=0;
 
-	if (!data || *data)
+	if (!data || *data) {
+		errno = EINVAL;
 		return -1;
+	}
 
 	for (i=opts.optind; i < opts.argc; i++)	{
 		int l = strlen(opts.argv[i]) + 1;
@@ -829,8 +846,10 @@ append_extra_args_unicode(uint8_t **data, size_t *data_size)
 	int i;
 	unsigned long usedchars=0;
 
-	if (!data || *data)
+	if (!data || *data) {
+		errno = EINVAL;
 		return -1;
+	}
 
 	for (i = opts.optind; i < opts.argc; i++) {
 		int l = strlen(opts.argv[i]) + 1;
@@ -871,37 +890,31 @@ append_extra_args_file(uint8_t **data, size_t *data_size)
 	size_t maxchars = 0;
 	char *buffer;
 
-	if (!data) {
-		fprintf(stderr, "internal error\n");
-		exit(1);
+	if (!data || *data) {
+		errno = EINVAL;
+		return -1;
 	}
 
 	if (file && strncmp(file, "-", 1))
 		fd = open(file, O_RDONLY);
 
-	if (fd == -1) {
-		perror("Failed to open extra arguments file");
-		exit(1);
-	}
+	if (fd < 0)
+		return -1;
 
 	buffer = malloc(maxchars);
 	do {
 		if (maxchars - appended == 0) {
 			maxchars += 1024;
 			char *tmp = realloc(buffer, maxchars);
-			if (tmp == NULL) {
-				perror("Error reading extra arguments file");
-				exit(1);
-			}
+			if (tmp == NULL)
+				return -1;
 			buffer = tmp;
 		}
 		num_read = read(fd, buffer + appended, maxchars - appended);
-		if (num_read < 0) {
-			perror("Error reading extra arguments file");
-			exit(1);
-		} else if (num_read > 0) {
+		if (num_read < 0)
+			return -1;
+		else if (num_read > 0)
 			appended += num_read;
-		}
 	} while (num_read > 0);
 
 	if (fd != STDIN_FILENO)
@@ -935,14 +948,18 @@ append_extra_args(uint8_t **data, size_t *data_size)
 
 	if (opts.extra_opts_file) {
 		ret = append_extra_args_file(&new_data, &new_data_size);
-		if (ret < 0)
+		if (ret < 0) {
+			fprintf(stderr, "efibootmgr: append_extra_args: %m\n");
 			return -1;
+		}
 	}
 	if (new_data_size) {
 		ret = add_new_data(data, data_size, new_data, new_data_size);
 		free(new_data);
-		if (ret < 0)
+		if (ret < 0) {
+			fprintf(stderr, "efibootmgr: append_extra_args: %m\n");
 			return -1;
+		}
 		new_data = NULL;
 		new_data_size = 0;
 	}
@@ -952,6 +969,7 @@ append_extra_args(uint8_t **data, size_t *data_size)
 	else
 		ret = append_extra_args_ascii(&new_data, &new_data_size);
 	if (ret < 0) {
+		fprintf(stderr, "efibootmgr: append_extra_args: %m\n");
 		if (new_data) /* this can't happen, but covscan believes */
 			free(new_data);
 		return -1;
@@ -960,8 +978,10 @@ append_extra_args(uint8_t **data, size_t *data_size)
 		ret = add_new_data(data, data_size, new_data, new_data_size);
 		free(new_data);
 		new_data = NULL;
-		if (ret < 0)
+		if (ret < 0) {
+			fprintf(stderr, "efibootmgr: append_extra_args: %m\n");
 			return -1;
+		}
 		new_data_size = 0;
 	}
 
