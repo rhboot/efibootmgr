@@ -813,21 +813,19 @@ append_extra_args_ascii(uint8_t **data, size_t *data_size)
 	}
 
 	for (i=opts.optind; i < opts.argc; i++)	{
-		int l = strlen(opts.argv[i]) + 1;
+		int l = strlen(opts.argv[i]);
 		int space = (i < opts.argc - 1) ? 1: 0;
-		uint8_t *tmp = realloc(new_data, (usedchars + l + space));
+		uint8_t *tmp = realloc(new_data, (usedchars + l + space + 1));
 		if (tmp == NULL)
 			return -1;
 		new_data = tmp;
 		p = (char *)new_data + usedchars;
 		strcpy(p, opts.argv[i]);
 		usedchars += l;
-		p += l;
 		/* Put a space between args */
 		if (space)
-			p[usedchars++] = ' ';
-		else
-			p[usedchars] = '\0';
+			new_data[usedchars++] = ' ';
+		new_data[usedchars] = '\0';
 	}
 
 	if (!new_data)
