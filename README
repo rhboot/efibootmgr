@@ -29,7 +29,6 @@ usage: efibootmgr [options]
 	-O | --delete-bootorder delete BootOrder
 	-p | --part part       (defaults to 1) containing loader
 	-q | --quiet           be quiet
-	--test filename   don't write to NVRAM, write to filename
 	-t | --timeout seconds   Boot manager timeout
 	-T | --delete-timeout    delete Timeout value
 	-u | --unicode | --UCS-2  pass extra args as UCS-2 (default is ASCII)
