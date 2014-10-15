@@ -324,6 +324,15 @@ read_boot_order(efi_variable_t **boot_order)
 }
 
 static int
+set_boot_u16(const char *name, uint16_t num)
+{
+	return efi_set_variable(EFI_GLOBAL_GUID, name, (uint8_t *)&num,
+				sizeof (num), EFI_VARIABLE_NON_VOLATILE |
+					      EFI_VARIABLE_BOOTSERVICE_ACCESS |
+					      EFI_VARIABLE_RUNTIME_ACCESS);
+}
+
+static int
 add_to_boot_order(uint16_t num)
 {
 	efi_variable_t *boot_order = NULL;
@@ -332,8 +341,11 @@ add_to_boot_order(uint16_t num)
 	int rc;
 
 	rc = read_boot_order(&boot_order);
-	if (rc < 0)
+	if (rc < 0) {
+		if (errno == ENOENT)
+			rc = set_boot_u16("BootOrder", num);
 		return rc;
+	}
 
 	/* We've now got an array (in boot_order->data) of the
 	 * boot order.  First add our entry, then copy the old array.
@@ -369,8 +381,11 @@ remove_dupes_from_boot_order(void)
 	int rc;
 
 	rc = read_boot_order(&boot_order);
-	if (rc < 0)
+	if (rc < 0) {
+		if (errno == ENOENT)
+			rc = 0;
 		return rc;
+	}
 
 	old_data = (uint16_t *)(boot_order->data);
 	/* Start with the same size */
@@ -420,8 +435,11 @@ remove_from_boot_order(uint16_t num)
 	int rc;
 
 	rc = read_boot_order(&boot_order);
-	if (rc < 0)
+	if (rc < 0) {
+		if (errno == ENOENT)
+			rc = 0;
 		return rc;
+	}
 
 	/* We've now got an array (in boot_order->data) of the
 	   boot order.  Simply copy the array, skipping the
@@ -478,15 +496,6 @@ read_boot_u16(const char *name)
 	rc = data[0];
 	free(data);
 	return rc;
-}
-
-static int
-set_boot_u16(const char *name, uint16_t num)
-{
-	return efi_set_variable(EFI_GLOBAL_GUID, name, (uint8_t *)&num,
-				sizeof (num), EFI_VARIABLE_NON_VOLATILE |
-					      EFI_VARIABLE_BOOTSERVICE_ACCESS |
-					      EFI_VARIABLE_RUNTIME_ACCESS);
 }
 
 static int
