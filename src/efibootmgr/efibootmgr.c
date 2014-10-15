@@ -501,13 +501,18 @@ delete_boot_var(uint16_t num)
 	rc = efi_del_variable(EFI_GLOBAL_GUID, name);
 
 	/* For backwards compatibility, try to delete abcdef entries as well */
-	if (rc < 0 && errno == ENOENT) {
-		snprintf(name, sizeof(name), "Boot%04x", num);
-		rc = efi_del_variable(EFI_GLOBAL_GUID, name);
+	if (rc < 0) {
+		if (errno == ENOENT) {
+			snprintf(name, sizeof(name), "Boot%04x", num);
+			rc = efi_del_variable(EFI_GLOBAL_GUID, name);
+		} else if (errno == EPERM) {
+			warn("Could not delete Boot%04X", num);
+			return rc;
+		}
 	}
 
 	if (rc < 0) {
-		fprintf(stderr,"\nboot entry: %X not found\n\n",num);
+		warnx("Boot entry %04X not found", num);
 		return rc;
 	}
 	list_for_each_safe(pos, n, &boot_entry_list) {
@@ -522,7 +527,6 @@ delete_boot_var(uint16_t num)
 	}
 	return 0;
 }
-
 
 static void
 set_var_nums(list_t *list)
