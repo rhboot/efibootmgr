@@ -19,6 +19,7 @@
  */
 
 #include <ctype.h>
+#include <err.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -502,7 +503,6 @@ static ssize_t
 make_disk_load_option(char *disk, uint8_t *buf, size_t size)
 {
 	int disk_fd=0;
-	char buffer[80];
 	char signature[16];
 	int rc, edd_version=0;
 	uint8_t mbr_type=0, signature_type=0;
@@ -514,11 +514,8 @@ make_disk_load_option(char *disk, uint8_t *buf, size_t size)
 	memset(signature, 0, sizeof(signature));
 
 	disk_fd = open(opts.disk, O_RDWR);
-	if (disk_fd == -1) {
-		sprintf(buffer, "Could not open disk %s", opts.disk);
-		perror(buffer);
-		return -1;
-	}
+	if (disk_fd == -1)
+		err(5, "Could not open disk %s", opts.disk);
 
 	if (opts.edd_version) {
 		edd_version = get_edd_version();
@@ -539,12 +536,10 @@ make_disk_load_option(char *disk, uint8_t *buf, size_t size)
 				  &part_start, &part_size, signature,
 				  &mbr_type, &signature_type);
 	close(disk_fd);
-	if (rc) {
-		fprintf(stderr, "Error: no partition information on disk %s.\n"
-			"       Cowardly refusing to create a boot option.\n",
+	if (rc)
+		errx(5, "No partition information on disk %s.\n"
+			"Cowardly refusing to create a boot option.\n",
 			opts.disk);
-		return -1;
-	}
 
 	needed = make_harddrive_device_path(opts.part, part_start, part_size,
 					(uint8_t *)signature, mbr_type,
