@@ -1069,15 +1069,26 @@ parse_opts(int argc, char **argv)
 		case 'B':
 			opts.delete_boot = 1;
 			break;
-		case 'b':
-			rc = sscanf(optarg, "%X", &num);
-			if (rc == 1 && num < 0xffff) {
-				opts.bootnum = num;
-			} else {
-				fprintf (stderr,"invalid hex value %s\n",optarg);
+		case 'b': {
+			char *endptr = NULL;
+			unsigned long result;
+			result = strtoul(optarg, &endptr, 16);
+			if ((result == ULONG_MAX && errno == ERANGE) ||
+					(endptr && *endptr != '\0')) {
+				print_error_arrow("Invalid bootnum value",
+					optarg,
+					(intptr_t)endptr - (intptr_t)optarg);
 				exit(1);
 			}
+			if (result > 0xffff) {
+				fprintf(stderr, "Invalid bootnum value: %lX\n",
+					result);
+				exit(1);
+			}
+
+			opts.bootnum = num;
 			break;
+		}
 		case 'c':
 			opts.create = 1;
 			break;
@@ -1112,14 +1123,26 @@ parse_opts(int argc, char **argv)
 			exit(0);
 			break;
 
-		case 'H':
-			rc = sscanf(optarg, "%x", &num);
-			if (rc == 1) opts.acpi_hid = num;
-			else {
-				fprintf (stderr,"invalid hex value %s\n",optarg);
+		case 'H': {
+			char *endptr = NULL;
+			unsigned long result;
+			result = strtoul(optarg, &endptr, 16);
+			if ((result == ULONG_MAX && errno == ERANGE) ||
+					(endptr && *endptr != '\0')) {
+				print_error_arrow("Invalid ACPI_HID value",
+					optarg,
+					(intptr_t)endptr - (intptr_t)optarg);
 				exit(1);
 			}
+			if (result > 0xffff) {
+				fprintf(stderr, "Invalid ACPI_HID value: %lX\n",
+					result);
+				exit(1);
+			}
+
+			opts.acpi_hid = num;
 			break;
+		}
 		case 'i':
 			opts.iface = optarg;
 			break;
@@ -1135,14 +1158,31 @@ parse_opts(int argc, char **argv)
 		case 'N':
 			opts.delete_bootnext = 1;
 			break;
-		case 'n':
-			rc = sscanf(optarg, "%x", &num);
-			if (rc == 1) opts.bootnext = num;
-			else {
-				fprintf (stderr,"invalid hex value %s\n",optarg);
+		case 'n': {
+			char *endptr = NULL;
+			unsigned long result;
+			result = strtoul(optarg, &endptr, 16);
+			if ((result == ULONG_MAX && errno == ERANGE) ||
+					(endptr && *endptr != '\0')) {
+				print_error_arrow("Invalid BootNext value",
+					optarg,
+					(intptr_t)endptr - (intptr_t)optarg);
 				exit(1);
 			}
+			if (result > 0xffff) {
+				fprintf(stderr, "Invalid BootNext value: %lX\n",
+					result);
+				exit(1);
+			}
+			if (!is_current_boot_entry(result)) {
+				fprintf(stderr,
+					"Boot entry %04lX does not exist\n",
+					result);
+				exit(1);
+			}
+			opts.bootnext = result;
 			break;
+		}
 		case 'o':
 			opts.bootorder = optarg;
 			break;
@@ -1178,14 +1218,26 @@ parse_opts(int argc, char **argv)
 			opts.unicode = 1;
 			break;
 
-		case 'U':
-			rc = sscanf(optarg, "%x", &num);
-			if (rc == 1) opts.acpi_uid = num;
-			else {
-				fprintf (stderr,"invalid hex value %s\n",optarg);
+		case 'U': {
+			char *endptr = NULL;
+			unsigned long result;
+			result = strtoul(optarg, &endptr, 16);
+			if ((result == ULONG_MAX && errno == ERANGE) ||
+					(endptr && *endptr != '\0')) {
+				print_error_arrow("Invalid ACPI_UID value",
+					optarg,
+					(intptr_t)endptr - (intptr_t)optarg);
 				exit(1);
 			}
+			if (result > 0xffff) {
+				fprintf(stderr, "Invalid ACPI_UID value: %lX\n",
+					result);
+				exit(1);
+			}
+
+			opts.acpi_uid = num;
 			break;
+		}
 		case 'v':
 			opts.verbose = 1;
 			if (optarg) {
