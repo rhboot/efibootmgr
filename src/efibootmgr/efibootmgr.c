@@ -1305,16 +1305,22 @@ main(int argc, char **argv)
 		if (opts.bootnum == -1)
 			errx(3, "You must specify a boot entry to delete "
 				"(see the -b option).");
-		else
+		else {
 			ret = delete_boot_var(opts.bootnum);
+			if (ret < 0)
+				err(15, "Could not delete boot variable");
+		}
 	}
 
 	if (opts.active >= 0) {
 		if (opts.bootnum == -1)
 			errx(4, "You must specify a boot entry to activate "
 				"(see the -b option");
-		else
-			ret=set_active_state();
+		else {
+			ret = set_active_state();
+			if (ret < 0)
+				err(16, "Could not set active state");
+		}
 	}
 
 	if (opts.create) {
@@ -1326,18 +1332,19 @@ main(int argc, char **argv)
 		/* Put this boot var in the right BootOrder */
 		if (new_boot)
 			ret=add_to_boot_order(new_boot->num);
-		if (ret)
+		if (ret < 0)
 			err(6, "Could not add entry to BootOrder");
 	}
 
 	if (opts.delete_bootorder) {
 		ret = efi_del_variable(EFI_GLOBAL_GUID, "BootOrder");
-		err(7, "Could not remove entry from BootOrder");
+		if (ret < 0)
+			err(7, "Could not remove entry from BootOrder");
 	}
 
 	if (opts.bootorder) {
 		ret = set_boot_order(opts.keep_old_entries);
-		if (ret)
+		if (ret < 0)
 			err(8, "Could not set BootOrder");
 	}
 
@@ -1349,13 +1356,13 @@ main(int argc, char **argv)
 
 	if (opts.delete_bootnext) {
 		ret = efi_del_variable(EFI_GLOBAL_GUID, "BootNext");
-		if (ret)
+		if (ret < 0)
 			err(10, "Could not set BootNext");
 	}
 
 	if (opts.delete_timeout) {
 		ret = efi_del_variable(EFI_GLOBAL_GUID, "Timeout");
-		if (ret)
+		if (ret < 0)
 			err(11, "Could not delete Timeout");
 	}
 
@@ -1363,27 +1370,27 @@ main(int argc, char **argv)
 		if (!is_current_boot_entry(opts.bootnext & 0xFFFF))
 			errx(12, "Boot entry %X does not exist", opts.bootnext);
 		ret = set_boot_u16("BootNext", opts.bootnext & 0xFFFF);
-		if (ret)
+		if (ret < 0)
 			err(13, "Could not set BootNext");
 	}
 
 	if (opts.set_timeout) {
 		ret = set_boot_u16("Timeout", opts.timeout);
-		if (ret)
+		if (ret < 0)
 			err(14, "Could not set Timeout");
 	}
 
 	if (!opts.quiet && ret == 0) {
 		num = read_boot_u16("BootNext");
-		if (num != -1 ) {
+		if (num >= 0) {
 			printf("BootNext: %04X\n", num);
 		}
 		num = read_boot_u16("BootCurrent");
-		if (num != -1) {
+		if (num >= 0) {
 			printf("BootCurrent: %04X\n", num);
 		}
 		num = read_boot_u16("Timeout");
-		if (num != -1) {
+		if (num >= 0) {
 			printf("Timeout: %u seconds\n", num);
 		}
 		show_boot_order();
