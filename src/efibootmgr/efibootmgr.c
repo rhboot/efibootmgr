@@ -34,10 +34,11 @@
 
 #include <ctype.h>
 #include <err.h>
+#include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 #include <stdint.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -594,52 +595,89 @@ is_current_boot_entry(int b)
 	return 0;
 }
 
+static void
+print_error_arrow(char *message, char *buffer, off_t offset)
+{
+	unsigned int i;
+	fprintf(stderr, "%s: %s\n", message, buffer);
+	for (i = 0; i < strlen(message) + 2; i++)
+		fprintf(stderr, " ");
+	for (i = 0; i < offset; i++)
+		fprintf(stderr, " ");
+	fprintf(stderr, "^\n");
+}
 
 static int
 parse_boot_order(char *buffer, uint16_t **order, size_t *length)
 {
-	int i, len;
-	int num, rc;
-
 	uint16_t *data;
 	size_t data_size;
+	size_t len = strlen(buffer);
+	intptr_t end = (intptr_t)buffer + len + 1;
 
-	len = strlen(buffer);
-	if (len % 5 != 4) {
-		fprintf(stderr, "\nInvalid boot order: %s\n\n", buffer);
-		return -1;
+	int num = 0;
+	char *buf = buffer;
+	while ((intptr_t)buf < end) {
+		size_t comma = strcspn(buf, ",");
+		if (comma == 0) {
+			off_t offset = (intptr_t)buf - (intptr_t)buffer;
+			print_error_arrow("Malformed boot order",buffer,offset);
+			exit(8);
+		} else {
+			num++;
+		}
+		buf += comma + 1;
 	}
-	len = (len / 5) + 1;
 
-	data_size = len * sizeof (*data);
-	data = malloc(data_size);
+	data = calloc(num, sizeof (*data));
 	if (!data)
 		return -1;
+	data_size = num * sizeof (*data);
 
-	for (i=0; i < len && *buffer; i++) {
-		rc = sscanf(buffer, "%x", &num);
-		if (rc == 1) {
-			data[i] = num & 0xFFFF;
-		} else {
-			fprintf(stderr,"\nInvalid hex characters in boot order: %s\n\n",buffer);
+	int i = 0;
+	buf = buffer;
+	while ((intptr_t)buf < end) {
+		unsigned long result = 0;
+		size_t comma = strcspn(buf, ",");
+
+		buf[comma] = '\0';
+		char *endptr = NULL;
+		result = strtoul(buf, &endptr, 16);
+		if ((result == ULONG_MAX && errno == ERANGE) ||
+				(endptr && *endptr != '\0')) {
+			print_error_arrow("Invalid boot order", buffer,
+				(intptr_t)endptr - (intptr_t)buffer);
 			free(data);
-			return -1;
+			exit(8);
 		}
+		if (result > 0xffff) {
+			fprintf(stderr, "Invalid boot order entry value: %lX\n",
+				result);
+			print_error_arrow("Invalid boot order", buffer,
+				(intptr_t)buf - (intptr_t)buffer);
+			free(data);
+			exit(8);
+		}
+
 		/* make sure this is an existing boot entry */
-		if (!is_current_boot_entry(data[i])) {
-			fprintf (stderr,"\nboot entry %X does not exist\n\n",data[i]);
+		if (!is_current_boot_entry(result)) {
+			print_error_arrow("Invalid boot order entry value",
+					buffer,
+					(intptr_t)buf - (intptr_t)buffer);
+			fprintf(stderr,"Boot entry %04lX does not exist\n",
+				result);
 			free(data);
-			return -1;
+			exit(8);
 		}
 
-		/* Advance to the comma */ 
-		while (*buffer && *buffer != ',') buffer++;
-		/* Advance through the comma(s) */
-		while (*buffer && *buffer == ',') buffer++;
+		data[i++] = result;
+		buf[comma] = ',';
+		buf += comma + 1;
 	}
+
 	*order = data;
 	*length = data_size;
-	return i;
+	return num;
 }
 
 static int
