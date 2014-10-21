@@ -58,9 +58,11 @@ test-archive:
 	@git archive --format=tar $(shell git branch | awk '/^*/ { print $$2 }') | ( cd /tmp/$(RELEASE_STRING)-tmp/ ; tar x )
 	@git diff | ( cd /tmp/$(RELEASE_STRING)-tmp/ ; patch -s -p1 -b -z .gitdiff )
 	@mv /tmp/$(RELEASE_STRING)-tmp/ /tmp/$(RELEASE_STRING)/
-	@dir=$$PWD; cd /tmp; tar -c --bzip2 -f $$dir/$(RELEASE_STRING).tar.bz2 $(RELEASE_STRING)
+	@dir=$$PWD; cd /tmp; tar -c --bzip2 -f $$dir/$(RELEASE_STRING).tar.bz2 $(RELEASE_STRING) && tar -c --gzip -f $$dir/$(RELEASE_STRING).tar.gz $(RELEASE_STRING) && zip -q -r $$dir/$(RELEASE_STRING).zip $(RELEASE_STRING)/
 	@rm -rf /tmp/$(RELEASE_STRING)
 	@echo "The archive is in $(RELEASE_STRING).tar.bz2"
+	@echo "The archive is in $(RELEASE_STRING).tar.gz"
+	@echo "The archive is in $(RELEASE_STRING).zip"
 
 archive:
 	git tag -s $(GITTAG) refs/heads/master
@@ -68,10 +70,13 @@ archive:
 	@mkdir -p /tmp/$(RELEASE_STRING)-tmp
 	@git archive --format=tar $(GITTAG) | ( cd /tmp/$(RELEASE_STRING)-tmp/ ; tar x )
 	@mv /tmp/$(RELEASE_STRING)-tmp/ /tmp/$(RELEASE_STRING)/
-	@dir=$$PWD; cd /tmp; tar -c --bzip2 -f $$dir/$(RELEASE_STRING).tar.bz2 $(RELEASE_STRING)
+	@dir=$$PWD; cd /tmp; tar -c --bzip2 -f $$dir/$(RELEASE_STRING).tar.bz2 $(RELEASE_STRING) && tar -c --gzip -f $$dir/$(RELEASE_STRING).tar.gz $(RELEASE_STRING) && zip -q -r $$dir/$(RELEASE_STRING).zip $(RELEASE_STRING)/
 	@rm -rf /tmp/$(RELEASE_STRING)
-	gpg  -a -u $(SIGNING_KEY) --output $(RELEASE_STRING).tar.bz2.sign --detach-sig $(RELEASE_STRING).tar.bz2
+	gpg -a -u $(SIGNING_KEY) --output $(RELEASE_STRING).tar.bz2.sig --detach-sig $(RELEASE_STRING).tar.bz2
 	@echo "The archive is in $(RELEASE_STRING).tar.bz2"
+	@echo "The archive is in $(RELEASE_STRING).tar.gz"
+	@echo "The archive is in $(RELEASE_STRING).zip"
+	@echo "The archive signature is in $(RELEASE_STRING).tar.bz2.sig"
 
 tarball: archive
 

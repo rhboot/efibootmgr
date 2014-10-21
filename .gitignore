@@ -5,3 +5,4 @@
 *.S
 efibootmgr-*.tar.*
 core.*
+efibootmgr*.zip
