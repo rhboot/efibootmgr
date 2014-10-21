@@ -1174,12 +1174,6 @@ parse_opts(int argc, char **argv)
 					result);
 				exit(1);
 			}
-			if (!is_current_boot_entry(result)) {
-				fprintf(stderr,
-					"Boot entry %04lX does not exist\n",
-					result);
-				exit(1);
-			}
 			opts.bootnext = result;
 			break;
 		}
@@ -1355,9 +1349,13 @@ main(int argc, char **argv)
 	}
 
 	if (opts.delete_bootnext) {
+		if (!is_current_boot_entry(opts.delete_bootnext))
+			errx(17, "Boot entry %04X does not exist\n",
+				opts.delete_bootnext);
+
 		ret = efi_del_variable(EFI_GLOBAL_GUID, "BootNext");
 		if (ret < 0)
-			err(10, "Could not set BootNext");
+			err(10, "Could not delete BootNext");
 	}
 
 	if (opts.delete_timeout) {
