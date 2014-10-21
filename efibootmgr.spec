@@ -1,6 +1,6 @@
 Summary: EFI Boot Manager
 Name: efibootmgr
-Version: 0.10.0
+Version: 0.11.0
 Release: 1%{?dist}
 Group: System Environment/Base
 License: GPLv2+
@@ -53,6 +53,11 @@ rm -rf %{buildroot}
 %doc README INSTALL COPYING
     
 %changelog
+* Tue Oct 21 2014 Peter Jones <pjones@redhat.com> - 0.11.0-1
+- Fix "-n" and friends not being assigned/checked right sometimes from 0.10.0-1
+- Generate more archives to avoid people using github's, because they're just
+  bad.
+
 * Mon Oct 20 2014 Peter Jones <pjones@redhat.com> - 0.10.0-1
 - Make -o parameter validation work better and be more informative
 - Better exit values
