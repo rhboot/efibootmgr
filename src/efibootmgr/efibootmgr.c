@@ -875,16 +875,11 @@ show_boot_order()
 	rc = read_boot_order(&boot_order);
 
 	if (rc < 0) {
-		if (errno == ENOENT) {
-			boot_order = calloc(1, sizeof (*boot_order));
-			if (!boot_order) {
-				perror("show_boot_order()");
-				return;
-			}
-		} else {
+		if (errno == ENOENT)
+			printf("No BootOrder is set; firmware will attempt recovery\n");
+		else
 			perror("show_boot_order()");
-			return;
-		}
+		return;
 	}
 
 	/* We've now got an array (in boot_order->data) of the
