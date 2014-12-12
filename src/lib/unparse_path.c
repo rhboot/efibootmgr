@@ -233,13 +233,6 @@ unparse_messaging_path(char *buffer, size_t buffer_size, EFI_DEVICE_PATH *path)
 			return needed;
 		buf_offset += needed;
 
-		needed = snprintf(buffer + buf_offset,
-			buffer_size == 0 ? 0 : buffer_size - buf_offset,
-			"MAC(");
-		if (needed < 0)
-			return needed;
-		buf_offset += needed;
-
 		needed = unparse_raw(buffer + buf_offset,
 			buffer_size == 0 ? 0 : buffer_size - buf_offset,
 			mac->macaddr, 6);
