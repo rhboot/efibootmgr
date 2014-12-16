@@ -249,7 +249,7 @@ unparse_messaging_path(char *buffer, size_t buffer_size, EFI_DEVICE_PATH *path)
 
 		return buf_offset;
 	case 12:
-		needed = snprintf(buffer, buf_offset, "IPv4(");
+		needed = snprintf(buffer, buffer_size, "IPv4(");
 		if (needed < 0)
 			return -1;
 		buf_offset += needed;
