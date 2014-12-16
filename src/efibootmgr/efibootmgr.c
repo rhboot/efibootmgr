@@ -778,7 +778,7 @@ show_boot_vars()
 	char description[80];
 	EFI_LOAD_OPTION *load_option;
 	EFI_DEVICE_PATH *path;
-	unsigned long optional_data_len=0;
+	long optional_data_len=0;
 
 	list_for_each(pos, &boot_entry_list) {
 		boot = list_entry(pos, var_entry_t, list);
