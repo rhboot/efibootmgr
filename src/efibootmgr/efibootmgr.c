@@ -110,8 +110,12 @@ read_vars(char **namelist,
 			rc = efi_get_variable(EFI_GLOBAL_GUID, namelist[i],
 					       &entry->data, &entry->data_size,
 					       &entry->attributes);
-			if (rc < 0)
-				goto err;
+			if (rc < 0) {
+				warn("Skipping unreadable variable \"%s\"",
+					namelist[i]);
+				free(entry);
+				continue;
+			}
 
 			/* latest apple firmware sets high bit which appears
 			 * invalid to the linux kernel if we write it back so
