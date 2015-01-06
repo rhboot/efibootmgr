@@ -434,8 +434,7 @@ static int
 remove_from_boot_order(uint16_t num)
 {
 	var_entry_t *boot_order = NULL;
-	uint64_t new_data_size;
-	uint16_t *new_data, *old_data;
+	uint16_t *data;
 	unsigned int old_i,new_i;
 	int rc;
 
@@ -447,34 +446,37 @@ remove_from_boot_order(uint16_t num)
 	}
 
 	/* We've now got an array (in boot_order->data) of the
-	   boot order.  Simply copy the array, skipping the
-	   entry we're deleting.
+	   boot order. Squeeze out any instance of the entry we're
+	   deleting by shifting the remainder down.
 	*/
-	old_data = (uint16_t *)(boot_order->data);
-	/* Start with the same size */
-	new_data_size = boot_order->data_size - sizeof (*new_data);
-	new_data = malloc(new_data_size);
-	if (!new_data)
-		return -1;
+	data = (uint16_t *)(boot_order->data);
 
 	for (old_i=0,new_i=0;
-	     old_i < boot_order->data_size / sizeof(*new_data);
+	     old_i < boot_order->data_size / sizeof(data[0]);
 	     old_i++) {
-		if (old_data[old_i] != num) {
-				/* Copy this value */
-			new_data[new_i] = old_data[old_i];
+		if (data[old_i] != num) {
+			if (new_i != old_i)
+				data[new_i] = data[old_i];
 			new_i++;
 		}
 	}
 
-	/* Now new_data has what we need */
-	free(boot_order->data);
-	boot_order->data = (uint8_t *)new_data;
-	boot_order->data_size = new_data_size;
+	/* If nothing removed, no need to update the BootOrder variable */
+	if (new_i == old_i)
+		goto all_done;
+
+	/* BootOrder variable needs to be updated */
 	efi_del_variable(EFI_GLOBAL_GUID, "BootOrder");
+
+	if (new_i == 0)
+		goto all_done;
+
+	boot_order->data_size = sizeof(data[0]) * new_i;
 	rc = efi_set_variable(EFI_GLOBAL_GUID, "BootOrder", boot_order->data,
 				boot_order->data_size, boot_order->attributes);
+all_done:
 	free(boot_order->data);
+	free(boot_order);
 	return rc;
 }
 
