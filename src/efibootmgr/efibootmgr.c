@@ -770,10 +770,12 @@ set_boot_order(int keep_old_entries)
 	if (rc < 0 || data_size == 0)
 		return rc;
 
-	return efi_set_variable(EFI_GLOBAL_GUID, "BootOrder", data, data_size,
-				EFI_VARIABLE_NON_VOLATILE |
-				EFI_VARIABLE_BOOTSERVICE_ACCESS |
-				EFI_VARIABLE_RUNTIME_ACCESS);
+	rc = efi_set_variable(EFI_GLOBAL_GUID, "BootOrder", data, data_size,
+			      EFI_VARIABLE_NON_VOLATILE |
+			      EFI_VARIABLE_BOOTSERVICE_ACCESS |
+			      EFI_VARIABLE_RUNTIME_ACCESS);
+	free(data);
+	return rc;
 }
 
 static void

@@ -104,6 +104,7 @@ read_var_names(filter_t filter, char ***namelist)
 
 		char **tmp = realloc(newlist, (++nentries + 1) * sizeof (*newlist));
 		if (!tmp) {
+			free(aname);
 			rc = -1;
 			break;
 		}
@@ -811,8 +812,11 @@ append_extra_args_ascii(uint8_t **data, size_t *data_size)
 		int l = strlen(opts.argv[i]);
 		int space = (i < opts.argc - 1) ? 1: 0;
 		uint8_t *tmp = realloc(new_data, (usedchars + l + space + 1));
-		if (tmp == NULL)
+		if (tmp == NULL) {
+			if (new_data)
+				free(new_data);
 			return -1;
+		}
 		new_data = tmp;
 		p = (char *)new_data + usedchars;
 		strcpy(p, opts.argv[i]);
@@ -904,10 +908,12 @@ append_extra_args_file(uint8_t **data, size_t *data_size)
 			buffer = tmp;
 		}
 		num_read = read(fd, buffer + appended, maxchars - appended);
-		if (num_read < 0)
+		if (num_read < 0) {
+			free(buffer);
 			return -1;
-		else if (num_read > 0)
+		} else if (num_read > 0) {
 			appended += num_read;
+		}
 	} while (num_read > 0);
 
 	if (fd != STDIN_FILENO)
