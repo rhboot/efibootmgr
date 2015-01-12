@@ -172,9 +172,13 @@ find_free_boot_var(list_t *boot_list)
 	uint16_t *vars, free_number;
 	list_t *pos;
 	var_entry_t *boot;
-	list_for_each(pos, boot_list) {
+
+	list_for_each(pos, boot_list)
 		num_vars++;
-	}
+
+	if (num_vars == 0)
+		return 0;
+
 	vars = calloc(1, sizeof(uint16_t) * num_vars);
 	if (!vars)
 		return -1;
