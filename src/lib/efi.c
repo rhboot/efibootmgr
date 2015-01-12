@@ -189,7 +189,7 @@ make_edd10_device_path(uint32_t hardware_device, uint8_t *buf, size_t size)
 	hw->length = EDD10_HARDWARE_VENDOR_PATH_LENGTH;
 	memcpy(&(hw->vendor_guid), &guid, sizeof(guid));
 	*data = hardware_device;
-	if (size >= hw->length)
+	if (size >= hw->length && buf != NULL)
 		memcpy(buf, buffer, hw->length);
 	return hw->length;
 }
@@ -399,7 +399,7 @@ make_harddrive_device_path(uint32_t num, uint64_t part_start,
 	if (signature) memcpy(p.signature, signature, 16);
 	p.mbr_type = mbr_type;
 	p.signature_type = signature_type;
-	if (size >= p.length)
+	if (size >= p.length && buf != NULL)
 		memcpy(buf, &p, p.length);
 	return p.length;
 }
