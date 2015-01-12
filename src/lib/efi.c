@@ -880,7 +880,7 @@ append_extra_args_file(uint8_t **data, size_t *data_size)
 	int fd = STDIN_FILENO;
 	ssize_t num_read=0;
 	unsigned long appended=0;
-	size_t maxchars = 0;
+	size_t maxchars = 1024;
 	char *buffer;
 
 	if (!data || *data) {
