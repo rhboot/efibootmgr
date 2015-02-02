@@ -398,11 +398,63 @@ is_mbr_valid(legacy_mbr *mbr)
 	return (mbr->signature == MSDOS_MBR_SIGNATURE);
 }
 
+/**
+ * get_ebr(): fetch the next EBR from chain
+ * @fd: disk file descriptor
+ * @mbr: currently processed MBR structure
+ * @num: number of partition to use as extended
+ * @sector_size: sector size for the disk (to avoid multiple ioctl requests)
+ * @ebr1_start: starting sector of the very first EBR (required to calculate offsets);
+ *              if equals to 0, it means the first EBR is being requested right now
+ * @ebr: [out] structure to contain the target EBR (may be the same pointer as @mbr)
+ * @ebr_start: [out] starting sector of the fetched EBR
+ *
+ * Description: Takes the @num's element in @mbr, treats it as pointer to the next
+ * element of logical partitions chain and obtains its EBR (Extended Boot Record).
+ * Returns 1 if succeeded, or 0 otherwise.
+ */
+static int
+get_ebr(int fd, legacy_mbr *mbr, uint32_t num, int sector_size, uint32_t ebr1_start, legacy_mbr *ebr, uint32_t *ebr_start)
+{
+	uint8_t extended_partition_types[] = { 0x05, 0x0f, 0x1f, 0x85, 0x91, 0x9b, 0xc5, 0xcf, 0xd5 };
+	size_t extended_partition_types_num = sizeof(extended_partition_types) / sizeof(extended_partition_types[0]);
+	int this_bytes_read;
+	uint32_t i;
+
+	/* Check whether requested partition is in fact extended partition */
+	for (i = 0; i < extended_partition_types_num; ++i)
+	{
+		if (mbr->partition[num - 1].os_type == extended_partition_types[i])
+			break;
+	}
+	if (i >= extended_partition_types_num)
+	{
+		/* Not an extended partition record, return error */
+		return 0;
+	}
+	/*
+	 * How partition offset is calculated for EBRs:
+	 * 1. The logical partition's offset (stored in the first partition entry) is relative to the CURRENT EBR's starting sector.
+	 * 2. The next EBR's offset (stored in the second partition entry) is relative to the FIRST EBR's starting sector (that is,
+	 *    relative to the starting sector of the extended partition defined in the main MBR).
+	 * That's why we need ebr1_start parameter in this function.
+	 */
+	*ebr_start = ebr1_start + mbr->partition[num - 1].starting_lba;
+	lseek(fd, *ebr_start * sector_size, SEEK_SET);
+	this_bytes_read = read(fd, ebr, sizeof(*ebr));
+	if (this_bytes_read < (ssize_t)sizeof(*ebr))
+	{
+		fprintf(stderr, "Error reading EBR from sector %u.\n", *ebr_start);
+		return 0;
+	}
+	return is_mbr_valid(ebr);
+}
+
 /************************************************************
  * msdos_disk_get_extended partition_info()
  * Requires:
  *  - open file descriptor fd
- *  - start, size
+ *  - start, size, sector_size
  * Modifies: all these
  * Returns:
  *  0 on success
@@ -412,12 +464,46 @@ is_mbr_valid(legacy_mbr *mbr)
 
 static int
 msdos_disk_get_extended_partition_info (int fd, legacy_mbr *mbr,
-					uint32_t num,
+					uint32_t num, int sector_size,
 					uint64_t *start, uint64_t *size)
 {
-        /* Until I can handle these... */
-        fprintf(stderr, "Extended partition info not supported.\n");
-        return 1;
+	uint32_t extended_partition_no;
+	legacy_mbr ebr;
+	uint32_t ebr1_start;
+	uint32_t ebr_start;
+	uint32_t i;
+
+	/* Looking for the extended partition */
+	for (extended_partition_no = 1; extended_partition_no <= 4; ++extended_partition_no)
+	{
+		if (get_ebr(fd, mbr, extended_partition_no, sector_size, 0, &ebr, &ebr_start))
+			break;
+	}
+	if (extended_partition_no > 4)
+	{
+		fprintf(stderr, "Extended partition not found.\n");
+		return 1;
+	}
+
+	/* Going down the chain of EBRs until we reach the required logical partition */
+	ebr1_start = mbr->partition[extended_partition_no - 1].starting_lba;
+	for (i = 5; i < num; ++i)
+	{
+		if (!get_ebr(fd, &ebr, 2, sector_size, ebr1_start, &ebr, &ebr_start))
+		{
+			fprintf(stderr, "Logical partition No.%u not found.\n", num);
+			return 1;
+		}
+	}
+	if (!ebr.partition[0].os_type)
+	{
+		/* Partition is missing */
+		fprintf(stderr, "Logical partition No.%u not found.\n", num);
+		return 1;
+	}
+	*start = ebr_start + ebr.partition[0].starting_lba;
+	*size  = ebr.partition[0].size_in_lba;
+	return 0;
 }
 
 /************************************************************
@@ -425,7 +511,7 @@ msdos_disk_get_extended_partition_info (int fd, legacy_mbr *mbr,
  * Requires:
  *  - mbr
  *  - open file descriptor fd (for extended partitions)
- *  - start, size, signature, mbr_type, signature_type
+ *  - start, size, signature, mbr_type, signature_type, sector_size
  * Modifies: all these
  * Returns:
  *  0 on success
@@ -435,7 +521,7 @@ msdos_disk_get_extended_partition_info (int fd, legacy_mbr *mbr,
 
 static int
 msdos_disk_get_partition_info (int fd, legacy_mbr *mbr,
-			       uint32_t num,
+			       uint32_t num, int sector_size,
 			       uint64_t *start, uint64_t *size,
 			       char *signature,
 			       uint8_t *mbr_type, uint8_t *signature_type)
@@ -487,7 +573,7 @@ msdos_disk_get_partition_info (int fd, legacy_mbr *mbr,
 
         if (num > 4) {
 		/* Extended partition */
-                return msdos_disk_get_extended_partition_info(fd, mbr, num,
+                return msdos_disk_get_extended_partition_info(fd, mbr, num, sector_size,
                                                               start, size);
         }
 	else if (num == 0) {
@@ -594,6 +680,7 @@ disk_get_partition_info (int fd,
 						  signature_type);
 	if (gpt_invalid) {
 		mbr_invalid = msdos_disk_get_partition_info(fd, mbr, num,
+							    sector_size,
 							    start, size,
 							    signature,
 							    mbr_type,
