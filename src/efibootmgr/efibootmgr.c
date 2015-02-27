@@ -579,7 +579,7 @@ set_var_nums(list_t *list)
 }
 
 static void
-unparse_boot_order(uint16_t *order, int length)
+print_boot_order(uint16_t *order, int length)
 {
 	int i;
 	printf("BootOrder: ");
@@ -813,8 +813,9 @@ show_boot_vars()
 			size_t text_path_len = 0;
 			ssize_t rc;
 
-			rc = unparse_path(text_path, text_path_len, path,
-				     load_option->file_path_list_length);
+			rc = efidp_format_device_path(text_path, text_path_len,
+						      (const_efidp)path,
+						      load_option->file_path_list_length);
 			if (rc < 0) {
 				fprintf(stderr, "Could not parse device path: %m\n");
 				exit(1);
@@ -827,8 +828,10 @@ show_boot_vars()
 				fprintf(stderr, "Could not parse device path: %m\n");
 				exit(1);
 			}
-			rc = unparse_path(text_path, text_path_len,
-				path, load_option->file_path_list_length);
+
+			rc = efidp_format_device_path(text_path, text_path_len,
+						      (const_efidp)path,
+						      load_option->file_path_list_length);
 			if (rc < 0) {
 				fprintf(stderr, "Could not parse device path: %m\n");
 				exit(1);
@@ -899,7 +902,7 @@ show_boot_order()
 	*/
 	data = (uint16_t *)boot_order->data;
 	if (boot_order->data_size) {
-		unparse_boot_order(data, boot_order->data_size / sizeof(uint16_t));
+		print_boot_order(data, boot_order->data_size / sizeof(uint16_t));
 		free(boot_order->data);
 	}
 	free(boot_order);

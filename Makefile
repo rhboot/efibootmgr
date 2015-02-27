@@ -8,7 +8,8 @@
   RELEASE_STRING := $(RELEASE_NAME)-$(RELEASE_MAJOR).$(RELEASE_MINOR).$(RELEASE_SUBLEVEL)
 
   CFLAGS = $(EXTRA_CFLAGS) -DEFIBOOTMGR_VERSION=\"$(RELEASE_MAJOR).$(RELEASE_MINOR).$(RELEASE_SUBLEVEL)\" \
-	    -Wsign-compare -Wall -Werror -g -D_FILE_OFFSET_BITS=64
+	    -Wsign-compare -Wall -Werror -g -D_FILE_OFFSET_BITS=64 \
+	    -I/usr/include/efivar
 
   MODULES := src
 
