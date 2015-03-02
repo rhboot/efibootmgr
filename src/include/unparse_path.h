@@ -24,13 +24,6 @@
 #include <stdint.h>
 #include "efi.h"
 
-#define OFFSET_OF(struct_type, member)    \
-    ((unsigned long) ((char *) &((struct_type*) 0)->member))
-
-ssize_t unparse_path(char *buffer, size_t buffer_size,
-			EFI_DEVICE_PATH *path, uint16_t pathsize);
-ssize_t unparse_raw(char *buffer, size_t buffer_size,
-			uint8_t *p, uint64_t length);
 ssize_t unparse_raw_text(char *buffer, size_t buffer_size,
 			uint8_t *p, uint64_t length);
 
