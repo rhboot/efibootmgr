@@ -19,7 +19,7 @@
  */
 
 #include <stdio.h>
-#include <sys/pci.h>
+#include <linux/pci.h>
 #include <stdint.h>
 #include <sys/stat.h>
 #include <fcntl.h>
