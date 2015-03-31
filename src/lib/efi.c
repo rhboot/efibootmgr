@@ -42,20 +42,9 @@
 #include <linux/ethtool.h>
 #include "efi.h"
 #include "efichar.h"
-#include "scsi_ioctls.h"
 #include "disk.h"
 #include "efibootmgr.h"
 #include "list.h"
-
-EFI_DEVICE_PATH *
-load_option_path(EFI_LOAD_OPTION *option)
-{
-	char *p = (char *) option;
-	return (EFI_DEVICE_PATH *)
-		(p + sizeof(uint32_t) /* Attributes */
-		 + sizeof(uint16_t)   /* FilePathListLength*/
-		 + efichar_strsize(option->description)); /* Description */
-}
 
 static int
 select_boot_var_names(const efi_guid_t *guid, const char *name)
@@ -140,7 +129,7 @@ get_edd_version()
 	uint8_t *data = NULL;
 	size_t data_size = 0;
 	uint32_t attributes;
-	ACPI_DEVICE_PATH *path;
+	efidp_header *path;
 	int rc = 0;
 
 	/* Allow global user option override */
@@ -164,80 +153,10 @@ get_edd_version()
 	if (rc < 0)
 		return rc;
 
-	path = (ACPI_DEVICE_PATH *)data;
+	path = (efidp_header *)data;
 	if (path->type == 2 && path->subtype == 1)
 		return 3;
 	return 1;
-}
-
-/*
-  EFI_DEVICE_PATH, 0x01 (Hardware), 0x04 (Vendor), length 0x0018
-  This needs to know what EFI device has the boot device.
-*/
-static ssize_t
-make_edd10_device_path(uint32_t hardware_device, uint8_t *buf, size_t size)
-{
-	VENDOR_DEVICE_PATH *hw;
-	char buffer[EDD10_HARDWARE_VENDOR_PATH_LENGTH];
-	efi_guid_t guid = EDD10_HARDWARE_VENDOR_PATH_GUID;
-	uint32_t *data;
-	memset(buffer, 0, sizeof(buffer));
-	hw = (VENDOR_DEVICE_PATH *)buffer;
-	data = (uint32_t *)hw->data;
-	hw->type = 0x01; /* Hardware Device Path */
-	hw->subtype = 0x04; /* Vendor */
-	hw->length = EDD10_HARDWARE_VENDOR_PATH_LENGTH;
-	memcpy(&(hw->vendor_guid), &guid, sizeof(guid));
-	*data = hardware_device;
-	if (size >= hw->length && buf != NULL)
-		memcpy(buf, buffer, hw->length);
-	return hw->length;
-}
-
-static ssize_t
-make_end_device_path(uint8_t *buf, size_t size)
-{
-	END_DEVICE_PATH p;
-	memset(&p, 0, sizeof(p));
-	p.type = 0x7F; /* End of Hardware Device Path */
-	p.subtype = 0xFF; /* End Entire Device Path */
-	p.length = sizeof(p);
-	if (size >= p.length)
-		memcpy(buf, &p, p.length);
-	return p.length;
-}
-
-static ssize_t
-make_acpi_device_path(uint32_t _HID, uint32_t _UID, uint8_t *buf, size_t size)
-{
-	ACPI_DEVICE_PATH p;
-	memset(&p, 0, sizeof(p));
-	p.type = 2;
-	p.subtype = 1;
-	p.length = sizeof(p);
-	p._HID = _HID;
-	p._UID = _UID;
-	if (size >= p.length)
-		memcpy(buf, &p, p.length);
-	return p.length;
-}
-
-static ssize_t
-make_mac_addr_device_path(char *mac, uint8_t iftype, uint8_t *buf, size_t size)
-{
-	int i;
-	MAC_ADDR_DEVICE_PATH p;
-	memset(&p, 0, sizeof(p));
-	p.type = 3;
-	p.subtype = 11;
-	p.length = sizeof(p);
-	for (i=0; i < 14; i++) {
-		p.macaddr[i] = mac[i];
-	}
-	p.iftype = iftype;
-	if (size >= p.length)
-		memcpy(buf, &p, p.length);
-	return p.length;
 }
 
 struct device
@@ -288,22 +207,6 @@ find_parent(struct pci_access *pacc, unsigned int target_bus)
 }
 
 static ssize_t
-make_one_pci_device_path(uint8_t device, uint8_t function,
-			uint8_t *buf, size_t size)
-{
-	PCI_DEVICE_PATH p;
-	memset(&p, 0, sizeof(p));
-	p.type = 1;
-	p.subtype = 1;
-	p.length   = sizeof(p);
-	p.device   = device;
-	p.function = function;
-	if (size >= p.length)
-		memcpy(buf, &p, p.length);
-	return p.length;
-}
-
-static ssize_t
 make_pci_device_path(uint8_t bus, uint8_t device, uint8_t function,
 			uint8_t *buf, size_t size)
 {
@@ -331,10 +234,9 @@ make_pci_device_path(uint8_t bus, uint8_t device, uint8_t function,
 
 	list_for_each_safe(pos, n, &pci_parent_list) {
 		dev = list_entry(pos, struct device, node);
-		needed = make_one_pci_device_path(dev->pci_dev->dev,
-					dev->pci_dev->func,
-					buf + buf_offset,
-					size == 0 ? 0 : size - buf_offset);
+		needed = efidp_make_pci(buf+buf_offset,
+					size == 0 ? 0 : size-buf_offset,
+					dev->pci_dev->dev, dev->pci_dev->func);
 		if (needed < 0)
 			return -1;
 		buf_offset += needed;
@@ -342,8 +244,9 @@ make_pci_device_path(uint8_t bus, uint8_t device, uint8_t function,
 		free(dev);
 	}
 
-	needed = make_one_pci_device_path(device, function, buf + buf_offset,
-					size == 0 ? 0 : size - buf_offset);
+	needed = efidp_make_pci(buf + buf_offset,
+				size == 0 ? 0 : size - buf_offset,
+				device, function);
 	if (needed < 0)
 		return -1;
 	buf_offset += needed;
@@ -354,88 +257,10 @@ make_pci_device_path(uint8_t bus, uint8_t device, uint8_t function,
 }
 
 static ssize_t
-make_nvme_device_path(uint32_t ns_id, uint8_t *buf, size_t size)
-{
-	NVME_DEVICE_PATH p;
-	memset(&p, 0, sizeof(p));
-	p.type = 3;
-	p.subtype = 23;
-	p.length = sizeof(p);
-	p.namespace_id = ns_id;
-	if (size >= p.length)
-		memcpy(buf, &p, p.length);
-	return p.length;
-}
-
-static ssize_t
-make_scsi_device_path(uint16_t id, uint16_t lun, uint8_t *buf, size_t size)
-{
-	SCSI_DEVICE_PATH p;
-	memset(&p, 0, sizeof(p));
-	p.type = 3;
-	p.subtype = 2;
-	p.length   = sizeof(p);
-	p.id       = id;
-	p.lun      = lun;
-	if (size >= p.length)
-		memcpy(buf, &p, p.length);
-	return p.length;
-}
-
-static ssize_t
-make_harddrive_device_path(uint32_t num, uint64_t part_start,
-			uint64_t part_size, uint8_t *signature,
-			uint8_t mbr_type, uint8_t signature_type,
-			uint8_t *buf, size_t size)
-{
-	HARDDRIVE_DEVICE_PATH p;
-	memset(&p, 0, sizeof(p));
-	p.type = 4;
-	p.subtype = 1;
-	p.length   = sizeof(p);
-	p.part_num = num;
-	p.start = part_start;
-	p.size = part_size;
-	if (signature) memcpy(p.signature, signature, 16);
-	p.mbr_type = mbr_type;
-	p.signature_type = signature_type;
-	if (size >= p.length && buf != NULL)
-		memcpy(buf, &p, p.length);
-	return p.length;
-}
-
-static ssize_t
-make_file_path_device_path(efi_char16_t *name, uint8_t *buf, size_t size)
-{
-	FILE_PATH_DEVICE_PATH *p;
-	int namelen  = efichar_strlen(name, -1);
-	int namesize = efichar_strsize(name);
-	char *buffer = calloc(1, sizeof (*p) + namesize);
-	ssize_t ret;
-
-	if (!buffer)
-		return -1;
-
-	memset(buffer, 0, namesize + 1);
-	p = (FILE_PATH_DEVICE_PATH *)buffer;
-	p->type      = 4;
-	p->subtype   = 4;
-	p->length    = 4 + namesize;
-	efichar_strncpy(p->path_name, name, namelen);
-
-	if (size >= p->length)
-		memcpy(buf, buffer, p->length);
-	ret = p->length;
-	free(buffer);
-	return ret;
-}
-
-static ssize_t
 make_edd30_device_path(int fd, uint8_t *buf, size_t size)
 {
 	int rc=0, interface_type;
 	unsigned char bus=0, device=0, function=0;
-	Scsi_Idlun idlun;
 	uint32_t ns_id;
 	unsigned char host=0, channel=0, id=0, lun=0;
 	ssize_t needed;
@@ -444,17 +269,16 @@ make_edd30_device_path(int fd, uint8_t *buf, size_t size)
 	rc = disk_get_pci(fd, &interface_type, &bus, &device, &function);
 	if (rc) return 0;
 	if (interface_type == nvme) {
-		rc = get_nvme_ns_id(fd, &ns_id);
-		if (rc)
+		rc = efi_get_nvme_ns_id(fd, &ns_id);
+		if (rc < 0)
 			return 0;
 	} else if (interface_type != virtblk) {
-		memset(&idlun, 0, sizeof(idlun));
-		rc = get_scsi_idlun(fd, &idlun);
-		if (rc) return 0;
-		idlun_to_components(&idlun, &host, &channel, &id, &lun);
+		rc = efi_get_scsi_idlun(fd, &host, &channel, &id, &lun);
+		if (rc < 0)
+			return 0;
 	}
 
-	needed = make_acpi_device_path(EISAID_PNP0A03, bus, buf, size);
+	needed = efidp_make_acpi_hid(buf, size, EFIDP_ACPI_PCI_ROOT_HID, bus);
 	if (needed < 0)
 		return needed;
 	buf_offset += needed;
@@ -466,14 +290,14 @@ make_edd30_device_path(int fd, uint8_t *buf, size_t size)
 	buf_offset += needed;
 
 	if (interface_type == nvme) {
-		needed = make_nvme_device_path(ns_id, buf + buf_offset,
-					size == 0 ? 0 : size - buf_offset);
+		needed = efidp_make_nvme(buf+buf_offset, size?size-buf_offset:0,
+					 ns_id, NULL);
 		if (needed < 0)
 			return needed;
 		buf_offset += needed;
 	} else if (interface_type != virtblk) {
-		needed = make_scsi_device_path(id, lun, buf + buf_offset,
-					size == 0 ? 0 : size - buf_offset);
+		needed = efidp_make_scsi(buf+buf_offset, size?size-buf_offset:0,
+					 id, lun);
 		if (needed < 0)
 			return needed;
 		buf_offset += needed;
@@ -508,7 +332,6 @@ make_disk_load_option(char *disk, uint8_t *buf, size_t size)
 	int rc, edd_version=0;
 	uint8_t mbr_type=0, signature_type=0;
 	uint64_t part_start=0, part_size=0;
-	efi_char16_t *os_loader_path;
 	ssize_t needed = 0;
 	off_t buf_offset = 0;
 
@@ -523,8 +346,8 @@ make_disk_load_option(char *disk, uint8_t *buf, size_t size)
 		if (edd_version == 3) {
 			needed = make_edd30_device_path(disk_fd, buf, size);
 		} else if (edd_version == 1) {
-			needed = make_edd10_device_path(opts.edd10_devicenum,
-							buf, size);
+			needed = efidp_make_edd10(buf, size,
+						  opts.edd10_devicenum);
 		}
 		if (needed < 0) {
 			close(disk_fd);
@@ -542,29 +365,21 @@ make_disk_load_option(char *disk, uint8_t *buf, size_t size)
 			"Cowardly refusing to create a boot option.\n",
 			opts.disk);
 
-	needed = make_harddrive_device_path(opts.part, part_start, part_size,
-					(uint8_t *)signature, mbr_type,
-					signature_type, buf + buf_offset,
-					size == 0 ? 0 : size - buf_offset);
+	needed = efidp_make_hd(buf+buf_offset, size?size-buf_offset:0,
+			       opts.part, part_start, part_size,
+			       (uint8_t *)signature, mbr_type, signature_type);
 	if (needed < 0)
 		return needed;
 	buf_offset += needed;
 
-	needed = (strlen(opts.loader) + 1) * sizeof (*os_loader_path);
-	os_loader_path = malloc(needed);
-	if (!os_loader_path)
-		return -1;
-	efichar_from_char(os_loader_path, tilt_slashes(opts.loader),
-			needed);
-	needed = make_file_path_device_path(os_loader_path, buf + buf_offset,
-					size == 0 ? 0 : size - buf_offset);
-	free(os_loader_path);
+	opts.loader = tilt_slashes(opts.loader);
+	needed = efidp_make_file(buf+buf_offset, size?size-buf_offset:0,
+				 opts.loader);
 	if (needed < 0)
 		return needed;
 	buf_offset += needed;
 
-	needed = make_end_device_path(buf + buf_offset,
-				size == 0 ? 0 : size - buf_offset);
+	needed = efidp_make_end_entire(buf, size?size-buf_offset:0);
 	if (needed < 0)
 		return needed;
 	buf_offset += needed;
@@ -661,32 +476,50 @@ make_net_load_option(char *iface, uint8_t *buf, size_t size)
 		perror("Cannot get hardware address.");
 		return -1;
 	}
-	close(fd);
 
 	buf_offset = 0;
-	needed = make_acpi_device_path(opts.acpi_hid, opts.acpi_uid, buf,
-					size == 0 ? 0 : size - buf_offset);
-	if (needed < 0)
+	needed = efidp_make_acpi_hid(buf, size?size-buf_offset:0,
+				     opts.acpi_hid, opts.acpi_uid);
+	if (needed < 0) {
+err_needed:
+		close(fd);
 		return needed;
+	}
 	buf_offset += needed;
 
 	needed = make_pci_device_path(bus, (uint8_t)slot, (uint8_t)func,
 					buf + buf_offset,
 					size == 0 ? 0 : size - buf_offset);
 	if (needed < 0)
-		return needed;
+		goto err_needed;
 	buf_offset += needed;
 
-	needed = make_mac_addr_device_path(ifr.ifr_ifru.ifru_hwaddr.sa_data,
-					ifr.ifr_ifru.ifru_hwaddr.sa_family,
-					buf + buf_offset,
-					size == 0 ? 0 : size - buf_offset);
+	needed = efidp_make_mac_addr(buf, size?size-buf_offset:0,
+				     ifr.ifr_ifru.ifru_hwaddr.sa_family,
+				     (uint8_t*)ifr.ifr_ifru.ifru_hwaddr.sa_data,
+				     sizeof (ifr.ifr_ifru.ifru_hwaddr.sa_data));
 	if (needed < 0)
-		return needed;
+		goto err_needed;
 	buf_offset += needed;
 
-	needed = make_end_device_path(buf + buf_offset,
-					size == 0 ? 0 : size - buf_offset);
+#if 0
+	if (opts.ipv4) {
+		needed = make_ipv4_addr_device_path(fd, );
+		if (needed < 0)
+			goto err_needed;
+		buf_offset += needed;
+	}
+
+	if (opts.ipv6) {
+		needed = make_ipv6_addr_device_path(fd, );
+		if (needed < 0)
+			goto err_needed;
+		buf_offset += needed;
+	}
+#endif
+	close(fd);
+
+	needed = efidp_make_end_entire(buf,size?size-buf_offset:0);
 	if (needed < 0)
 		return needed;
 	buf_offset += needed;
@@ -712,82 +545,65 @@ make_net_load_option(char *iface, uint8_t *buf, size_t size)
  * Returns 0 on error, length of load option created on success.
  */
 ssize_t
-make_linux_load_option(uint8_t **data, size_t *data_size)
+make_linux_load_option(uint8_t **data, size_t *data_size,
+		       uint8_t *optional_data, size_t optional_data_size)
 {
-	EFI_LOAD_OPTION *load_option = NULL;
-	size_t load_option_size = sizeof (*load_option);
 	efi_char16_t description[64];
 	uint8_t *buf;
 	ssize_t needed;
 	off_t buf_offset = 0, desc_offset;
 	int rc;
-
-	load_option = calloc(1, sizeof (*load_option));
-	if (load_option == NULL) {
-		fprintf(stderr, "efibootmgr: %m\n");
-		return -1;
-	}
-	buf = (uint8_t *)load_option;
-	buf_offset = 0;
-
-	/* Write Attributes */
-	if (opts.active)
-		load_option->attributes = LOAD_OPTION_ACTIVE;
-	else
-		load_option->attributes = 0;
-	buf_offset += sizeof(uint32_t);
-
-	/* skip writing file_path_list_length */
-	buf_offset += sizeof(uint16_t);
-	/* Write description.  This is the text that appears on the screen for the load option. */
-	memset(description, 0, sizeof(description));
-	efichar_from_char(description, opts.label, sizeof(description));
-
-	needed = (strlen(opts.label) + 1) * 2;
-	buf = extend(load_option, load_option_size, needed);
-
-	efichar_strncpy(load_option->description, description,
-			efichar_strlen(description, -1) + 1);
-	buf_offset += needed;
-	desc_offset = buf_offset;
+	uint32_t attributes = opts.active ? LOAD_OPTION_ACTIVE : 0;
+	efidp dp = NULL;
 
 	if (opts.iface) {
 		needed = make_net_load_option(opts.iface, NULL, 0);
 		if (needed < 0) {
+err:
 			fprintf(stderr, "efibootmgr: could not create load option: %m\n");
-			free(buf);
 			return needed;
 		}
-		buf = extend(load_option, load_option_size, needed);
-		rc = make_net_load_option(opts.iface, buf + buf_offset, needed);
-		buf_offset += needed;
-		if (rc < 0) {
-			fprintf(stderr, "efibootmgr: could not create load option: %m\n");
-			free(buf);
-			return rc;
+		dp = (efidp)malloc(needed);
+		if (dp == NULL) {
+			needed = -1;
+			goto err;
 		}
+
+		needed = make_net_load_option(opts.iface, dp, needed);
+		if (needed < 0)
+			goto err;
 	} else {
 		needed = make_disk_load_option(opts.iface, NULL, 0);
-		if (needed < 0) {
-			fprintf(stderr, "efibootmgr: could not create load option: %m\n");
-			free(buf);
-			return needed;
+		if (needed < 0)
+			goto err;
+		dp = malloc(needed);
+		if (dp == NULL) {
+			needed = -1;
+			goto err;
 		}
-		buf = extend(load_option, load_option_size, needed);
-		rc = make_disk_load_option(opts.iface, buf + buf_offset, needed);
-		buf_offset += needed;
-		if (rc < 0) {
-			fprintf(stderr, "efibootmgr: could not create load option: %m\n");
-			free(buf);
-			return rc;
-		}
+		needed = make_disk_load_option(opts.iface, dp, needed);
+		if (needed < 0)
+			goto err;
 	}
 
-	load_option->file_path_list_length = buf_offset - desc_offset;
+	needed = efi_make_load_option(NULL, 0, attributes, dp, opts.label,
+				      optional_data, optional_data_size);
+	buf = malloc(needed);
+	if (!buf) {
+		free(dp);
+		return -1;
+	}
+	needed = efi_make_load_option(buf, needed, attributes, dp, opts.label,
+				      optional_data, optional_data_size);
+	free(dp);
+	if (needed < 0) {
+		free(buf);
+		return needed;
+	}
 
-	*data_size = buf_offset;
-	*data = (uint8_t *)load_option;
-	return *data_size;
+	*data_size = needed;
+	*data = buf;
+	return needed;
 }
 
 /*

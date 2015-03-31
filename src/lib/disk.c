@@ -24,11 +24,11 @@
 #include <inttypes.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <efivar.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
 #include "disk.h"
-#include "scsi_ioctls.h"
 #include "gpt.h"
 #include "efibootmgr.h"
 
@@ -254,7 +254,7 @@ disk_get_scsi_pci(int fd,
 {
 	int rc, usefd=fd;
 	struct stat buf;
-	char slot_name[SLOT_NAME_SIZE];
+	char slot_name[FILENAME_MAX];
 	unsigned int b=0,d=0,f=0;
 	memset(&buf, 0, sizeof(buf));
 	rc = fstat(fd, &buf);
@@ -272,7 +272,7 @@ disk_get_scsi_pci(int fd,
 		return 1;
 	}
 
-	rc = get_scsi_pci(usefd, slot_name, sizeof slot_name);
+	rc = efi_get_scsi_pci(usefd, slot_name, sizeof slot_name);
 	if (rc) {
 		perror("get_scsi_pci");
 		return rc;

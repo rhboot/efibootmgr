@@ -43,8 +43,6 @@
 EFI_GUID( 0x09576e91, 0x6d3f, 0x11d2, 0x8e39, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b)
 #define EFI_GLOBAL_VARIABLE \
 EFI_GUID( 0x8BE4DF61, 0x93CA, 0x11d2, 0xAA0D, 0x00, 0xE0, 0x98, 0x03, 0x2B, 0x8C)
-#define EDD10_HARDWARE_VENDOR_PATH_GUID \
-EFI_GUID( 0xCF31FAC5, 0xC24E, 0x11d2, 0x85F3, 0x00, 0xA0, 0xC9, 0x3E, 0xC9, 0x3B)
 #define BLKX_UNKNOWN_GUID \
 EFI_GUID( 0x47c7b225, 0xc42a, 0x11d2, 0x8e57, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b)
 #define DIR_UNKNOWN_GUID \
@@ -62,6 +60,7 @@ typedef struct {
 	uint8_t  data[1];
 } __attribute__((packed)) EFI_DEVICE_PATH;
 
+#if 0
 typedef struct {
 	uint32_t attributes;
 	uint16_t file_path_list_length;
@@ -69,14 +68,7 @@ typedef struct {
 	EFI_DEVICE_PATH _unused_file_path_list[1];
 } __attribute__((packed)) EFI_LOAD_OPTION;
 
-
-typedef struct {
-	uint8_t type;
-	uint8_t subtype;
-	uint16_t length;
-	uint32_t _HID;
-	uint32_t _UID;
-} __attribute__((packed)) ACPI_DEVICE_PATH;
+#endif
 
 typedef struct {
 	uint8_t type;
@@ -85,8 +77,6 @@ typedef struct {
 	efi_guid_t vendor_guid;
 	uint8_t data[1];
 } __attribute__((packed)) VENDOR_DEVICE_PATH;
-
-#define EDD10_HARDWARE_VENDOR_PATH_LENGTH 24
 
 typedef struct {
 	uint8_t type;
@@ -250,22 +240,6 @@ typedef struct {
 	uint8_t  stop_bits;
 } __attribute__((packed)) UART_DEVICE_PATH;
 
-
-typedef struct {
-	uint8_t type;
-	uint8_t subtype;
-	uint16_t length;
-	uint32_t part_num;
-	uint64_t start;
-	uint64_t size;
-	uint8_t  signature[16];
-	uint8_t  mbr_type;
-	uint8_t  signature_type;
-#ifdef __ia64
-	uint8_t  padding[6]; /* Emperically needed */
-#endif
-} __attribute__((packed)) HARDDRIVE_DEVICE_PATH;
-
 typedef struct {
 	uint8_t type;
 	uint8_t subtype;
@@ -274,14 +248,6 @@ typedef struct {
 	uint64_t start;
 	uint64_t size;
 } __attribute__((packed)) CDROM_DEVICE_PATH;
-
-typedef struct {
-	uint8_t type;
-	uint8_t subtype;
-	uint16_t length;
-	efi_char16_t path_name[1];
-} __attribute__((packed)) FILE_PATH_DEVICE_PATH;
-
 
 typedef struct {
 	uint8_t type;
@@ -299,19 +265,7 @@ typedef struct {
 	uint8_t  description[1];
 } __attribute__((packed)) BIOS_BOOT_SPEC_DEVICE_PATH;
 
-typedef struct {
-	uint8_t  type;
-	uint8_t  subtype;
-	uint16_t length;
-} __attribute__((packed)) END_DEVICE_PATH;
-
-
-/* Used for ACPI _HID */
-#define EISAID_PNP0A03 0xa0341d0
-
 /* Exported functions */
-
-extern EFI_DEVICE_PATH *load_option_path(EFI_LOAD_OPTION *option);
 
 extern int read_boot_var_names(char ***namelist);
 extern ssize_t make_linux_load_option(uint8_t **data, size_t *data_size);

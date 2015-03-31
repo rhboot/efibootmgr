@@ -955,9 +955,6 @@ set_active_state()
 	return -1;
 }
 
-
-
-
 static void
 usage()
 {
