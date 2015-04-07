@@ -32,7 +32,6 @@
 
 #include "efi.h"
 #include "unparse_path.h"
-#include "efichar.h"
 
 /* Avoid unaligned access warnings */
 #define get(buf, obj) *(typeof(obj) *)memcpy(buf, &obj, sizeof(obj))

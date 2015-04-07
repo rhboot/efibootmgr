@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <efiboot.h>
 #include <efivar.h>
 #include <errno.h>
 #include <stdint.h>
@@ -41,8 +42,7 @@
 #include <asm/types.h>
 #include <linux/ethtool.h>
 #include "efi.h"
-#include "efichar.h"
-#include "disk.h"
+#include "ucs2.h"
 #include "efibootmgr.h"
 #include "list.h"
 
@@ -122,271 +122,7 @@ read_boot_var_names(char ***namelist)
 	return read_var_names(select_boot_var_names, namelist);
 }
 
-static int
-get_edd_version()
-{
-	efi_guid_t guid = BLKX_UNKNOWN_GUID;
-	uint8_t *data = NULL;
-	size_t data_size = 0;
-	uint32_t attributes;
-	efidp_header *path;
-	int rc = 0;
-
-	/* Allow global user option override */
-
-	switch (opts.edd_version)
-	{
-	case 0: /* No EDD information */
-		return 0;
-		break;
-	case 1: /* EDD 1.0 */
-		return 1;
-		break;
-	case 3: /* EDD 3.0 */
-		return 3;
-		break;
-	default:
-		break;
-	}
-
-	rc = efi_get_variable(guid, "blk0", &data, &data_size, &attributes);
-	if (rc < 0)
-		return rc;
-
-	path = (efidp_header *)data;
-	if (path->type == 2 && path->subtype == 1)
-		return 3;
-	return 1;
-}
-
-struct device
-{
-	struct pci_dev *pci_dev;
-	struct list_head node;
-};
-
-static struct device *
-is_parent_bridge(struct pci_dev *p, unsigned int target_bus)
-{
-	struct device *d;
- 	unsigned int primary __attribute__((unused)), secondary;
-
-	if ( (pci_read_word(p, PCI_HEADER_TYPE) & 0x7f) != PCI_HEADER_TYPE_BRIDGE)
-		return NULL;
-
-	primary=pci_read_byte(p, PCI_PRIMARY_BUS);
-	secondary=pci_read_byte(p, PCI_SECONDARY_BUS);
-
-
-	if (secondary != target_bus)
-		return NULL;
-
-	d = malloc(sizeof(struct device));
-	if (!d)
-		return NULL;
-	memset(d, 0, sizeof(*d));
-	INIT_LIST_HEAD(&d->node);
-
-	d->pci_dev = p;
-
-	return d;
-}
-
-static struct device *
-find_parent(struct pci_access *pacc, unsigned int target_bus)
-{
-	struct device *dev;
-	struct pci_dev *p;
-
-	for (p=pacc->devices; p; p=p->next) {
-		dev = is_parent_bridge(p, target_bus);
-		if (dev)
-			return dev;
-	}
-	return NULL;
-}
-
-static ssize_t
-make_pci_device_path(uint8_t bus, uint8_t device, uint8_t function,
-			uint8_t *buf, size_t size)
-{
-	struct device *dev;
-	struct pci_access *pacc;
-	struct list_head *pos, *n;
-	LIST_HEAD(pci_parent_list);
-	ssize_t needed;
-	off_t buf_offset = 0;
-
-	pacc = pci_alloc();
-	if (!pacc)
-		return 0;
-
-	pci_init(pacc);
-	pci_scan_bus(pacc);
-
-	do {
-		dev = find_parent(pacc, bus);
-		if (dev) {
-			list_add(&pci_parent_list, &dev->node);
-			bus = dev->pci_dev->bus;
-		}
-	} while (dev && bus);
-
-	list_for_each_safe(pos, n, &pci_parent_list) {
-		dev = list_entry(pos, struct device, node);
-		needed = efidp_make_pci(buf+buf_offset,
-					size == 0 ? 0 : size-buf_offset,
-					dev->pci_dev->dev, dev->pci_dev->func);
-		if (needed < 0)
-			return -1;
-		buf_offset += needed;
-		list_del(&dev->node);
-		free(dev);
-	}
-
-	needed = efidp_make_pci(buf + buf_offset,
-				size == 0 ? 0 : size - buf_offset,
-				device, function);
-	if (needed < 0)
-		return -1;
-	buf_offset += needed;
-
-	pci_cleanup(pacc);
-
-	return buf_offset;
-}
-
-static ssize_t
-make_edd30_device_path(int fd, uint8_t *buf, size_t size)
-{
-	int rc=0, interface_type;
-	unsigned char bus=0, device=0, function=0;
-	uint32_t ns_id;
-	unsigned char host=0, channel=0, id=0, lun=0;
-	ssize_t needed;
-	off_t buf_offset = 0;
-
-	rc = disk_get_pci(fd, &interface_type, &bus, &device, &function);
-	if (rc) return 0;
-	if (interface_type == nvme) {
-		rc = efi_get_nvme_ns_id(fd, &ns_id);
-		if (rc < 0)
-			return 0;
-	} else if (interface_type != virtblk) {
-		rc = efi_get_scsi_idlun(fd, &host, &channel, &id, &lun);
-		if (rc < 0)
-			return 0;
-	}
-
-	needed = efidp_make_acpi_hid(buf, size, EFIDP_ACPI_PCI_ROOT_HID, bus);
-	if (needed < 0)
-		return needed;
-	buf_offset += needed;
-
-	needed = make_pci_device_path(bus, device, function, buf + buf_offset,
-					size == 0 ? 0 : size - buf_offset);
-	if (needed < 0)
-		return needed;
-	buf_offset += needed;
-
-	if (interface_type == nvme) {
-		needed = efidp_make_nvme(buf+buf_offset, size?size-buf_offset:0,
-					 ns_id, NULL);
-		if (needed < 0)
-			return needed;
-		buf_offset += needed;
-	} else if (interface_type != virtblk) {
-		needed = efidp_make_scsi(buf+buf_offset, size?size-buf_offset:0,
-					 id, lun);
-		if (needed < 0)
-			return needed;
-		buf_offset += needed;
-	}
-
-	return buf_offset;
-}
-
-static char *
-tilt_slashes(char *s)
-{
-	char *p;
-	for (p = s; *p; p++)
-		if (*p == '/')
-			*p = '\\';
-	return s;
-}
-
-/**
- * make_disk_load_option()
- * @disk disk
- * @buf - load option returned
- * @size - size of buffer available
- *
- * Returns -1 on error, length of load option created on success.
- */
-static ssize_t
-make_disk_load_option(char *disk, uint8_t *buf, size_t size)
-{
-	int disk_fd=0;
-	char signature[16];
-	int rc, edd_version=0;
-	uint8_t mbr_type=0, signature_type=0;
-	uint64_t part_start=0, part_size=0;
-	ssize_t needed = 0;
-	off_t buf_offset = 0;
-
-	memset(signature, 0, sizeof(signature));
-
-	disk_fd = open(opts.disk, O_RDWR);
-	if (disk_fd == -1)
-		err(5, "Could not open disk %s", opts.disk);
-
-	if (opts.edd_version) {
-		edd_version = get_edd_version();
-		if (edd_version == 3) {
-			needed = make_edd30_device_path(disk_fd, buf, size);
-		} else if (edd_version == 1) {
-			needed = efidp_make_edd10(buf, size,
-						  opts.edd10_devicenum);
-		}
-		if (needed < 0) {
-			close(disk_fd);
-			return needed;
-		}
-		buf_offset += needed;
-	}
-
-	rc = disk_get_partition_info(disk_fd, opts.part,
-				  &part_start, &part_size, signature,
-				  &mbr_type, &signature_type);
-	close(disk_fd);
-	if (rc)
-		errx(5, "No partition information on disk %s.\n"
-			"Cowardly refusing to create a boot option.\n",
-			opts.disk);
-
-	needed = efidp_make_hd(buf+buf_offset, size?size-buf_offset:0,
-			       opts.part, part_start, part_size,
-			       (uint8_t *)signature, mbr_type, signature_type);
-	if (needed < 0)
-		return needed;
-	buf_offset += needed;
-
-	opts.loader = tilt_slashes(opts.loader);
-	needed = efidp_make_file(buf+buf_offset, size?size-buf_offset:0,
-				 opts.loader);
-	if (needed < 0)
-		return needed;
-	buf_offset += needed;
-
-	needed = efidp_make_end_entire(buf, size?size-buf_offset:0);
-	if (needed < 0)
-		return needed;
-	buf_offset += needed;
-
-	return buf_offset;
-}
-
+#if 0
 static int
 get_virt_pci(char *name, unsigned char *bus,
 		unsigned char *device, unsigned char *function)
@@ -502,7 +238,6 @@ err_needed:
 		goto err_needed;
 	buf_offset += needed;
 
-#if 0
 	if (opts.ipv4) {
 		needed = make_ipv4_addr_device_path(fd, );
 		if (needed < 0)
@@ -516,7 +251,6 @@ err_needed:
 			goto err_needed;
 		buf_offset += needed;
 	}
-#endif
 	close(fd);
 
 	needed = efidp_make_end_entire(buf,size?size-buf_offset:0);
@@ -526,16 +260,7 @@ err_needed:
 
 	return buf_offset;
 }
-
-#define extend(buf, oldsize, size) ((void *)({				\
-		typeof(buf) __tmp = realloc(buf, (oldsize) + (size));	\
-		if (!__tmp) {						\
-			free(buf);					\
-			return -1;					\
-		}							\
-		(oldsize) += (size);					\
-		buf = __tmp;						\
-	}))
+#endif
 
 /**
  * make_linux_load_option()
@@ -548,14 +273,12 @@ ssize_t
 make_linux_load_option(uint8_t **data, size_t *data_size,
 		       uint8_t *optional_data, size_t optional_data_size)
 {
-	efi_char16_t description[64];
-	uint8_t *buf;
 	ssize_t needed;
-	off_t buf_offset = 0, desc_offset;
-	int rc;
 	uint32_t attributes = opts.active ? LOAD_OPTION_ACTIVE : 0;
+	int saved_errno;
 	efidp dp = NULL;
 
+#if 0
 	if (opts.iface) {
 		needed = make_net_load_option(opts.iface, NULL, 0);
 		if (needed < 0) {
@@ -569,238 +292,92 @@ err:
 			goto err;
 		}
 
-		needed = make_net_load_option(opts.iface, dp, needed);
+		needed = make_net_load_option(opts.iface, (uint8_t *)dp, needed);
 		if (needed < 0)
 			goto err;
 	} else {
-		needed = make_disk_load_option(opts.iface, NULL, 0);
+#endif
+		needed = efi_generate_file_device_path(NULL, 0, opts.loader,
+						       EFIBOOT_ABBREV_HD);
 		if (needed < 0)
-			goto err;
-		dp = malloc(needed);
-		if (dp == NULL) {
-			needed = -1;
-			goto err;
+			return -1;
+
+		if (data_size && *data_size) {
+			dp = malloc(needed);
+			if (dp == NULL)
+				return -1;
+			needed = efi_generate_file_device_path((uint8_t *)dp,
+							       needed,
+							       opts.loader,
+							     EFIBOOT_ABBREV_HD);
+			if (needed < 0) {
+				free(dp);
+				return -1;
+			}
 		}
-		needed = make_disk_load_option(opts.iface, dp, needed);
-		if (needed < 0)
-			goto err;
+#if 0
 	}
+#endif
 
-	needed = efi_make_load_option(NULL, 0, attributes, dp, opts.label,
+	needed = efi_make_load_option(*data, *data_size,
+				      attributes, dp, needed, opts.label,
 				      optional_data, optional_data_size);
-	buf = malloc(needed);
-	if (!buf) {
+	if (dp) {
+		saved_errno = errno;
 		free(dp);
+		dp = NULL;
+		errno = saved_errno;
+	}
+	if (needed < 0)
 		return -1;
-	}
-	needed = efi_make_load_option(buf, needed, attributes, dp, opts.label,
-				      optional_data, optional_data_size);
-	free(dp);
-	if (needed < 0) {
-		free(buf);
-		return needed;
-	}
 
-	*data_size = needed;
-	*data = buf;
 	return needed;
 }
 
-/*
- * append_extra_args()
- * appends all arguments from argv[] not snarfed by getopt
- * as one long string onto data.
- */
-static int
-append_extra_args_ascii(uint8_t **data, size_t *data_size)
+ssize_t
+get_extra_args(uint8_t *data, ssize_t data_size)
 {
-	uint8_t *new_data = NULL;
-	char *p;
 	int i;
-	unsigned long usedchars=0;
-
-	if (!data || *data) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	for (i=opts.optind; i < opts.argc; i++)	{
-		int l = strlen(opts.argv[i]);
-		int space = (i < opts.argc - 1) ? 1: 0;
-		uint8_t *tmp = realloc(new_data, (usedchars + l + space + 1));
-		if (tmp == NULL) {
-			if (new_data)
-				free(new_data);
-			return -1;
-		}
-		new_data = tmp;
-		p = (char *)new_data + usedchars;
-		strcpy(p, opts.argv[i]);
-		usedchars += l;
-		/* Put a space between args */
-		if (space)
-			new_data[usedchars++] = ' ';
-		new_data[usedchars] = '\0';
-	}
-
-	if (!new_data)
-		return 0;
-
-	*data = (uint8_t *)new_data;
-	*data_size = usedchars;
-
-	return 0;
-}
-
-static int
-append_extra_args_unicode(uint8_t **data, size_t *data_size)
-{
-	uint16_t *new_data = NULL, *p;
-	int i;
-	unsigned long usedchars=0;
-
-	if (!data || *data) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	for (i = opts.optind; i < opts.argc; i++) {
-		int l = strlen(opts.argv[i]) + 1;
-		int space = (i < opts.argc - 1) ? 1 : 0;
-		uint16_t *tmp = realloc(new_data, (usedchars + l + space)
-						  * sizeof (*new_data));
-		if (tmp == NULL)
-			return -1;
-		new_data = tmp;
-		p = new_data + usedchars;
-		usedchars += efichar_from_char((efi_char16_t *)p,
-						opts.argv[i], l * 2)
-				/ sizeof (*new_data);
-		p = new_data + usedchars;
-		/* Put a space between args */
-		if (space)
-			usedchars += efichar_from_char(
-						(efi_char16_t *)p, " ", 2)
-				/ sizeof (*new_data);
-	}
-
-	if (!new_data)
-		return 0;
-
-	*data = (uint8_t *)new_data;
-	*data_size = usedchars * sizeof (*new_data);
-
-	return 0;
-}
-
-static int
-append_extra_args_file(uint8_t **data, size_t *data_size)
-{
-	char *file = opts.extra_opts_file;
-	int fd = STDIN_FILENO;
-	ssize_t num_read=0;
-	unsigned long appended=0;
-	size_t maxchars = 1024;
-	char *buffer;
-
-	if (!data || *data) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	if (file && strncmp(file, "-", 1))
-		fd = open(file, O_RDONLY);
-
-	if (fd < 0)
-		return -1;
-
-	buffer = malloc(maxchars);
-	do {
-		if (maxchars - appended == 0) {
-			maxchars += 1024;
-			char *tmp = realloc(buffer, maxchars);
-			if (tmp == NULL)
-				return -1;
-			buffer = tmp;
-		}
-		num_read = read(fd, buffer + appended, maxchars - appended);
-		if (num_read < 0) {
-			free(buffer);
-			return -1;
-		} else if (num_read > 0) {
-			appended += num_read;
-		}
-	} while (num_read > 0);
-
-	if (fd != STDIN_FILENO)
-		close(fd);
-
-	*data = (uint8_t *)buffer;
-	*data_size = appended;
-
-	return appended;
-}
-
-static int
-add_new_data(uint8_t **data, size_t *data_size,
-		uint8_t *new_data, size_t new_data_size)
-{
-	uint8_t *tmp = realloc(*data, *data_size + new_data_size);
-	if (tmp == NULL)
-		return -1;
-	memcpy(tmp + *data_size, new_data, new_data_size);
-	*data = tmp;
-	*data_size = *data_size + new_data_size;
-	return 0;
-}
-
-int
-append_extra_args(uint8_t **data, size_t *data_size)
-{
-	int ret = 0;
-	uint8_t *new_data = NULL;
-	size_t new_data_size = 0;
+	ssize_t needed = 0, sz;
+	off_t off = 0;
 
 	if (opts.extra_opts_file) {
-		ret = append_extra_args_file(&new_data, &new_data_size);
-		if (ret < 0) {
-			fprintf(stderr, "efibootmgr: append_extra_args: %m\n");
+		needed = efi_load_option_args_from_file(data, data_size,
+						     opts.extra_opts_file);
+		if (needed < 0) {
+			fprintf(stderr, "efibootmgr: get_extra_args: %m\n");
 			return -1;
 		}
 	}
-	if (new_data_size) {
-		ret = add_new_data(data, data_size, new_data, new_data_size);
-		free(new_data);
-		if (ret < 0) {
-			fprintf(stderr, "efibootmgr: append_extra_args: %m\n");
-			return -1;
-		}
-		new_data = NULL;
-		new_data_size = 0;
-	}
+	for (i = opts.optind; i < opts.argc; i++) {
+		int space = (i < opts.argc - 1) ? 1 : 0;
 
-	if  (opts.unicode)
-		ret = append_extra_args_unicode(&new_data, &new_data_size);
-	else
-		ret = append_extra_args_ascii(&new_data, &new_data_size);
-	if (ret < 0) {
-		fprintf(stderr, "efibootmgr: append_extra_args: %m\n");
-		if (new_data) /* this can't happen, but covscan believes */
-			free(new_data);
-		return -1;
-	}
-	if (new_data_size) {
-		ret = add_new_data(data, data_size, new_data, new_data_size);
-		free(new_data);
-		new_data = NULL;
-		if (ret < 0) {
-			fprintf(stderr, "efibootmgr: append_extra_args: %m\n");
-			return -1;
+		if (opts.unicode) {
+			sz = efi_load_option_args_as_ucs2(
+						(uint16_t *)(data+off),
+						data_size?data_size+off:0,
+						opts.argv[i]);
+			if (sz < 0)
+				return -1;
+			off += sz;
+			if (data && off < data_size-2 && space) {
+				data[off] = '\0';
+				data[off+1] = '\0';
+			}
+			off += space * sizeof (uint16_t);
+		} else {
+			sz = efi_load_option_args_as_utf8(data+off,
+						data_size?data_size+off:0,
+						opts.argv[i]);
+			if (sz < 0)
+				return -1;
+			off += sz;
+			if (data && off < data_size-1 && space) {
+				data[off] = '\0';
+			}
+			off += space;
 		}
-		new_data_size = 0;
+		needed += off;
 	}
-
-	if (new_data) /* once again, this can't happen, but covscan believes */
-		free(new_data);
-	return 0;
+	return needed;
 }

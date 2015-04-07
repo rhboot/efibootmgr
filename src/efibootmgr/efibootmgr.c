@@ -46,12 +46,11 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <efivar.h>
+#include <efiboot.h>
 #include <inttypes.h>
 #include "list.h"
 #include "efi.h"
-#include "efichar.h"
 #include "unparse_path.h"
-#include "disk.h"
 #include "efibootmgr.h"
 
 
@@ -215,14 +214,15 @@ warn_duplicate_name(list_t *boot_list)
 {
 	list_t *pos;
 	var_entry_t *boot;
-	EFI_LOAD_OPTION *load_option;
+	efi_load_option *load_option;
+	const unsigned char const *desc;
 
 	list_for_each(pos, boot_list) {
 		boot = list_entry(pos, var_entry_t, list);
-		load_option = (EFI_LOAD_OPTION *)
+		load_option = (efi_load_option *)
 			boot->data;
-		if (!efichar_char_strcmp(opts.label,
-					 load_option->description)) {
+		desc = efi_load_option_desc(load_option);
+		if (!strcmp((char *)opts.label, (char *)desc)) {
 			fprintf(stderr, "** Warning ** : %.8s has same label %s\n",
 			       boot->name,
 			       opts.label);
@@ -237,10 +237,13 @@ make_boot_var(list_t *boot_list)
 	int free_number;
 	list_t *pos;
 	int rc;
+	uint8_t *extra_args = NULL;
+	ssize_t extra_args_size = 0;
+	ssize_t needed=0, sz;
 
-	if (opts.bootnum == -1)
+	if (opts.bootnum == -1) {
 		free_number = find_free_boot_var(boot_list);
-	else {
+	} else {
 		list_for_each(pos, boot_list) {
 			boot = list_entry(pos, var_entry_t, list);
 			if (boot->num == opts.bootnum) {
@@ -260,23 +263,43 @@ make_boot_var(list_t *boot_list)
 	/* Create a new var_entry_t object
 	   and populate it.
 	*/
-
 	boot = calloc(1, sizeof(*boot));
 	if (!boot) {
 		warn("efibootmgr");
 		return NULL;
 	}
-	if (make_linux_load_option(&boot->data, &boot->data_size) < 0)
-		goto err_boot_entry;
-	if (append_extra_args(&boot->data, &boot->data_size) < 0)
-		goto err_boot_entry;
+
+	sz = get_extra_args(NULL, 0);
+	if (sz < 0)
+		goto err;
+	extra_args_size = sz;
+
+	boot->data = NULL;
+	boot->data_size = 0;
+	needed = make_linux_load_option(&boot->data, &boot->data_size,
+					NULL, sz);
+	if (needed < 0)
+		goto err;
+	boot->data_size = needed;
+	boot->data = malloc(needed);
+	if (!boot->data)
+		goto err;
+
+	extra_args = boot->data + needed - extra_args_size;
+	sz = get_extra_args(extra_args, extra_args_size);
+	if (sz < 0)
+		goto err;
+	sz = make_linux_load_option(&boot->data, &boot->data_size,
+				    extra_args, extra_args_size);
+	if (sz < 0)
+		goto err;
 
 	boot->num = free_number;
-	boot->guid = EFI_GLOBAL_VARIABLE;
+	boot->guid = EFI_GLOBAL_GUID;
 	rc = asprintf(&boot->name, "Boot%04X", free_number);
 	if (rc < 0) {
 		warn("efibootmgr");
-		goto err_boot_entry;
+		goto err;
 	}
 	boot->attributes = EFI_VARIABLE_NON_VOLATILE |
 			    EFI_VARIABLE_BOOTSERVICE_ACCESS |
@@ -284,19 +307,21 @@ make_boot_var(list_t *boot_list)
 	rc = efi_set_variable(boot->guid, boot->name, boot->data,
 				boot->data_size, boot->attributes);
 	if (rc < 0)
-		goto err_boot_entry;
+		goto err;
 	list_add_tail(&boot->list, boot_list);
 	return boot;
-err_boot_entry:
-	if (boot->name) {
-		warn("Could not set variable %s", boot->name);
-		free(boot->name);
-	} else {
-		warn("Could not set variable");
+err:
+	if (boot) {
+		if (boot->data)
+			free(boot->data);
+		if (boot->name) {
+			warn("Could not set variable %s", boot->name);
+			free(boot->name);
+		} else {
+			warn("Could not set variable");
+		}
+		free(boot);
 	}
-	if (boot->data)
-		free(boot->data);
-	free(boot);
 	return NULL;
 }
 
@@ -787,92 +812,72 @@ show_boot_vars()
 {
 	list_t *pos;
 	var_entry_t *boot;
-	char description[80];
-	EFI_LOAD_OPTION *load_option;
-	EFI_DEVICE_PATH *path;
-	long optional_data_len=0;
+	const unsigned char const *description;
+	efi_load_option *load_option;
+	efidp dp = NULL;
+	unsigned char *optional_data = NULL;
+	size_t optional_data_len=0;
 
 	list_for_each(pos, &boot_entry_list) {
 		boot = list_entry(pos, var_entry_t, list);
-		load_option = (EFI_LOAD_OPTION *)boot->data;
-		efichar_to_char(description,
-				load_option->description, sizeof(description));
-		path = load_option_path(load_option);
+		load_option = (efi_load_option *)boot->data;
+		description = efi_load_option_desc(load_option);
+		dp = efi_load_option_path(load_option);
 		if (boot->name)
 			printf("%.8s", boot->name);
 		else
 			printf("Boot%04X", boot->num);
 
-		if (load_option->attributes & LOAD_OPTION_ACTIVE)
-			printf("* ");
-		else    printf("  ");
+		printf("%c ", (efi_load_option_attrs(load_option)
+			       & LOAD_OPTION_ACTIVE) ? '*' : ' ');
 		printf("%s", description);
 
 		if (opts.verbose) {
 			char *text_path = NULL;
 			size_t text_path_len = 0;
+			uint16_t pathlen = efi_load_option_pathlen(load_option);
 			ssize_t rc;
 
 			rc = efidp_format_device_path(text_path, text_path_len,
-						      (const_efidp)path,
-						      load_option->file_path_list_length);
-			if (rc < 0) {
-				fprintf(stderr, "Could not parse device path: %m\n");
-				exit(1);
-			}
+						      dp, pathlen);
+			if (rc < 0)
+				err(18, "Could not parse device path");
 			rc += 1;
 
 			text_path_len = rc;
 			text_path = calloc(1, rc);
-			if (!text_path) {
-				fprintf(stderr, "Could not parse device path: %m\n");
-				exit(1);
-			}
+			if (!text_path)
+				err(19, "Could not parse device path");
 
 			rc = efidp_format_device_path(text_path, text_path_len,
-						      (const_efidp)path,
-						      load_option->file_path_list_length);
-			if (rc < 0) {
-				fprintf(stderr, "Could not parse device path: %m\n");
-				exit(1);
-			}
+						      dp, pathlen);
+			if (rc < 0)
+				err(20, "Could not parse device path");
 			printf("\t%s", text_path);
 			free(text_path);
 			text_path_len = 0;
 			/* Print optional data */
 
-			optional_data_len =
-				boot->data_size -
-				load_option->file_path_list_length -
-				((char *)path - (char *)load_option);
-			if (optional_data_len <= 0) {
-				printf("\n");
-				continue;
-			}
+			rc = efi_load_option_optional_data(load_option,
+							   boot->data_size,
+							   &optional_data,
+							   &optional_data_len);
+			if (rc < 0)
+				err(21, "Could not parse optional data");
 
-			rc = unparse_raw_text(NULL, 0,
-				((uint8_t *)path)
-					+ load_option->file_path_list_length,
-				optional_data_len);
-			if (rc < 0) {
-				fprintf(stderr, "Could not parse device path: %m\n");
-				exit(1);
-			}
+			rc = unparse_raw_text(NULL, 0, optional_data,
+					      optional_data_len);
+			if (rc < 0)
+				err(22, "Could not parse optional data");
 			rc += 1;
 			text_path_len = rc;
 			text_path = calloc(1, rc);
-			if (!text_path) {
-				fprintf(stderr, "Could not parse device path: %m\n");
-				exit(1);
-			}
+			if (!text_path)
+				err(23, "Could not parse optional data");
 			rc = unparse_raw_text(text_path, text_path_len,
-				((uint8_t *)path)
-					+ load_option->file_path_list_length,
-				optional_data_len);
-			if (rc < 0) {
-				fprintf(stderr, "Could not parse device path: %m\n");
-				exit(1);
-			}
+					      optional_data, optional_data_len);
+			if (rc < 0)
+				err(23, "Could not parse device path");
 			printf("%s", text_path);
 			free(text_path);
 		}
@@ -913,19 +918,19 @@ set_active_state()
 {
 	list_t *pos;
 	var_entry_t *boot;
-	EFI_LOAD_OPTION *load_option;
+	efi_load_option *load_option;
 
 	list_for_each(pos, &boot_entry_list) {
 		boot = list_entry(pos, var_entry_t, list);
-		load_option = (EFI_LOAD_OPTION *)boot->data;
+		load_option = (efi_load_option *)boot->data;
 		if (boot->num == opts.bootnum) {
 			if (opts.active == 1) {
-				if (load_option->attributes
+				if (efi_load_option_attrs(load_option)
 						& LOAD_OPTION_ACTIVE) {
 					return 0;
 				} else {
-					load_option->attributes
-						|= LOAD_OPTION_ACTIVE;
+					efi_load_option_attr_set(load_option,
+							LOAD_OPTION_ACTIVE);
 					return efi_set_variable(boot->guid,
 							boot->name,
 							boot->data,
@@ -934,12 +939,12 @@ set_active_state()
 				}
 			}
 			else if (opts.active == 0) {
-				if (!(load_option->attributes
+				if (!(efi_load_option_attrs(load_option)
 						& LOAD_OPTION_ACTIVE)) {
 					return 0;
 				} else {
-					load_option->attributes
-						&= ~LOAD_OPTION_ACTIVE;
+					efi_load_option_attr_clear(load_option,
+							LOAD_OPTION_ACTIVE);
 					return efi_set_variable(boot->guid,
 							boot->name,
 							boot->data,
@@ -1002,7 +1007,7 @@ set_default_opts()
 	opts.timeout         = -1;   /* Don't set it */
 	opts.edd10_devicenum = 0x80;
 	opts.loader          = "\\EFI\\redhat\\grub.efi";
-	opts.label           = "Linux";
+	opts.label           = (unsigned char *)"Linux";
 	opts.disk            = "/dev/sda";
 	opts.iface           = NULL;
 	opts.part            = 1;
@@ -1166,7 +1171,7 @@ parse_opts(int argc, char **argv)
 			opts.loader = optarg;
 			break;
 		case 'L':
-			opts.label = optarg;
+			opts.label = (unsigned char *)optarg;
 			break;
 		case 'N':
 			opts.delete_bootnext = 1;

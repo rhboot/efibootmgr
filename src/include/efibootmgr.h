@@ -28,7 +28,7 @@ typedef struct {
 	char *disk;
 	char *iface;
 	char *loader;
-	char *label;
+	unsigned char *label;
 	char *bootorder;
 	int keep_old_entries;
 	char *testfile;
@@ -54,6 +54,7 @@ typedef struct {
 	unsigned int forcegpt:1;
 	unsigned int set_timeout:1;
 	unsigned int delete_timeout:1;
+	unsigned int no_boot_order:1;
 	unsigned short int timeout;
 } efibootmgr_opt_t;
 
