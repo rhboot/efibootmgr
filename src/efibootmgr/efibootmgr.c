@@ -123,6 +123,7 @@ read_vars(char **namelist,
 			entry->attributes = entry->attributes & ~(1 << 31);
 
 			entry->name = namelist[i];
+			entry->guid = EFI_GLOBAL_GUID;
 			list_add_tail(&entry->list, head);
 		}
 	}
