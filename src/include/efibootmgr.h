@@ -35,7 +35,7 @@ typedef struct {
 	char *extra_opts_file;
 	uint32_t part;
 	int edd_version;
-	int edd10_devicenum;
+	uint32_t edd10_devicenum;
 	int bootnum;
 	int bootnext;
 	int verbose;

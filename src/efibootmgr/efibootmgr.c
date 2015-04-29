@@ -1120,7 +1120,13 @@ parse_opts(int argc, char **argv)
 			rc = sscanf(optarg, "%u", &num);
 			if (rc == 1) opts.edd_version = num;
 			else {
-				fprintf (stderr,"invalid numeric value %s\n",optarg);
+				fprintf (stderr,"invalid numeric value %s\n",
+					 optarg);
+				exit(1);
+			}
+			if (num != 0 && num != 1 && num != 3) {
+				fprintf (stderr, "invalid EDD version %d\n",
+					 num);
 				exit(1);
 			}
 			break;
@@ -1128,7 +1134,8 @@ parse_opts(int argc, char **argv)
 			rc = sscanf(optarg, "%x", &num);
 			if (rc == 1) opts.edd10_devicenum = num;
 			else {
-				fprintf (stderr,"invalid hex value %s\n",optarg);
+				fprintf (stderr,"invalid hex value %s\n",
+					 optarg);
 				exit(1);
 			}
 			break;
