@@ -41,8 +41,6 @@ typedef struct {
 	int verbose;
 	int active;
 	int deduplicate;
-	int64_t acpi_hid;
-	int64_t acpi_uid;
 	unsigned int delete_boot:1;
 	unsigned int delete_bootorder:1;
 	unsigned int delete_bootnext:1;

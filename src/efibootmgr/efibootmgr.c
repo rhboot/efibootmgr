@@ -976,7 +976,6 @@ usage()
 	printf("\t-e | --edd [1|3|-1]   force EDD 1.0 or 3.0 creation variables, or guess\n");
 	printf("\t-E | --device num      EDD 1.0 device number (defaults to 0x80)\n");
 	printf("\t-g | --gpt            force disk with invalid PMBR to be treated as GPT\n");
-	printf("\t-H | --acpi_hid XXXX  set the ACPI HID (used with -i)\n");
 	printf("\t-i | --iface name     create a netboot entry for the named interface\n");
 	printf("\t-l | --loader name     (defaults to \\EFI\\redhat\\grub.efi)\n");
 	printf("\t-L | --label label     Boot manager display label (defaults to \"Linux\")\n");
@@ -989,7 +988,6 @@ usage()
 	printf("\t-t | --timeout seconds  set boot manager timeout waiting for user input.\n");
 	printf("\t-T | --delete-timeout   delete Timeout.\n");
 	printf("\t-u | --unicode | --UCS-2  pass extra args as UCS-2 (default is ASCII)\n");
-	printf("\t-U | --acpi_uid XXXX    set the ACPI UID (used with -i)\n");
 	printf("\t-v | --verbose          print additional information\n");
 	printf("\t-V | --version          return version and exit\n");
 	printf("\t-w | --write-signature  write unique sig to MBR if needed\n");
@@ -1011,8 +1009,6 @@ set_default_opts()
 	opts.disk            = "/dev/sda";
 	opts.iface           = NULL;
 	opts.part            = 1;
-	opts.acpi_hid        = -1;
-	opts.acpi_uid        = -1;
 }
 
 static void
@@ -1036,7 +1032,6 @@ parse_opts(int argc, char **argv)
 			{"remove-dups",            no_argument, 0, 'D'},
 			{"disk",             required_argument, 0, 'd'},
 			{"iface",            required_argument, 0, 'i'},
-			{"acpi_hid",         required_argument, 0, 'H'},
 			{"edd-device",       required_argument, 0, 'E'},
 			{"edd30",            required_argument, 0, 'e'},
 			{"gpt",                    no_argument, 0, 'g'},
@@ -1053,7 +1048,6 @@ parse_opts(int argc, char **argv)
 			{"delete-timeout",         no_argument, 0, 'T'},
 			{"unicode",                no_argument, 0, 'u'},
 			{"UCS-2",                  no_argument, 0, 'u'},
-			{"acpi_uid",         required_argument, 0, 'U'},
 			{"verbose",          optional_argument, 0, 'v'},
 			{"version",                no_argument, 0, 'V'},
 			{"write-signature",        no_argument, 0, 'w'},
@@ -1148,26 +1142,6 @@ parse_opts(int argc, char **argv)
 			exit(0);
 			break;
 
-		case 'H': {
-			char *endptr = NULL;
-			unsigned long result;
-			result = strtoul(optarg, &endptr, 16);
-			if ((result == ULONG_MAX && errno == ERANGE) ||
-					(endptr && *endptr != '\0')) {
-				print_error_arrow("Invalid ACPI_HID value",
-					optarg,
-					(intptr_t)endptr - (intptr_t)optarg);
-				exit(1);
-			}
-			if (result > 0xffff) {
-				fprintf(stderr, "Invalid ACPI_HID value: %lX\n",
-					result);
-				exit(1);
-			}
-
-			opts.acpi_hid = result;
-			break;
-		}
 		case 'i':
 			opts.iface = optarg;
 			break;
@@ -1236,27 +1210,6 @@ parse_opts(int argc, char **argv)
 		case 'u':
 			opts.unicode = 1;
 			break;
-
-		case 'U': {
-			char *endptr = NULL;
-			unsigned long result;
-			result = strtoul(optarg, &endptr, 16);
-			if ((result == ULONG_MAX && errno == ERANGE) ||
-					(endptr && *endptr != '\0')) {
-				print_error_arrow("Invalid ACPI_UID value",
-					optarg,
-					(intptr_t)endptr - (intptr_t)optarg);
-				exit(1);
-			}
-			if (result > 0xffff) {
-				fprintf(stderr, "Invalid ACPI_UID value: %lX\n",
-					result);
-				exit(1);
-			}
-
-			opts.acpi_uid = result;
-			break;
-		}
 		case 'v':
 			opts.verbose = 1;
 			if (optarg) {
@@ -1307,12 +1260,6 @@ main(int argc, char **argv)
 		printf("version %s\n", EFIBOOTMGR_VERSION);
 		return 0;
 	}
-
-	if (opts.iface && (
-			opts.acpi_hid < 0 || opts.acpi_uid < 0 ||
-			opts.acpi_hid > UINT32_MAX ||
-			opts.acpi_uid > UINT32_MAX))
-		errx(1, "You must specify the ACPI HID and UID when using -i.");
 
 	if (!efi_variables_supported())
 		errx(2, "EFI variables are not supported on this system.");
