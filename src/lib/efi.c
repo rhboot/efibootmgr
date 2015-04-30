@@ -42,7 +42,6 @@
 #include <asm/types.h>
 #include <linux/ethtool.h>
 #include "efi.h"
-#include "ucs2.h"
 #include "efibootmgr.h"
 #include "list.h"
 
