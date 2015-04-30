@@ -977,6 +977,14 @@ usage()
 	printf("\t-E | --device num      EDD 1.0 device number (defaults to 0x80)\n");
 	printf("\t-g | --gpt            force disk with invalid PMBR to be treated as GPT\n");
 	printf("\t-i | --iface name     create a netboot entry for the named interface\n");
+#if 0
+	printf("\t     --ip-addr <local>,<remote>	set local and remote IP addresses\n");
+	printf("\t     --ip-gateway <gateway>	set the network gateway\n");
+	printf("\t     --ip-netmask <netmask>	set the netmask or prefix length\n");
+	printf("\t     --ip-proto TCP|UDP	set the IP protocol to be used\n");
+	printf("\t     --ip-port <local>,<remote>	set local and remote IP ports\n");
+	printf("\t     --ip-origin { {dhcp|static} | { static|stateless|stateful} }\n");
+#endif
 	printf("\t-l | --loader name     (defaults to \\EFI\\redhat\\grub.efi)\n");
 	printf("\t-L | --label label     Boot manager display label (defaults to \"Linux\")\n");
 	printf("\t-n | --bootnext XXXX   set BootNext to XXXX (hex)\n");
@@ -1007,7 +1015,6 @@ set_default_opts()
 	opts.loader          = "\\EFI\\redhat\\grub.efi";
 	opts.label           = (unsigned char *)"Linux";
 	opts.disk            = "/dev/sda";
-	opts.iface           = NULL;
 	opts.part            = 1;
 }
 
@@ -1144,6 +1151,8 @@ parse_opts(int argc, char **argv)
 
 		case 'i':
 			opts.iface = optarg;
+			opts.ip_version = EFIBOOTMGR_IPV4;
+			opts.ip_addr_origin = EFIBOOTMGR_IPV4_ORIGIN_DHCP;
 			break;
 		case 'k':
 			opts.keep_old_entries = 1;

@@ -21,12 +21,33 @@
 #ifndef _EFIBOOTMGR_H
 #define _EFIBOOTMGR_H
 
+#define EFIBOOTMGR_IPV4 0
+#define EFIBOOTMGR_IPV6 1
+
+#define EFIBOOTMGR_IPV4_ORIGIN_DHCP		0
+#define EFIBOOTMGR_IPV4_ORIGIN_STATIC		1
+#define EFIBOOTMGR_IPV6_ORIGIN_STATIC		0
+#define EFIBOOTMGR_IPV6_ORIGIN_STATELESS	1
+#define EFIBOOTMGR_IPV6_ORIGIN_STATEFUL		2
+
 typedef struct {
 	int argc;
 	char **argv;
 	int optind;
 	char *disk;
+
+	int ip_version;
 	char *iface;
+	char *macaddr;
+	char *local_ip_addr;
+	char *remote_ip_addr;
+	char *gateway_ip_addr;
+	char *ip_netmask;
+	uint16_t ip_local_port;
+	uint16_t ip_remote_port;
+	uint16_t ip_protocol;
+	uint8_t ip_addr_origin;
+
 	char *loader;
 	unsigned char *label;
 	char *bootorder;
@@ -55,7 +76,6 @@ typedef struct {
 	unsigned int no_boot_order:1;
 	unsigned short int timeout;
 } efibootmgr_opt_t;
-
 
 extern efibootmgr_opt_t opts;
 

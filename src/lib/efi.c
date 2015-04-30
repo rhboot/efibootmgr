@@ -312,31 +312,49 @@ make_linux_load_option(uint8_t **data, size_t *data_size,
 	int saved_errno;
 	efidp dp = NULL;
 
-#if 0
-	if (opts.iface) {
-		needed = make_net_load_option(opts.iface, NULL, 0);
-		if (needed < 0) {
-err:
-			fprintf(stderr, "efibootmgr: could not create load option: %m\n");
-			return needed;
-		}
-		dp = (efidp)malloc(needed);
-		if (dp == NULL) {
-			needed = -1;
-			goto err;
-		}
-
-		needed = make_net_load_option(opts.iface, (uint8_t *)dp, needed);
+	if (opts.iface && opts.ip_version == EFIBOOTMGR_IPV4) {
+		needed = efi_generate_ipv4_device_path(NULL, 0, opts.iface,
+						       opts.local_ip_addr,
+						       opts.remote_ip_addr,
+						       opts.gateway_ip_addr,
+						       opts.ip_netmask,
+						       opts.ip_local_port,
+						       opts.ip_remote_port,
+						       opts.ip_protocol,
+						       opts.ip_addr_origin);
 		if (needed < 0)
-			goto err;
+			return -1;
+		if (data_size && *data_size) {
+			dp = malloc(needed);
+
+			needed = efi_generate_ipv4_device_path(
+							(uint8_t *)dp, needed,
+							opts.iface,
+							opts.local_ip_addr,
+							opts.remote_ip_addr,
+							opts.gateway_ip_addr,
+							opts.ip_netmask,
+							opts.ip_local_port,
+							opts.ip_remote_port,
+							opts.ip_protocol,
+							opts.ip_addr_origin);
+			if (needed < 0) {
+				free(dp);
+				return -1;
+			}
+		}
+	} else if (opts.iface && opts.ip_version == EFIBOOTMGR_IPV6) {
+		errno = ENOSYS;
+		return -1;
 	} else {
-#endif
+		uint32_t options = EFIBOOT_ABBREV_HD;
+		int edd;
+
 		/* there's really no telling if this is even the right disk,
 		 * but... I also never see blk0 exported to runtime on any
 		 * hardware, so it probably only happens on some old itanium
 		 * box from the beginning of time anyway. */
-		uint32_t options = EFIBOOT_ABBREV_HD;
-		int edd = get_edd_version();
+		edd = get_edd_version();
 
 		switch (edd) {
 		case 1:
@@ -368,9 +386,7 @@ err:
 				return -1;
 			}
 		}
-#if 0
 	}
-#endif
 
 	needed = efi_make_load_option(*data, *data_size,
 				      attributes, dp, needed, opts.label,
