@@ -1,5 +1,9 @@
 Running 'make' builds the file src/efibootmgr/efibootmgr.
 efibootmgr should be placed into /usr/sbin/.
 
+If you receive a message like the following:
 
+src/include/efi.h:32:20: fatal error: efivar.h: No such file or directory
 
+You need to install the 'efivar' program which can be found at
+https://github.com/vathpela/efivar
