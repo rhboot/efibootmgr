@@ -221,7 +221,7 @@ warn_duplicate_name(list_t *boot_list)
 		boot = list_entry(pos, var_entry_t, list);
 		load_option = (efi_load_option *)
 			boot->data;
-		desc = efi_load_option_desc(load_option);
+		desc = efi_loadopt_desc(load_option);
 		if (!strcmp((char *)opts.label, (char *)desc)) {
 			fprintf(stderr, "** Warning ** : %.8s has same label %s\n",
 			       boot->name,
@@ -821,21 +821,21 @@ show_boot_vars()
 	list_for_each(pos, &boot_entry_list) {
 		boot = list_entry(pos, var_entry_t, list);
 		load_option = (efi_load_option *)boot->data;
-		description = efi_load_option_desc(load_option);
-		dp = efi_load_option_path(load_option);
+		description = efi_loadopt_desc(load_option);
+		dp = efi_loadopt_path(load_option);
 		if (boot->name)
 			printf("%.8s", boot->name);
 		else
 			printf("Boot%04X", boot->num);
 
-		printf("%c ", (efi_load_option_attrs(load_option)
+		printf("%c ", (efi_loadopt_attrs(load_option)
 			       & LOAD_OPTION_ACTIVE) ? '*' : ' ');
 		printf("%s", description);
 
 		if (opts.verbose) {
 			char *text_path = NULL;
 			size_t text_path_len = 0;
-			uint16_t pathlen = efi_load_option_pathlen(load_option);
+			uint16_t pathlen = efi_loadopt_pathlen(load_option);
 			ssize_t rc;
 
 			rc = efidp_format_device_path(text_path, text_path_len,
@@ -858,7 +858,7 @@ show_boot_vars()
 			text_path_len = 0;
 			/* Print optional data */
 
-			rc = efi_load_option_optional_data(load_option,
+			rc = efi_loadopt_optional_data(load_option,
 							   boot->data_size,
 							   &optional_data,
 							   &optional_data_len);
@@ -925,11 +925,11 @@ set_active_state()
 		load_option = (efi_load_option *)boot->data;
 		if (boot->num == opts.bootnum) {
 			if (opts.active == 1) {
-				if (efi_load_option_attrs(load_option)
+				if (efi_loadopt_attrs(load_option)
 						& LOAD_OPTION_ACTIVE) {
 					return 0;
 				} else {
-					efi_load_option_attr_set(load_option,
+					efi_loadopt_attr_set(load_option,
 							LOAD_OPTION_ACTIVE);
 					return efi_set_variable(boot->guid,
 							boot->name,
@@ -939,11 +939,11 @@ set_active_state()
 				}
 			}
 			else if (opts.active == 0) {
-				if (!(efi_load_option_attrs(load_option)
+				if (!(efi_loadopt_attrs(load_option)
 						& LOAD_OPTION_ACTIVE)) {
 					return 0;
 				} else {
-					efi_load_option_attr_clear(load_option,
+					efi_loadopt_attr_clear(load_option,
 							LOAD_OPTION_ACTIVE);
 					return efi_set_variable(boot->guid,
 							boot->name,

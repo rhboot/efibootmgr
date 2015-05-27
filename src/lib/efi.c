@@ -388,7 +388,7 @@ make_linux_load_option(uint8_t **data, size_t *data_size,
 		}
 	}
 
-	needed = efi_make_load_option(*data, *data_size,
+	needed = efi_loadopt_create(*data, *data_size,
 				      attributes, dp, needed, opts.label,
 				      optional_data, optional_data_size);
 	if (dp) {
@@ -411,7 +411,7 @@ get_extra_args(uint8_t *data, ssize_t data_size)
 	off_t off = 0;
 
 	if (opts.extra_opts_file) {
-		needed = efi_load_option_args_from_file(data, data_size,
+		needed = efi_loadopt_args_from_file(data, data_size,
 						     opts.extra_opts_file);
 		if (needed < 0) {
 			fprintf(stderr, "efibootmgr: get_extra_args: %m\n");
@@ -422,7 +422,7 @@ get_extra_args(uint8_t *data, ssize_t data_size)
 		int space = (i < opts.argc - 1) ? 1 : 0;
 
 		if (opts.unicode) {
-			sz = efi_load_option_args_as_ucs2(
+			sz = efi_loadopt_args_as_ucs2(
 						(uint16_t *)(data+off),
 						data_size?data_size+off:0,
 						opts.argv[i]);
@@ -435,7 +435,7 @@ get_extra_args(uint8_t *data, ssize_t data_size)
 			}
 			off += space * sizeof (uint16_t);
 		} else {
-			sz = efi_load_option_args_as_utf8(data+off,
+			sz = efi_loadopt_args_as_utf8(data+off,
 						data_size?data_size+off:0,
 						opts.argv[i]);
 			if (sz < 0)
