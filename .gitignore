@@ -6,3 +6,4 @@
 efibootmgr-*.tar.*
 core.*
 efibootmgr*.zip
+efibootmgr.spec

@@ -1,6 +1,6 @@
 Summary: EFI Boot Manager
 Name: efibootmgr
-Version: 0.11.0
+Version: @@VERSION@@
 Release: 1%{?dist}
 Group: System Environment/Base
 License: GPLv2+
@@ -31,6 +31,8 @@ git config user.name "RHEL Ninjas"
 git add .
 git commit -a -q -m "%{version} baseline."
 git am %{patches} </dev/null
+git config --unset user.email
+git config --unset user.name
 
 %build
 make %{?_smp_mflags} EXTRA_CFLAGS='%{optflags}'
