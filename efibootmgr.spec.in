@@ -4,7 +4,7 @@ Version: @@VERSION@@
 Release: 1%{?dist}
 Group: System Environment/Base
 License: GPLv2+
-URL: http://github.com/vathpela/%{name}/
+URL: http://github.com/rhinstaller/%{name}/
 BuildRequires: git
 BuildRequires: efivar-libs >= 0.19 , efivar-devel >= 0.19
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXXXX)
@@ -15,7 +15,7 @@ ExclusiveArch: %{ix86} x86_64 aarch64
 Conflicts: elilo <= 3.6-6
 Obsoletes: elilo <= 3.6-6
 
-Source0: https://github.com/vathpela/%{name}/releases/download/%{name}-%{version}/%{name}-%{version}.tar.bz2
+Source0: https://github.com/rhinstaller/%{name}/releases/download/%{name}-%{version}/%{name}-%{version}.tar.bz2
 
 %description
 %{name} displays and allows the user to edit the Intel Extensible
@@ -55,6 +55,11 @@ rm -rf %{buildroot}
 %doc README INSTALL COPYING
     
 %changelog
+* Thu May 28 2015 Peter Jones <pjones@redhat.com> - 0.12-1
+- Update to 0.12
+- use libefiboot and libefivar to make device paths and load options
+- don't depend on -lz or -lpci any more
+
 * Tue Oct 21 2014 Peter Jones <pjones@redhat.com> - 0.11.0-1
 - Fix "-n" and friends not being assigned/checked right sometimes from 0.10.0-1
 - Generate more archives to avoid people using github's, because they're just

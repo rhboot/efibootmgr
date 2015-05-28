@@ -1,10 +1,13 @@
-For 0.9:
-
 - support for setting hotkeys
 - support for driver variables, not just boot variables.
 - support for arbitrary device paths with -c (including guid parsing)
-- audit for missing unparse_*_path() types.
-  - verify/debug NVME code
 - maintain a list of known GUIDs and print {vendor} instead of the full GUID
   - accept these for arbitrary paths as well.
+  - these are done in libefivar, but efibootmgr still needs some work on it
 - MS-DOS style extended partitions
+- lots more network stuff
+  - IPv6 with various discovery methods
+  - IPv4 w/o dhcp
+  - make sure FCoE works
+  - iscsi
+- make sure nvme works
