@@ -5,8 +5,8 @@ Release: 1%{?dist}
 Group: System Environment/Base
 License: GPLv2+
 URL: http://github.com/vathpela/%{name}/
-BuildRequires: pciutils-devel, zlib-devel, git
-BuildRequires: efivar-libs, efivar-devel
+BuildRequires: git
+BuildRequires: efivar-libs >= 0.19 , efivar-devel >= 0.19
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXXXX)
 # EFI/UEFI don't exist on PPC
 ExclusiveArch: %{ix86} x86_64 aarch64
