@@ -494,11 +494,11 @@ remove_from_boot_order(uint16_t num)
 	if (new_i == old_i)
 		goto all_done;
 
-	/* BootOrder variable needs to be updated */
-	efi_del_variable(EFI_GLOBAL_GUID, "BootOrder");
-
-	if (new_i == 0)
+	/* BootOrder should have nothing when new_i == 0 */
+	if (new_i == 0) {
+		efi_del_variable(EFI_GLOBAL_GUID, "BootOrder");
 		goto all_done;
+	}
 
 	boot_order->data_size = sizeof(data[0]) * new_i;
 	rc = efi_set_variable(EFI_GLOBAL_GUID, "BootOrder", boot_order->data,
