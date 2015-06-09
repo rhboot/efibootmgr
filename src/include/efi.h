@@ -41,6 +41,8 @@
  *******************************************************/
 #define BLKX_UNKNOWN_GUID \
 EFI_GUID( 0x47c7b225, 0xc42a, 0x11d2, 0x8e57, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b)
+#define ADDRESS_RANGE_MIRROR_VARIABLE_GUID \
+EFI_GUID( 0x7b9be2e0, 0xe28a, 0x4197, 0xad3e, 0x32, 0xf0, 0x62, 0xf9, 0x46, 0x2c)
 
 /* Exported functions */
 
@@ -48,5 +50,17 @@ extern int read_boot_var_names(char ***namelist);
 extern ssize_t make_linux_load_option(uint8_t **data, size_t *data_size,
 		       uint8_t *optional_data, size_t optional_data_size);
 extern ssize_t get_extra_args(uint8_t *data, ssize_t data_size);
+
+typedef struct {
+	uint8_t		mirror_version;
+	uint8_t		mirror_memory_below_4gb;
+	uint16_t	mirror_amount_above_4gb;
+	uint8_t		mirror_status;
+} __attribute__((packed)) ADDRESS_RANGE_MIRROR_VARIABLE_DATA;
+
+#define        MIRROR_VERSION  1
+
+#define ADDRESS_RANGE_MIRROR_VARIABLE_CURRENT "MirrorCurrent"
+#define ADDRESS_RANGE_MIRROR_VARIABLE_REQUEST "MirrorRequest"
 
 #endif /* EFI_H */

@@ -960,6 +960,115 @@ set_active_state()
 	return -1;
 }
 
+static int
+get_mirror(int which, int *below4g, int *above4g, int *mirrorstatus)
+{
+	int rc;
+	uint8_t *data;
+	ADDRESS_RANGE_MIRROR_VARIABLE_DATA *abm;
+	size_t data_size;
+	uint32_t attributes;
+	char *name;
+
+	if (which)
+		name = ADDRESS_RANGE_MIRROR_VARIABLE_REQUEST;
+	else
+		name = ADDRESS_RANGE_MIRROR_VARIABLE_CURRENT;
+
+	rc = efi_get_variable(ADDRESS_RANGE_MIRROR_VARIABLE_GUID, name,
+				&data, &data_size, &attributes);
+	if (rc == 0) {
+		abm = (ADDRESS_RANGE_MIRROR_VARIABLE_DATA *)data;
+		if (!which && abm->mirror_version != MIRROR_VERSION) {
+			fprintf(stderr, "** Warning ** : unrecognised version for memory mirror i/f\n");
+			return 2;
+		}
+		*below4g = abm->mirror_memory_below_4gb;
+		*above4g = abm->mirror_amount_above_4gb;
+		*mirrorstatus = abm->mirror_status;
+	}
+	return rc;
+}
+
+static int
+set_mirror(int below4g, int above4g)
+{
+	int s, status, rc;
+	uint8_t *data;
+	ADDRESS_RANGE_MIRROR_VARIABLE_DATA abm;
+	size_t data_size;
+	uint32_t attributes;
+	int oldbelow4g, oldabove4g;
+
+	if ((s = get_mirror(0, &oldbelow4g, &oldabove4g, &status)) == 0) {
+		if (oldbelow4g == below4g && oldabove4g == above4g)
+			return 0;
+	} else {
+		fprintf(stderr, "** Warning ** : platform does not support memory mirror\n");
+		return s;
+	}
+
+	data = (uint8_t *)&abm;
+	data_size = sizeof (abm);
+	attributes = EFI_VARIABLE_NON_VOLATILE
+		| EFI_VARIABLE_BOOTSERVICE_ACCESS
+		| EFI_VARIABLE_RUNTIME_ACCESS;
+
+	abm.mirror_version = MIRROR_VERSION;
+	abm.mirror_amount_above_4gb = opts.set_mirror_hi ? above4g : oldabove4g;
+	abm.mirror_memory_below_4gb = opts.set_mirror_lo ? below4g : oldbelow4g;
+	abm.mirror_status = 0;
+	data = (uint8_t *)&abm;
+	rc = efi_set_variable(ADDRESS_RANGE_MIRROR_VARIABLE_GUID,
+			      ADDRESS_RANGE_MIRROR_VARIABLE_REQUEST, data,
+				data_size, attributes);
+	return rc;
+}
+
+static void
+show_mirror(void)
+{
+	int status;
+	int below4g, above4g;
+	int rbelow4g, rabove4g;
+
+	if (get_mirror(0, &below4g, &above4g, &status) == 0) {
+		if (status == 0) {
+			printf("MirroredPercentageAbove4G: %d.%.2d\n", above4g/100, above4g%100);
+			printf("MirrorMemoryBelow4GB: %s\n", below4g ? "true" : "false");
+		} else {
+			printf("MirrorStatus: ");
+			switch (status) {
+			case 1:
+				printf("Platform does not support address range mirror\n");
+				break;
+			case 2:
+				printf("Invalid version number\n");
+				break;
+			case 3:
+				printf("MirroredMemoryAbove4GB > 50.00%%\n");
+				break;
+			case 4:
+				printf("DIMM configuration does not allow mirror\n");
+				break;
+			case 5:
+				printf("OEM specific method\n");
+				break;
+			default:
+				printf("%u\n", status);
+				break;
+			}
+			printf("DesiredMirroredPercentageAbove4G: %d.%.2d\n", above4g/100, above4g%100);
+			printf("DesiredMirrorMemoryBelow4GB: %s\n", below4g ? "true" : "false");
+		}
+	}
+	if ((get_mirror(1, &rbelow4g, &rabove4g, &status) == 0) &&
+		(above4g != rabove4g || below4g != rbelow4g)) {
+		printf("RequestMirroredPercentageAbove4G: %d.%.2d\n", rabove4g/100, rabove4g%100);
+		printf("RequestMirrorMemoryBelow4GB: %s\n", rbelow4g ? "true" : "false");
+	}
+}
+
 static void
 usage()
 {
@@ -987,6 +1096,8 @@ usage()
 #endif
 	printf("\t-l | --loader name     (defaults to \\EFI\\redhat\\grub.efi)\n");
 	printf("\t-L | --label label     Boot manager display label (defaults to \"Linux\")\n");
+	printf("\t-m | --mirror-below-4G t|f mirror memory below 4GB\n");
+	printf("\t-M | --mirror-above-4G X percentage memory to mirror above 4GB\n");
 	printf("\t-n | --bootnext XXXX   set BootNext to XXXX (hex)\n");
 	printf("\t-N | --delete-bootnext delete BootNext\n");
 	printf("\t-o | --bootorder XXXX,YYYY,ZZZZ,...     explicitly set BootOrder (hex)\n");
@@ -1023,6 +1134,7 @@ parse_opts(int argc, char **argv)
 {
 	int c, rc;
 	unsigned int num;
+	float fnum;
 	int option_index = 0;
 
 	while (1)
@@ -1045,6 +1157,8 @@ parse_opts(int argc, char **argv)
 			{"keep",                   no_argument, 0, 'k'},
 			{"loader",           required_argument, 0, 'l'},
 			{"label",            required_argument, 0, 'L'},
+			{"mirror-below-4G",  required_argument, 0, 'm'},
+			{"mirror-above-4G",  required_argument, 0, 'M'},
 			{"bootnext",         required_argument, 0, 'n'},
 			{"delete-bootnext",        no_argument, 0, 'N'},
 			{"bootorder",        required_argument, 0, 'o'},
@@ -1064,7 +1178,7 @@ parse_opts(int argc, char **argv)
 		};
 
 		c = getopt_long (argc, argv,
-				 "AaBb:cCDd:e:E:gH:i:l:L:n:No:Op:qt:TuU:v::Vw"
+				 "AaBb:cCDd:e:E:gH:i:l:L:M:m:n:No:Op:qt:TuU:v::Vw"
 				 "@:h",
 				 long_options, &option_index);
 		if (c == -1)
@@ -1162,6 +1276,31 @@ parse_opts(int argc, char **argv)
 			break;
 		case 'L':
 			opts.label = (unsigned char *)optarg;
+			break;
+		case 'm':
+			opts.set_mirror_lo = 1;
+			switch (optarg[0]) {
+			case '1': case 'y': case 't':
+				opts.below4g = 1;
+				break;
+			case '0': case 'n': case 'f':
+				opts.below4g = 0;
+				break;
+			default:
+				fprintf (stderr,"invalid boolean value %s\n",optarg);
+				exit(1);
+			}
+			break;
+		case 'M':
+			opts.set_mirror_hi = 1;
+			rc = sscanf(optarg, "%f", &fnum);
+			if (rc == 1 && fnum <= 50) {
+				opts.above4g = fnum * 100; /* percent to basis points */
+			}
+			else {
+				fprintf (stderr,"invalid numeric value %s\n",optarg);
+				exit(1);
+			}
 			break;
 		case 'N':
 			opts.delete_bootnext = 1;
@@ -1360,6 +1499,10 @@ main(int argc, char **argv)
 			err(14, "Could not set Timeout");
 	}
 
+	if (opts.set_mirror_lo || opts.set_mirror_hi) {
+		ret=set_mirror(opts.below4g, opts.above4g);
+	}
+
 	if (!opts.quiet && ret == 0) {
 		num = read_boot_u16("BootNext");
 		if (num >= 0) {
@@ -1375,6 +1518,7 @@ main(int argc, char **argv)
 		}
 		show_boot_order();
 		show_boot_vars();
+		show_mirror();
 	}
 	free_vars(&boot_entry_list);
 	free_array(boot_names);

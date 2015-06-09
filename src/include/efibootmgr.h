@@ -61,6 +61,8 @@ typedef struct {
 	int bootnext;
 	int verbose;
 	int active;
+	int below4g;
+	int above4g;
 	int deduplicate;
 	unsigned int delete_boot:1;
 	unsigned int delete_bootorder:1;
@@ -73,6 +75,8 @@ typedef struct {
 	unsigned int forcegpt:1;
 	unsigned int set_timeout:1;
 	unsigned int delete_timeout:1;
+	unsigned int set_mirror_lo:1;
+	unsigned int set_mirror_hi:1;
 	unsigned int no_boot_order:1;
 	unsigned short int timeout;
 } efibootmgr_opt_t;
