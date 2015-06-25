@@ -536,6 +536,15 @@ read_boot_u16(const char *name)
 }
 
 static int
+hex_could_be_lower_case(uint16_t num)
+{
+	return ((((num & 0x000f) >>  0) > 9) ||
+		(((num & 0x00f0) >>  4) > 9) ||
+		(((num & 0x0f00) >>  8) > 9) ||
+		(((num & 0xf000) >> 12) > 9));
+}
+
+static int
 delete_boot_var(uint16_t num)
 {
 	int rc;
@@ -545,22 +554,20 @@ delete_boot_var(uint16_t num)
 
 	snprintf(name, sizeof(name), "Boot%04X", num);
 	rc = efi_del_variable(EFI_GLOBAL_GUID, name);
+	if (rc < 0)
+		warn("Could not delete Boot%04X", num);
 
 	/* For backwards compatibility, try to delete abcdef entries as well */
-	if (rc < 0) {
-		if (errno == ENOENT) {
-			snprintf(name, sizeof(name), "Boot%04x", num);
-			rc = efi_del_variable(EFI_GLOBAL_GUID, name);
-		} else if (errno == EPERM) {
-			warn("Could not delete Boot%04X", num);
-			return rc;
-		}
+	if (rc < 0 && errno == ENOENT && hex_could_be_lower_case(num)) {
+		snprintf(name, sizeof(name), "Boot%04x", num);
+		rc = efi_del_variable(EFI_GLOBAL_GUID, name);
+		if (rc < 0 && errno != ENOENT)
+			warn("Could not delete Boot%04x", num);
 	}
 
-	if (rc < 0) {
-		warnx("Boot entry %04X not found", num);
+	if (rc < 0)
 		return rc;
-	}
+
 	list_for_each_safe(pos, n, &boot_entry_list) {
 		boot = list_entry(pos, var_entry_t, list);
 		if (boot->num == num) {
