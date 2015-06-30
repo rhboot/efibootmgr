@@ -7,10 +7,10 @@
   VERSION := $(RELEASE_MAJOR).$(RELEASE_MINOR)
   RELEASE_STRING := $(RELEASE_NAME)-$(RELEASE_MAJOR).$(RELEASE_MINOR)
 
+  PKG_CONFIG := pkg-config
   CFLAGS = $(EXTRA_CFLAGS) -DEFIBOOTMGR_VERSION=\"$(RELEASE_MAJOR).$(RELEASE_MINOR)\" \
 	    -Wsign-compare -Wall -Werror -g -D_FILE_OFFSET_BITS=64 \
-	    -I/usr/include/efivar
-
+	    $(shell $(PKG_CONFIG) --cflags efivar efiboot)
   MODULES := src
 
   BINDIR := /usr/sbin

@@ -10,7 +10,7 @@ efibootmgr_LIBS    := efi.o unparse_path.o
 efibootmgr_LIBDIR  := src/lib
 efibootmgr_FULLLIB := \
 	$(patsubst %,$(efibootmgr_LIBDIR)/%,$(efibootmgr_LIBS))
-LIBS = $(shell pkg-config --libs efivar efiboot)
+LIBS = $(shell $(PKG_CONFIG) --libs efivar efiboot)
 
 ALLDEPS += $(efibootmgr_FULLTARGET)
 CLEANLIST += $(efibootmgr_FULLTARGET)
