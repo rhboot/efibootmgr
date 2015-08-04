@@ -30,8 +30,6 @@
 
 */
 
-#define _GNU_SOURCE
-
 #include <ctype.h>
 #include <err.h>
 #include <errno.h>

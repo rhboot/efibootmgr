@@ -1,0 +1,15 @@
+SRCDIR = $(realpath .)
+TOPDIR = $(realpath ..)
+
+include $(TOPDIR)/Make.version
+include $(TOPDIR)/Make.rules
+include $(TOPDIR)/Make.defaults
+
+.%.d : %.c
+	$(CC) $(cflags) $(CPPFLAGS) -MM -MG -MF $@ $^
+
+.%.d : %.S
+	$(CC) $(cflags) $(CPPFLAGS) -MM -MG -MF $@ $^
+
+SOURCES ?=
+deps : $(call deps-of,$(filter-out %.h,$(SOURCES)))

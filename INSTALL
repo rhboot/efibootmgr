@@ -1,4 +1,4 @@
-Running 'make' builds the file src/efibootmgr/efibootmgr.
+Running 'make' builds the file src/efibootmgr.
 efibootmgr should be placed into /usr/sbin/.
 
 efibootmgr currently requires efivar version 0.19, as well as the pkg-config
@@ -10,3 +10,4 @@ then you have not installed these dependencies, which can be found at:
 
 efivar: https://github.com/rhinstaller/efivar
 pkg-config: http://pkgconfig.freedesktop.org
+

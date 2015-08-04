@@ -1,3 +1,0 @@
- %attr(0755,root,root) /usr/sbin
- %attr(0755,root,root) /usr/sbin/efibootmgr
- %attr(0444,root,root) /usr/share/man/man8/efibootmgr.8

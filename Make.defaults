@@ -1,0 +1,43 @@
+prefix	?= /usr
+libdir	?= $(prefix)/lib64
+datadir	?= $(prefix)/share
+mandir	?= $(datadir)/man
+includedir ?= $(prefix)/include
+bindir	?= $(prefix)/bin
+sbindir	?= $(prefix)/sbin
+PCDIR	?= $(libdir)/pkgconfig
+DESTDIR	?=
+
+INSTALL ?= install
+CROSS_COMPILE	?=
+PKG_CONFIG = $(CROSS_COMPILE)pkg-config
+CC	:= $(if $(filter default,$(origin CC)),$(CROSS_COMPILE)gcc,$(CC))
+CCLD	:= $(if $(filter undefined,$(origin CCLD)),$(CC),$(CCLD))
+CFLAGS	?= -O2 -g
+AR	:= $(CROSS_COMPILE)gcc-ar
+NM	:= $(CROSS_COMPILE)gcc-nm
+RANLIB	:= $(CROSS_COMPILE)gcc-ranlib
+
+PKGS	=
+
+SUBDIR_CFLAGS ?=
+clang_cflags =
+gcc_cflags = -Wmaybe-uninitialized
+cflags	= $(CFLAGS) $(SUBDIR_CFLAGS) \
+	-Werror -Wall -Wsign-compare -Wstrict-aliasing \
+	-std=gnu11 -fshort-wchar -fPIC -flto \
+	-D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE \
+	$(if $(filter $(CC),clang),$(clang_cflags),) \
+	$(if $(filter $(CC),gcc),$(gcc_cflags),) \
+	$(call pkg-config-cflags)
+clang_ccldflags =
+gcc_ccldflags = -fno-merge-constants \
+	-Wl,--fatal-warnings,--no-allow-shlib-undefined,--default-symver \
+	-Wl,-O2 -Wl,--no-undefined-version
+ccldflags = $(cflags) $(CCLDFLAGS) $(LDFLAGS) \
+	$(if $(filter $(CCLD),clang),$(clang_ccldflags),) \
+	$(if $(filter $(CCLD),gcc),$(gcc_ccldflags),) \
+	$(call pkg-config-ccldflags)
+CPPFLAGS?=
+SOFLAGS=-shared
+LDLIBS=$(foreach lib,$(LIBS),-l$(lib)) $(call pkg-config-ldlibs)
