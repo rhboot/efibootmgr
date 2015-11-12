@@ -5,6 +5,7 @@ mandir	?= $(datadir)/man
 includedir ?= $(prefix)/include
 bindir	?= $(prefix)/bin
 sbindir	?= $(prefix)/sbin
+localedir ?= $(datadir)/locale/
 PCDIR	?= $(libdir)/pkgconfig
 DESTDIR	?=
 
@@ -26,7 +27,7 @@ gcc_cflags = -Wmaybe-uninitialized
 cflags	= $(CFLAGS) $(SUBDIR_CFLAGS) \
 	-Werror -Wall -Wsign-compare -Wstrict-aliasing \
 	-std=gnu11 -fshort-wchar -fPIC -flto \
-	-D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE \
+	-D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -DLOCALEDIR=\"$(localedir)\" \
 	$(if $(filter $(CC),clang),$(clang_cflags),) \
 	$(if $(filter $(CC),gcc),$(gcc_cflags),) \
 	$(call pkg-config-cflags)
