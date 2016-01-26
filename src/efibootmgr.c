@@ -1300,7 +1300,7 @@ parse_opts(int argc, char **argv)
 		case 'M':
 			opts.set_mirror_hi = 1;
 			rc = sscanf(optarg, "%f", &fnum);
-			if (rc == 1 && fnum <= 50) {
+			if (rc == 1 && fnum <= 50 && fnum >= 0) {
 				opts.above4g = fnum * 100; /* percent to basis points */
 			}
 			else {
