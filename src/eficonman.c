@@ -125,12 +125,20 @@ main(int argc, char *argv[])
 	textdomain("eficonman");
 
 	struct poptOption options[] = {
-		{NULL, '\0', POPT_ARG_INTL_DOMAIN, "eficonman" },
-		{"info", 'i', POPT_ARG_VAL|POPT_ARGFLAG_OR, &action,
-			ACTION_INFO, _("Display console information"),
-			NULL },
-		{"quiet", 'q', POPT_ARG_VAL, &quiet, 1, _("Work quietly"),
-			NULL},
+		{.argInfo = POPT_ARG_INTL_DOMAIN,
+		 .arg = "eficonman" },
+		{.longName = "info",
+		 .shortName = 'i',
+		 .argInfo = POPT_ARG_VAL|POPT_ARGFLAG_OR,
+		 .arg = &action,
+		 .val = ACTION_INFO,
+		 .descrip = _("Display console information"), },
+		{.longName = "quiet",
+		 .shortName = 'q',
+		 .argInfo = POPT_ARG_VAL,
+		 .arg = &quiet,
+		 .val = 1,
+		 .descrip = _("Work quietly"), },
 		POPT_AUTOALIAS
 		POPT_AUTOHELP
 		POPT_TABLEEND
