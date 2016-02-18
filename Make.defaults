@@ -23,9 +23,9 @@ PKGS	=
 
 SUBDIR_CFLAGS ?=
 clang_cflags =
-gcc_cflags = -Wmaybe-uninitialized
+gcc_cflags =
 cflags	= $(CFLAGS) $(SUBDIR_CFLAGS) \
-	-Werror -Wall -Wsign-compare -Wstrict-aliasing \
+	-Werror -Wall -Wextra -Wsign-compare -Wstrict-aliasing \
 	-std=gnu11 -fshort-wchar -fPIC -flto \
 	-D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -DLOCALEDIR=\"$(localedir)\" \
 	$(if $(filter $(CC),clang),$(clang_cflags),) \
