@@ -7,13 +7,14 @@ include $(TOPDIR)/Make.defaults
 
 SUBDIR_CFLAGS = -I$(SRCDIR)/include
 
-BINTARGETS=efibootmgr
+BINTARGETS=efibootmgr efibootdump
 TARGETS=$(BINTARGETS)
 
 all : deps $(TARGETS)
 
 EFIBOOTMGR_SOURCES = efibootmgr.c efi.c unparse_path.c
 EFICONMAN_SOURCES = eficonman.c
+EFIBOOTDUMP_SOURCES = efibootdump.c unparse_path.c
 EFIBOOTNEXT_SOURCES = efibootnext.c
 ALL_SOURCES=$(EFIBOOTMGR_SOURCES)
 -include $(call deps-of,$(ALL_SOURCES))
@@ -23,6 +24,9 @@ efibootmgr : PKGS=efivar efiboot
 
 eficonman : $(call objects-of,$(EFICONMAN_SOURCES))
 eficonman : PKGS=efivar efiboot popt
+
+efibootdump : $(call objects-of,$(EFIBOOTDUMP_SOURCES))
+efibootdump : PKGS=efivar efiboot popt
 
 efibootnext : $(call objects-of,$(EFIBOOTNEXT_SOURCES))
 efibootnext : PKGS=efivar efiboot popt
@@ -39,5 +43,6 @@ install :
 	$(INSTALL) -m 755 efibootmgr $(DESTDIR)/$(sbindir)/efibootmgr
 	$(INSTALL) -d -m 755 $(DESTDIR)/$(mandir)/man8/
 	$(INSTALL) -m 644 efibootmgr.8 $(DESTDIR)/$(mandir)/man8/efibootmgr.8
+	$(INSTALL) -m 644 efibootdump.8 $(DESTDIR)/$(mandir)/man8/efibootdump.8
 
 .PHONY : all deps clean install

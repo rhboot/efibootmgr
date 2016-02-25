@@ -1,0 +1,32 @@
+.TH "EFIBOOTDUMP" "8" "24 February 2016" "" ""
+
+.SH NAME
+efibootdump \- dump a boot entries from a variable or a file
+.SH SYNOPSIS
+
+\fBefibootdump\fR [\fB-?\fR|\fB--help\fR] [\fB--usage\fR]
+.br
+	[\fB-f\fR \fI<file1>\fR [... \fB-f\fR \fI<fileN>\fR]]
+.br
+	[[\fB-g\fR \fI{guid}\fR] \fI<name0>\fR [... [\fI<nameN>\fR]]]
+.SH "DESCRIPTION"
+.PP
+\fBefibootdump\fR is a userspace application used to display individual UEFI boot options, from a file or a UEFI variable.  This allows e.g. saved files from efivarfs to be displayed, as well as variables on the running machine.
+
+.SH "OPTIONS"
+The following is a list of options accepted by efibootmgr:
+.TP
+\fB-g | --guid\fR \fI{guid}\fR
+Any variables specified by name have the specified GUID.
+.TP
+\fB-f | --file\fR \fI<file>\fR
+Read a single boot variable from the specified file.
+.TP
+\fI<nameN>\fR
+Display the specified variable on the local machine.  If no GUID is specified, EFI Global Variable is the default.
+.SH "BUGS"
+.PP
+Please direct any bugs, features, patches, etc. to the Red Hat installer team at https://github.com/rhinstaller/efibootmgr \&.
+.SH "SEE ALSO"
+.PP
+efibootmgr(8)
