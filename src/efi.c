@@ -424,7 +424,7 @@ get_extra_args(uint8_t *data, ssize_t data_size)
 			sz = efi_loadopt_args_as_ucs2(
 						(uint16_t *)(data+off),
 						data_size?data_size+off:0,
-						opts.argv[i]);
+						(uint8_t *)opts.argv[i]);
 			if (sz < 0)
 				return -1;
 			off += sz;
@@ -436,7 +436,7 @@ get_extra_args(uint8_t *data, ssize_t data_size)
 		} else {
 			sz = efi_loadopt_args_as_utf8(data+off,
 						data_size?data_size+off:0,
-						opts.argv[i]);
+						(uint8_t *)opts.argv[i]);
 			if (sz < 0)
 				return -1;
 			off += sz;
