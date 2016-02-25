@@ -7,7 +7,7 @@ include $(TOPDIR)/Make.defaults
 
 SUBDIR_CFLAGS = -I$(SRCDIR)/include
 
-BINTARGETS=efibootmgr eficonman
+BINTARGETS=efibootmgr
 TARGETS=$(BINTARGETS)
 
 all : deps $(TARGETS)
@@ -33,7 +33,6 @@ clean :
 install :
 	$(INSTALL) -d -m 755 $(DESTDIR)/$(sbindir)/
 	$(INSTALL) -m 755 efibootmgr $(DESTDIR)/$(sbindir)/efibootmgr
-	$(INSTALL) -m 755 eficonman $(DESTDIR)/$(sbindir)/eficonman
 	$(INSTALL) -d -m 755 $(DESTDIR)/$(mandir)/man8/
 	$(INSTALL) -m 644 efibootmgr.8 $(DESTDIR)/$(mandir)/man8/efibootmgr.8
 
