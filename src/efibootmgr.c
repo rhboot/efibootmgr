@@ -218,13 +218,12 @@ warn_duplicate_name(list_t *boot_list)
 
 	list_for_each(pos, boot_list) {
 		boot = list_entry(pos, var_entry_t, list);
-		load_option = (efi_load_option *)
-			boot->data;
-		desc = efi_loadopt_desc(load_option);
+		load_option = (efi_load_option *)boot->data;
+		desc = efi_loadopt_desc(load_option, boot->data_size);
 		if (!strcmp((char *)opts.label, (char *)desc)) {
-			fprintf(stderr, "** Warning ** : %.8s has same label %s\n",
-			       boot->name,
-			       opts.label);
+			fprintf(stderr,
+				"** Warning ** : %.8s has same label %s\n",
+				boot->name, opts.label);
 		}
 	}
 }
@@ -827,8 +826,7 @@ show_boot_vars()
 	list_for_each(pos, &boot_entry_list) {
 		boot = list_entry(pos, var_entry_t, list);
 		load_option = (efi_load_option *)boot->data;
-		description = efi_loadopt_desc(load_option);
-		dp = efi_loadopt_path(load_option);
+		description = efi_loadopt_desc(load_option, boot->data_size);
 		if (boot->name)
 			printf("%.8s", boot->name);
 		else
@@ -841,9 +839,12 @@ show_boot_vars()
 		if (opts.verbose) {
 			char *text_path = NULL;
 			size_t text_path_len = 0;
-			uint16_t pathlen = efi_loadopt_pathlen(load_option);
+			uint16_t pathlen;
 			ssize_t rc;
 
+			pathlen = efi_loadopt_pathlen(load_option,
+						      boot->data_size);
+			dp = efi_loadopt_path(load_option, pathlen);
 			rc = efidp_format_device_path(text_path, text_path_len,
 						      dp, pathlen);
 			if (rc < 0)
