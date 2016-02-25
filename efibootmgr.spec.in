@@ -9,7 +9,7 @@ BuildRequires: git, popt-devel
 BuildRequires: efivar-libs >= 0.19 , efivar-devel >= 0.19
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXXXX)
 # EFI/UEFI don't exist on PPC
-ExclusiveArch: %{ix86} x86_64 aarch64
+ExclusiveArch: %{ix86} x86_64 aarch64 arm
 
 # for RHEL / Fedora when efibootmgr was part of the elilo package
 Conflicts: elilo <= 3.6-6
