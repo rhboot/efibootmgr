@@ -303,7 +303,7 @@ make_boot_var(list_t *boot_list)
 			    EFI_VARIABLE_BOOTSERVICE_ACCESS |
 			    EFI_VARIABLE_RUNTIME_ACCESS;
 	rc = efi_set_variable(boot->guid, boot->name, boot->data,
-				boot->data_size, boot->attributes);
+				boot->data_size, boot->attributes, 0644);
 	if (rc < 0)
 		goto err;
 	list_add_tail(&boot->list, boot_list);
@@ -361,7 +361,8 @@ set_boot_u16(const char *name, uint16_t num)
 	return efi_set_variable(EFI_GLOBAL_GUID, name, (uint8_t *)&num,
 				sizeof (num), EFI_VARIABLE_NON_VOLATILE |
 					      EFI_VARIABLE_BOOTSERVICE_ACCESS |
-					      EFI_VARIABLE_RUNTIME_ACCESS);
+					      EFI_VARIABLE_RUNTIME_ACCESS,
+					      0644);
 }
 
 static int
@@ -397,7 +398,7 @@ add_to_boot_order(uint16_t num)
 	boot_order->data_size = new_data_size;
 
 	rc = efi_set_variable(EFI_GLOBAL_GUID, "BootOrder", boot_order->data,
-			boot_order->data_size, boot_order->attributes);
+			boot_order->data_size, boot_order->attributes, 0644);
 	free(boot_order->data);
 	free(boot_order);
 	return rc;
@@ -451,7 +452,8 @@ remove_dupes_from_boot_order(void)
 	boot_order->data_size = new_data_size;
 	efi_del_variable(EFI_GLOBAL_GUID, "BootOrder");
 	rc = efi_set_variable(EFI_GLOBAL_GUID, "BootOrder", boot_order->data,
-				boot_order->data_size, boot_order->attributes);
+				boot_order->data_size, boot_order->attributes,
+				0644);
 	free(boot_order->data);
 	free(boot_order);
 	return rc;
@@ -500,7 +502,8 @@ remove_from_boot_order(uint16_t num)
 
 	boot_order->data_size = sizeof(data[0]) * new_i;
 	rc = efi_set_variable(EFI_GLOBAL_GUID, "BootOrder", boot_order->data,
-				boot_order->data_size, boot_order->attributes);
+				boot_order->data_size, boot_order->attributes,
+				0644);
 all_done:
 	free(boot_order->data);
 	free(boot_order);
@@ -807,7 +810,8 @@ set_boot_order(int keep_old_entries)
 	rc = efi_set_variable(EFI_GLOBAL_GUID, "BootOrder", data, data_size,
 			      EFI_VARIABLE_NON_VOLATILE |
 			      EFI_VARIABLE_BOOTSERVICE_ACCESS |
-			      EFI_VARIABLE_RUNTIME_ACCESS);
+			      EFI_VARIABLE_RUNTIME_ACCESS,
+			      0644);
 	free(data);
 	return rc;
 }
@@ -942,7 +946,8 @@ set_active_state()
 							boot->name,
 							boot->data,
 							boot->data_size,
-							boot->attributes);
+							boot->attributes,
+							0644);
 				}
 			}
 			else if (opts.active == 0) {
@@ -956,7 +961,8 @@ set_active_state()
 							boot->name,
 							boot->data,
 							boot->data_size,
-							boot->attributes);
+							boot->attributes,
+							0644);
 				}
 			}
 		}
@@ -1028,7 +1034,7 @@ set_mirror(int below4g, int above4g)
 	data = (uint8_t *)&abm;
 	rc = efi_set_variable(ADDRESS_RANGE_MIRROR_VARIABLE_GUID,
 			      ADDRESS_RANGE_MIRROR_VARIABLE_REQUEST, data,
-				data_size, attributes);
+			      data_size, attributes, 0644);
 	return rc;
 }
 
