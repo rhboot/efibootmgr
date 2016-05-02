@@ -1160,7 +1160,7 @@ parse_opts(int argc, char **argv)
 			{"bootnum",          required_argument, 0, 'b'},
 			{"delete-bootnum",         no_argument, 0, 'B'},
 			{"create",                 no_argument, 0, 'c'},
-			{"create-only",		   no_argument, 0, 'C'},
+			{"create-only",            no_argument, 0, 'C'},
 			{"remove-dups",            no_argument, 0, 'D'},
 			{"disk",             required_argument, 0, 'd'},
 			{"iface",            required_argument, 0, 'i'},
@@ -1220,13 +1220,11 @@ parse_opts(int argc, char **argv)
 				print_error_arrow("Invalid bootnum value",
 					optarg,
 					(intptr_t)endptr - (intptr_t)optarg);
-				exit(1);
+				exit(28);
 			}
-			if (result > 0xffff) {
-				fprintf(stderr, "Invalid bootnum value: %lX\n",
-					result);
-				exit(1);
-			}
+			if (result > 0xffff)
+				errx(29, "Invalid bootnum value: %lX\n",
+				     result);
 
 			opts.bootnum = result;
 			break;
@@ -1246,26 +1244,19 @@ parse_opts(int argc, char **argv)
 			break;
 		case 'e':
 			rc = sscanf(optarg, "%u", &num);
-			if (rc == 1) opts.edd_version = num;
-			else {
-				fprintf (stderr,"invalid numeric value %s\n",
-					 optarg);
-				exit(1);
-			}
-			if (num != 0 && num != 1 && num != 3) {
-				fprintf (stderr, "invalid EDD version %d\n",
-					 num);
-				exit(1);
-			}
+			if (rc == 1)
+				opts.edd_version = num;
+			else
+				errx(30, "invalid numeric value %s\n", optarg);
+			if (num != 0 && num != 1 && num != 3)
+				errx(31, "invalid EDD version %d\n", num);
 			break;
 		case 'E':
 			rc = sscanf(optarg, "%x", &num);
-			if (rc == 1) opts.edd10_devicenum = num;
-			else {
-				fprintf (stderr,"invalid hex value %s\n",
-					 optarg);
-				exit(1);
-			}
+			if (rc == 1)
+				opts.edd10_devicenum = num;
+			else
+				errx(32, "invalid hex value %s\n", optarg);
 			break;
 		case 'g':
 			opts.forcegpt = 1;
@@ -1300,20 +1291,17 @@ parse_opts(int argc, char **argv)
 				opts.below4g = 0;
 				break;
 			default:
-				fprintf (stderr,"invalid boolean value %s\n",optarg);
-				exit(1);
+				errx(33, "invalid boolean value %s\n", optarg);
 			}
 			break;
 		case 'M':
 			opts.set_mirror_hi = 1;
 			rc = sscanf(optarg, "%f", &fnum);
-			if (rc == 1 && fnum <= 50 && fnum >= 0) {
-				opts.above4g = fnum * 100; /* percent to basis points */
-			}
-			else {
-				fprintf (stderr,"invalid numeric value %s\n",optarg);
-				exit(1);
-			}
+			if (rc == 1 && fnum <= 50 && fnum >= 0)
+				/* percent to basis points */
+				opts.above4g = fnum * 100;
+			else
+				errx(34, "invalid numeric value %s\n", optarg);
 			break;
 		case 'N':
 			opts.delete_bootnext = 1;
@@ -1327,13 +1315,11 @@ parse_opts(int argc, char **argv)
 				print_error_arrow("Invalid BootNext value",
 					optarg,
 					(intptr_t)endptr - (intptr_t)optarg);
-				exit(1);
+				exit(35);
 			}
-			if (result > 0xffff) {
-				fprintf(stderr, "Invalid BootNext value: %lX\n",
-					result);
-				exit(1);
-			}
+			if (result > 0xffff)
+				errx(36, "Invalid BootNext value: %lX\n",
+				     result);
 			opts.bootnext = result;
 			break;
 		}
@@ -1345,11 +1331,10 @@ parse_opts(int argc, char **argv)
 			break;
 		case 'p':
 			rc = sscanf(optarg, "%u", &num);
-			if (rc == 1) opts.part = num;
-			else {
-				fprintf (stderr,"invalid numeric value %s\n",optarg);
-				exit(1);
-			}
+			if (rc == 1)
+				opts.part = num;
+			else
+				errx(37, "invalid numeric value %s\n", optarg);
 			break;
 		case 'q':
 			opts.quiet = 1;
@@ -1359,10 +1344,8 @@ parse_opts(int argc, char **argv)
 			if (rc == 1) {
 				opts.timeout = num;
 				opts.set_timeout = 1;
-			}
-			else {
-				fprintf (stderr,"invalid numeric value %s\n",optarg);
-				exit(1);
+			} else {
+				errx(38, "invalid numeric value %s\n", optarg);
 			}
 			break;
 		case 'T':
@@ -1374,14 +1357,16 @@ parse_opts(int argc, char **argv)
 		case 'v':
 			opts.verbose = 1;
 			if (optarg) {
-				if (!strcmp(optarg, "v"))  opts.verbose = 2;
-				if (!strcmp(optarg, "vv")) opts.verbose = 3;
+				if (!strcmp(optarg, "v"))
+					opts.verbose = 2;
+				if (!strcmp(optarg, "vv"))
+					opts.verbose = 3;
 				rc = sscanf(optarg, "%u", &num);
-				if (rc == 1)  opts.verbose = num;
-				else {
-					fprintf (stderr,"invalid numeric value %s\n",optarg);
-					exit(1);
-				}
+				if (rc == 1)
+					opts.verbose = num;
+				else
+					errx(39, "invalid numeric value %s\n",
+					     optarg);
 			}
 			break;
 		case 'V':

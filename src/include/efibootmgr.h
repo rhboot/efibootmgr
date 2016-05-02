@@ -78,7 +78,7 @@ typedef struct {
 	unsigned int set_mirror_lo:1;
 	unsigned int set_mirror_hi:1;
 	unsigned int no_boot_order:1;
-	unsigned short int timeout;
+	short int timeout;
 } efibootmgr_opt_t;
 
 extern efibootmgr_opt_t opts;
