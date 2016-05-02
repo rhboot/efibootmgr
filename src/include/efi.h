@@ -47,6 +47,7 @@ EFI_GUID( 0x7b9be2e0, 0xe28a, 0x4197, 0xad3e, 0x32, 0xf0, 0x62, 0xf9, 0x46, 0x2c
 /* Exported functions */
 
 extern int read_boot_var_names(char ***namelist);
+extern int read_var_names(const char *prefix, char ***namelist);
 extern ssize_t make_linux_load_option(uint8_t **data, size_t *data_size,
 		       uint8_t *optional_data, size_t optional_data_size);
 extern ssize_t get_extra_args(uint8_t *data, ssize_t data_size);

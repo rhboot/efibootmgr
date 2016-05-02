@@ -9,7 +9,7 @@
 efibootmgr \- manipulate the EFI Boot Manager
 .SH SYNOPSIS
 
-\fBefibootmgr\fR [ \fB-a\fR ] [ \fB-A\fR ] [ \fB-b \fIXXXX\fB\fR ] [ \fB-B \fIXXXX\fB\fR ] [ \fB-c\fR ] [ \fB-d \fIDISK\fB\fR ] [ \fB-D\fR ] [ \fB-e \fI1|3|-1\fB\fR ] [ \fB-E \fINUM\fB\fR ] [ \fB-g\fR ] [ \fB-H \fIXXXX\fB\fR ] [ \fB-i \fINAME\fB\fR ] [ \fB-l \fINAME\fB\fR ] [ \fB-L \fILABEL\fB\fR ] [ \fB-m \fIt|f\fB\fR ] [ \fB-M \fIX\fB\fR ] [ \fB-n \fIXXXX\fB\fR ] [ \fB-N\fR ] [ \fB-o \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR\fI ...\fR ] [ \fB-O\fR ] [ \fB-p \fIPART\fB\fR ] [ \fB-q\fR ] [ \fB-t \fIseconds\fB\fR ] [ \fB-T\fR ] [ \fB-u\fR ] [ \fB-U \fIXXXX\fB\fR ] [ \fB-v\fR ] [ \fB-V\fR ] [ \fB-w\fR ] [ \fB-@ \fIfile\fB\fR ]
+\fBefibootmgr\fR [ \fB-a\fR ] [ \fB-A\fR ] [ \fB-b \fIXXXX\fB\fR ] [ -r | -y ] [ \fB-B \fIXXXX\fB\fR ] [ \fB-c\fR ] [ \fB-d \fIDISK\fB\fR ] [ \fB-D\fR ] [ \fB-e \fI1|3|-1\fB\fR ] [ \fB-E \fINUM\fB\fR ] [ \fB-g\fR ] [ \fB-H \fIXXXX\fB\fR ] [ \fB-i \fINAME\fB\fR ] [ \fB-l \fINAME\fB\fR ] [ \fB-L \fILABEL\fB\fR ] [ \fB-m \fIt|f\fB\fR ] [ \fB-M \fIX\fB\fR ] [ \fB-n \fIXXXX\fB\fR ] [ \fB-N\fR ] [ \fB-o \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR\fI ...\fR ] [ \fB-O\fR ] [ \fB-p \fIPART\fB\fR ] [ \fB-q\fR ] [ \fB-t \fIseconds\fB\fR ] [ \fB-T\fR ] [ \fB-u\fR ] [ \fB-U \fIXXXX\fB\fR ] [ \fB-v\fR ] [ \fB-V\fR ] [ \fB-w\fR ] [ \fB-@ \fIfile\fB\fR ]
 
 .SH "DESCRIPTION"
 .PP
@@ -96,6 +96,9 @@ Partition number containing the bootloader (defaults to 1)
 \fB-q | --quiet\fR
 Quiet mode - supresses output.
 .TP
+\fB-r | --driver\fR
+Operate on Driver#### variables instead of Boot#### variables.
+.TP
 \fB-t | --timeout \fIseconds\fB\fR
 Boot Manager timeout, in \fIseconds\fR\&.
 .TP
@@ -114,6 +117,9 @@ Just print version string and exit.
 .TP
 \fB-w | --write-signature\fR
 write unique signature to the MBR if needed
+.TP
+\fB-y | --sysprep\fR
+Operate on SysPrep#### variables instead of Boot#### variables.
 .TP
 \fB-@ | --append-binary-args \fR
 append extra variable args from file (use - to read

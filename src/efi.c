@@ -45,17 +45,20 @@
 #include "list.h"
 
 static int
-select_boot_var_names(const efi_guid_t *guid, const char *name)
+select_var_names_by_prefix(const efi_guid_t *guid, const char *prefix,
+			   const char *name)
 {
 	efi_guid_t global = EFI_GLOBAL_GUID;
-	if (!strncmp(name, "Boot", 4) &&
-			isxdigit(name[4]) && isxdigit(name[5]) &&
-			isxdigit(name[6]) && isxdigit(name[7]) &&
+	size_t plen = strlen(prefix);
+	const char *num = name + plen;
+	if (!strncmp(name, prefix, plen) &&
+			isxdigit(num[0]) && isxdigit(num[1]) &&
+			isxdigit(num[2]) && isxdigit(num[3]) &&
 			!memcmp(guid, &global, sizeof (global)))
 		return 1;
 	return 0;
 }
-typedef __typeof__(select_boot_var_names) filter_t;
+typedef __typeof__(select_var_names_by_prefix) filter_t;
 
 static int
 cmpstringp(const void *p1, const void *p2)
@@ -66,7 +69,7 @@ cmpstringp(const void *p1, const void *p2)
 }
 
 static int
-read_var_names(filter_t filter, char ***namelist)
+read_prefixed_var_names(filter_t filter, const char *prefix, char ***namelist)
 {
 	int rc;
 	efi_guid_t *guid = NULL;
@@ -80,7 +83,7 @@ read_var_names(filter_t filter, char ***namelist)
 		return -1;
 
 	while ((rc = efi_get_next_variable_name(&guid, &name)) > 0) {
-		if (!filter(guid, name))
+		if (!filter(guid, prefix, name))
 			continue;
 
 		char *aname = strdup(name);
@@ -115,9 +118,16 @@ read_var_names(filter_t filter, char ***namelist)
 }
 
 int
+read_var_names(const char *prefix, char ***namelist)
+{
+	return read_prefixed_var_names(select_var_names_by_prefix,
+				       prefix, namelist);
+}
+
+int
 read_boot_var_names(char ***namelist)
 {
-	return read_var_names(select_boot_var_names, namelist);
+	return read_var_names("Boot", namelist);
 }
 
 #if 0

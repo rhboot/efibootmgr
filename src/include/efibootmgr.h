@@ -30,6 +30,12 @@
 #define EFIBOOTMGR_IPV6_ORIGIN_STATELESS	1
 #define EFIBOOTMGR_IPV6_ORIGIN_STATEFUL		2
 
+typedef enum {
+	boot,
+	driver,
+	sysprep,
+} ebm_mode;
+
 typedef struct {
 	int argc;
 	char **argv;
@@ -50,22 +56,22 @@ typedef struct {
 
 	char *loader;
 	unsigned char *label;
-	char *bootorder;
+	char *order;
 	int keep_old_entries;
 	char *testfile;
 	char *extra_opts_file;
 	uint32_t part;
 	int edd_version;
 	uint32_t edd10_devicenum;
-	int bootnum;
+	int num;
 	int bootnext;
 	int verbose;
 	int active;
 	int below4g;
 	int above4g;
 	int deduplicate;
-	unsigned int delete_boot:1;
-	unsigned int delete_bootorder:1;
+	unsigned int delete:1;
+	unsigned int delete_order:1;
 	unsigned int delete_bootnext:1;
 	unsigned int quiet:1;
 	unsigned int showversion:1;
@@ -77,7 +83,9 @@ typedef struct {
 	unsigned int delete_timeout:1;
 	unsigned int set_mirror_lo:1;
 	unsigned int set_mirror_hi:1;
-	unsigned int no_boot_order:1;
+	unsigned int no_order:1;
+	unsigned int driver:1;
+	unsigned int sysprep:1;
 	short int timeout;
 } efibootmgr_opt_t;
 
