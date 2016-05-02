@@ -402,6 +402,67 @@ make_linux_load_option(uint8_t **data, size_t *data_size,
 	return needed;
 }
 
+static ssize_t
+read_stdin(uint8_t *data_out, ssize_t data_size_out)
+{
+	static uint8_t *data = NULL;
+	static ssize_t data_size = 0;
+	off_t pos = 0;
+	ssize_t allocated;
+
+	if (data_out && data_size_out) {
+		if (!data || data_size != data_size_out) {
+			errno = EINVAL;
+			return -1;
+		}
+		memcpy(data_out, data, data_size);
+		return data_size;
+	}
+	allocated = 4096;
+	data = malloc(allocated);
+	if (!data)
+		return -1;
+	memset(data, 0, allocated);
+
+	while (1) {
+		ssize_t ret;
+		if (allocated - pos == 0) {
+			allocated += 4096;
+			/*
+			 * there's really no way a variable is going to be
+			 * 64k and work, so bail before we suck up all of
+			 * memory.
+			 */
+			if (allocated > 4096 * 16) {
+				errno = ENOSPC;
+err:
+				free(data);
+				data = 0;
+				data_size = 0;
+				return -1;
+			}
+
+			uint8_t *data_new;
+			data_new = realloc(data, allocated);
+			if (!data_new)
+				goto err;
+			data = data_new;
+		}
+		ret = fread(data+pos, 1, allocated-pos, stdin);
+		if (ret == 0) {
+			if (ferror(stdin)) {
+				errno = EIO;
+				goto err;
+			}
+			if (feof(stdin))
+				break;
+		}
+		data_size += ret;
+		pos += ret;
+	}
+	return data_size;
+}
+
 ssize_t
 get_extra_args(uint8_t *data, ssize_t data_size)
 {
@@ -410,12 +471,14 @@ get_extra_args(uint8_t *data, ssize_t data_size)
 	off_t off = 0;
 
 	if (opts.extra_opts_file) {
-		needed = efi_loadopt_args_from_file(data, data_size,
+		if (!strcmp(opts.extra_opts_file, "-"))
+			needed = read_stdin(data, data_size);
+		else
+			needed = efi_loadopt_args_from_file(data, data_size,
 						     opts.extra_opts_file);
-		if (needed < 0) {
+		if (needed < 0)
 			fprintf(stderr, "efibootmgr: get_extra_args: %m\n");
-			return -1;
-		}
+		return needed;
 	}
 	for (i = opts.optind; i < opts.argc; i++) {
 		int space = (i < opts.argc - 1) ? 1 : 0;
