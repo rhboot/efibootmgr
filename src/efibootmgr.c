@@ -848,7 +848,7 @@ show_boot_vars()
 
 			pathlen = efi_loadopt_pathlen(load_option,
 						      boot->data_size);
-			dp = efi_loadopt_path(load_option, pathlen);
+			dp = efi_loadopt_path(load_option, boot->data_size);
 			rc = efidp_format_device_path(text_path, text_path_len,
 						      dp, pathlen);
 			if (rc < 0)
