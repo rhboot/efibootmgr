@@ -25,7 +25,7 @@ install :
 
 %.so :
 	$(CCLD) $(ccldflags) $(CPPFLAGS) $(SOFLAGS) \
-	  -Wl,-soname,$@.$(MAJOR_VERSION) \
+	  -Wl,-soname,$@.$(VERSION) \
 	  -o $@ $^ $(LDLIBS)
 
 %.o : %.c
