@@ -53,6 +53,18 @@ rm -rf %{buildroot}
 %doc README
     
 %changelog
+* Wed Aug 17 2016 Peter Jones <pjones@redhat.com> - 13-1
+- Update to efibootmgr 13
+- Add support for --sysprep and --driver to support UEFI System Prep
+  Applications and UEFI Drivers.
+- use efivar's error reporting facility, and show error traces when
+  "-v -v" is used.
+- Still yet better error codes returned on failures.
+- Add -m and -M to support Memory Address Range Mirroring.
+- Add efibootdump, to examine Boot* variables found in tarballs in bug
+  reports and similar.
+- miscellaneous bugfixes.
+
 * Thu May 28 2015 Peter Jones <pjones@redhat.com> - 0.12-1
 - Update to 0.12
 - use libefiboot and libefivar to make device paths and load options
