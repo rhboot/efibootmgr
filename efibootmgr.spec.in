@@ -6,7 +6,7 @@ Group: System Environment/Base
 License: GPLv2+
 URL: http://github.com/rhinstaller/%{name}/
 BuildRequires: git, popt-devel
-BuildRequires: efivar-libs >= 0.19 , efivar-devel >= 0.19
+BuildRequires: efivar-libs >= 25-1, efivar-devel >= 25-1
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXXXX)
 # EFI/UEFI don't exist on PPC
 ExclusiveArch: %{ix86} x86_64 aarch64 arm
@@ -49,7 +49,7 @@ rm -rf %{buildroot}
 %{!?_licensedir:%global license %%doc}
 %license COPYING
 %{_sbindir}/*
-%{_mandir}/man8/*
+%{_mandir}/*/*.?.gz
 %doc README
     
 %changelog
