@@ -57,6 +57,8 @@
 #define EFIBOOTMGR_VERSION "unknown (fix Makefile!)"
 #endif
 
+int verbose;
+
 typedef struct _var_entry {
 	char		*name;
 	efi_guid_t	guid;
@@ -1528,6 +1530,8 @@ main(int argc, char **argv)
 		printf("version %s\n", EFIBOOTMGR_VERSION);
 		return 0;
 	}
+
+	verbose = opts.verbose;
 
 	if (opts.sysprep && opts.driver)
 		errx(25, "--sysprep and --driver may not be used together.");

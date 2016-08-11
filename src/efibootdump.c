@@ -22,7 +22,10 @@
 #include <uchar.h>
 #include <unistd.h>
 
+#include "error.h"
 #include "unparse_path.h"
+
+int verbose;
 
 #define  _(String) gettext (String)
 #define Q_(String) dgettext (NULL, String)
@@ -63,7 +66,7 @@ print_boot_entry(efi_load_option *loadopt, size_t data_size)
 	text_path_len = rc + 1;
 	text_path = alloca(text_path_len);
 	if (!text_path)
-		err(100, "Couldn't allocate memory");
+		error(100, "Couldn't allocate memory");
 	rc = efidp_format_device_path(text_path, text_path_len,
 				      dp, pathlen);
 	if (rc < 0) {
@@ -89,7 +92,7 @@ print_boot_entry(efi_load_option *loadopt, size_t data_size)
 	raw_len = rc + 1;
 	raw = alloca(raw_len);
 	if (!raw)
-		err(101, "Couldn't allocate memory");
+		error(101, "Couldn't allocate memory");
 
 	rc = unparse_raw_text(raw, raw_len, optional_data, optional_data_len);
 	if (rc < 0) {
@@ -135,6 +138,15 @@ main(int argc, char *argv[])
 		 .arg = &files,
 		 .descrip = _("File to read variable data from"),
 		 .argDescrip = "<file>"},
+		{.longName = "verbose",
+		 .shortName = 'v',
+		 .argInfo = POPT_ARG_VAL |
+			    POPT_ARGFLAG_OPTIONAL |
+			    POPT_ARGFLAG_STRIP,
+		 .arg = &verbose,
+		 .val = 2,
+		 .descrip = ("Be more verbose on errors"),
+		},
 		POPT_AUTOALIAS
 		POPT_AUTOHELP
 		POPT_TABLEEND
@@ -152,15 +164,15 @@ main(int argc, char *argv[])
 	int rc;
 	rc = poptReadDefaultConfig(optcon, 0);
 	if (rc < 0 && !(rc == POPT_ERROR_ERRNO && errno == ENOENT))
-		errx(1, _("poptReadDefaultConfig failed: %s: %s"),
-			poptBadOption(optcon, 0), poptStrerror(rc));
+		errorx(1, _("poptReadDefaultConfig failed: %s: %s"),
+		       poptBadOption(optcon, 0), poptStrerror(rc));
 
 	while ((rc = poptGetNextOpt(optcon)) > 0)
 		;
 
 	if (rc < -1)
-		errx(2, "Invalid argument: \"%s\": %s",
-		     poptBadOption(optcon, 0), poptStrerror(rc));
+		errorx(2, "Invalid argument: \"%s\": %s",
+		       poptBadOption(optcon, 0), poptStrerror(rc));
 
 	argc = poptStrippedArgv(optcon, argc, argv);
 	names = poptGetArgs(optcon);
@@ -183,13 +195,14 @@ main(int argc, char *argv[])
 		if (guidstr) {
 			rc = efi_id_guid_to_guid(guidstr, &guid);
 			if (rc < 0)
-				err(5, "Could not parse guid \"%s\"", guidstr);
+				error(5, "Could not parse guid \"%s\"",
+				      guidstr);
 		}
 		free(guidstr);
 		guidstr = NULL;
 		rc = efi_guid_to_str(&guid, &guidstr);
 		if (rc < 0)
-			err(6, "Guid lookup failed");
+			error(6, "Guid lookup failed");
 	}
 
 	for (unsigned int i = 0;
@@ -203,34 +216,34 @@ main(int argc, char *argv[])
 		memset(&statbuf, 0, sizeof(statbuf));
 		rc = stat(filename, &statbuf);
 		if (rc < 0)
-			err(7, "Could not stat \"%s\"", filename);
+			error(7, "Could not stat \"%s\"", filename);
 
 		data_size = statbuf.st_size;
 		if (data_size == 0)
-			errx(11, "File \"%s\" is empty", filename);
+			errorx(11, "File \"%s\" is empty", filename);
 
 		data = alloca(data_size);
 		if (data == NULL)
-			err(8, "Could not allocate memory");
+			error(8, "Could not allocate memory");
 
 		f = fopen(filename, "r");
 		if (!f)
-			err(9, "Could not open \"%s\"", filename);
+			error(9, "Could not open \"%s\"", filename);
 
 		n = fread(data, 1, data_size, f);
 		if (n < data_size)
-			err(10, "Could not read \"%s\"", filename);
+			error(10, "Could not read \"%s\"", filename);
 
 		printf("%s: ", filename);
 		loadopt = (efi_load_option *)(data + 4);
 		if (data_size <= 8)
-			errx(11, "Data is not a valid load option");
+			errorx(11, "Data is not a valid load option");
 		if (efi_loadopt_is_valid(loadopt, data_size - 4)) {
 			print_boot_entry(loadopt, data_size - 4);
 		} else {
 			loadopt = (efi_load_option *)data;
 			if (!efi_loadopt_is_valid(loadopt, data_size))
-				errx(11, "Data is not a valid load option");
+				errorx(11, "Data is not a valid load option");
 			print_boot_entry(loadopt, data_size);
 		}
 
@@ -245,17 +258,21 @@ main(int argc, char *argv[])
 		rc = efi_get_variable(guid, names[i], &data, &data_size,
 				      &attrs);
 		if (rc < 0) {
-			warn("couldn't read variable %s-%s", names[i], guidstr);
+			warning("couldn't read variable %s-%s",
+				names[i], guidstr);
 			continue;
 		}
 
 		loadopt = (efi_load_option *)data;
 		if (!efi_loadopt_is_valid(loadopt, data_size)) {
+			warning("load option for %s is not valid", names[i]);
+			printf("%d\n", __LINE__);
 			if (data && data_size > 0) {
 				free(data);
 				continue;
 			}
 		}
+		printf("%d\n", __LINE__);
 
 		printf("%s", names[i]);
 		if (efi_guid_cmp(&efi_guid_global, &guid))
