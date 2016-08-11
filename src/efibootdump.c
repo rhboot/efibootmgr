@@ -145,7 +145,7 @@ main(int argc, char *argv[])
 			    POPT_ARGFLAG_STRIP,
 		 .arg = &verbose,
 		 .val = 2,
-		 .descrip = ("Be more verbose on errors"),
+		 .descrip = _("Be more verbose on errors"),
 		},
 		POPT_AUTOALIAS
 		POPT_AUTOHELP
