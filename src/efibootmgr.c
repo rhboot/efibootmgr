@@ -1181,7 +1181,7 @@ usage()
 	printf("\t-a | --active         sets bootnum active\n");
 	printf("\t-A | --inactive       sets bootnum inactive\n");
 	printf("\t-b | --bootnum XXXX   modify BootXXXX (hex)\n");
-	printf("\t-B | --delete-bootnum delete bootnum (hex)\n");
+	printf("\t-B | --delete-bootnum delete bootnum\n");
 	printf("\t-c | --create         create new variable bootnum and add to bootorder\n");
 	printf("\t-C | --create-only	create new variable bootnum and do not add to bootorder\n");
 	printf("\t-D | --remove-dups	remove duplicate values from BootOrder\n");
