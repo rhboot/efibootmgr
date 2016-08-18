@@ -41,6 +41,7 @@ clean :
 install :
 	$(INSTALL) -d -m 755 $(DESTDIR)/$(sbindir)/
 	$(INSTALL) -m 755 efibootmgr $(DESTDIR)/$(sbindir)/efibootmgr
+	$(INSTALL) -m 755 efibootdump $(DESTDIR)/$(sbindir)/efibootdump
 	$(INSTALL) -d -m 755 $(DESTDIR)/$(mandir)/man8/
 	$(INSTALL) -m 644 efibootmgr.8 $(DESTDIR)/$(mandir)/man8/efibootmgr.8
 	$(INSTALL) -m 644 efibootdump.8 $(DESTDIR)/$(mandir)/man8/efibootdump.8
