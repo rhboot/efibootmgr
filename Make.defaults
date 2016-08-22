@@ -29,16 +29,16 @@ cflags	= $(CFLAGS) $(SUBDIR_CFLAGS) \
 	-std=gnu11 -fshort-wchar -fPIC -flto \
 	-D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -DLOCALEDIR=\"$(localedir)\" \
 	-DEFIBOOTMGR_VERSION="\"$(VERSION)\"" \
-	$(if $(filter $(CC),clang),$(clang_cflags),) \
-	$(if $(filter $(CC),gcc),$(gcc_cflags),) \
+	$(if $(findstring clang,$(CC)),$(clang_cflags),) \
+	$(if $(findstring gcc,$(CC)),$(gcc_cflags),) \
 	$(call pkg-config-cflags)
 clang_ccldflags =
 gcc_ccldflags = -fno-merge-constants \
 	-Wl,--fatal-warnings,--no-allow-shlib-undefined,--default-symver \
 	-Wl,-O2 -Wl,--no-undefined-version
 ccldflags = $(cflags) $(CCLDFLAGS) $(LDFLAGS) \
-	$(if $(filter $(CCLD),clang),$(clang_ccldflags),) \
-	$(if $(filter $(CCLD),gcc),$(gcc_ccldflags),) \
+	$(if $(findstring clang,$(CCLD)),$(clang_ccldflags),) \
+	$(if $(findstring gcc,$(CCLD)),$(gcc_ccldflags),) \
 	$(call pkg-config-ccldflags)
 CPPFLAGS?=
 SOFLAGS=-shared
