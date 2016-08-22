@@ -28,6 +28,7 @@ cflags	= $(CFLAGS) $(SUBDIR_CFLAGS) \
 	-Werror -Wall -Wextra -Wsign-compare -Wstrict-aliasing \
 	-std=gnu11 -fshort-wchar -fPIC -flto \
 	-D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -DLOCALEDIR=\"$(localedir)\" \
+	-DEFIBOOTMGR_VERSION="\"$(VERSION)\"" \
 	$(if $(filter $(CC),clang),$(clang_cflags),) \
 	$(if $(filter $(CC),gcc),$(gcc_cflags),) \
 	$(call pkg-config-cflags)
