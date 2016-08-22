@@ -34,7 +34,7 @@ cflags	= $(CFLAGS) $(SUBDIR_CFLAGS) \
 	$(call pkg-config-cflags)
 clang_ccldflags =
 gcc_ccldflags = -fno-merge-constants \
-	-Wl,--fatal-warnings,--no-allow-shlib-undefined,--default-symver \
+	-Wl,--fatal-warnings,--no-allow-shlib-undefined \
 	-Wl,-O2 -Wl,--no-undefined-version
 ccldflags = $(cflags) $(CCLDFLAGS) $(LDFLAGS) \
 	$(if $(findstring clang,$(CCLD)),$(clang_ccldflags),) \
