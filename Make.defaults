@@ -14,7 +14,7 @@ CROSS_COMPILE	?=
 PKG_CONFIG = $(CROSS_COMPILE)pkg-config
 CC	:= $(if $(filter default,$(origin CC)),$(CROSS_COMPILE)gcc,$(CC))
 CCLD	:= $(if $(filter undefined,$(origin CCLD)),$(CC),$(CCLD))
-CFLAGS	?= -O2 -g
+CFLAGS	?= -O2 -g -flto
 AR	:= $(CROSS_COMPILE)gcc-ar
 NM	:= $(CROSS_COMPILE)gcc-nm
 RANLIB	:= $(CROSS_COMPILE)gcc-ranlib
@@ -26,7 +26,7 @@ clang_cflags =
 gcc_cflags =
 cflags	= $(CFLAGS) $(SUBDIR_CFLAGS) \
 	-Werror -Wall -Wextra -Wsign-compare -Wstrict-aliasing \
-	-std=gnu11 -fshort-wchar -fPIC -flto \
+	-std=gnu11 -fshort-wchar -fPIC \
 	-D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -DLOCALEDIR=\"$(localedir)\" \
 	-DEFIBOOTMGR_VERSION="\"$(VERSION)\"" \
 	$(if $(findstring clang,$(CC)),$(clang_cflags),) \
