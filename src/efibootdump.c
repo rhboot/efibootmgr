@@ -272,7 +272,6 @@ main(int argc, char *argv[])
 				continue;
 			}
 		}
-		printf("%d\n", __LINE__);
 
 		printf("%s", names[i]);
 		if (efi_guid_cmp(&efi_guid_global, &guid))
