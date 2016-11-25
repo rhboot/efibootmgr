@@ -21,7 +21,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <uchar.h>
 #include <unistd.h>
 
 #include "error.h"
