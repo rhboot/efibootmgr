@@ -868,6 +868,36 @@ err:
 	return rc;
 }
 
+#define ev_bits(val, mask, shift) \
+	(((val) & ((mask) << (shift))) >> (shift))
+
+static inline char *
+ucs2_to_utf8(const uint16_t * const chars, ssize_t limit)
+{
+	ssize_t i, j;
+	char *ret;
+
+	ret = alloca(limit * 6 + 1);
+	if (!ret)
+		return NULL;
+	memset(ret, 0, limit * 6 +1);
+
+	for (i=0, j=0; chars[i] && i < (limit >= 0 ? limit : i+1); i++,j++) {
+		if (chars[i] <= 0x7f) {
+			ret[j] = chars[i];
+		} else if (chars[i] > 0x7f && chars[i] <= 0x7ff) {
+			ret[j++] = 0xc0 | ev_bits(chars[i], 0x1f, 6);
+			ret[j]   = 0x80 | ev_bits(chars[i], 0x3f, 0);
+		} else if (chars[i] > 0x7ff) {
+			ret[j++] = 0xe0 | ev_bits(chars[i], 0xf, 12);
+			ret[j++] = 0x80 | ev_bits(chars[i], 0x3f, 6);
+			ret[j]   = 0x80| ev_bits(chars[i], 0x3f, 0);
+		}
+	}
+	ret[j] = '\0';
+	return strdup(ret);
+}
+
 static void
 show_vars(const char *prefix)
 {
@@ -928,19 +958,23 @@ show_vars(const char *prefix)
 			if (rc < 0)
 				error(21, "Could not parse optional data");
 
-			rc = unparse_raw_text(NULL, 0, optional_data,
-					      optional_data_len);
-			if (rc < 0)
-				error(22, "Could not parse optional data");
-			rc += 1;
-			text_path_len = rc;
-			text_path = calloc(1, rc);
-			if (!text_path)
-				error(23, "Could not parse optional data");
-			rc = unparse_raw_text(text_path, text_path_len,
-					      optional_data, optional_data_len);
-			if (rc < 0)
-				error(24, "Could not parse device path");
+			if (opts.unicode) {
+				text_path = ucs2_to_utf8((uint16_t*)optional_data, optional_data_len/2);
+			} else {
+				rc = unparse_raw_text(NULL, 0, optional_data,
+						      optional_data_len);
+				if (rc < 0)
+					error(22, "Could not parse optional data");
+				rc += 1;
+				text_path_len = rc;
+				text_path = calloc(1, rc);
+				if (!text_path)
+					error(23, "Could not parse optional data");
+				rc = unparse_raw_text(text_path, text_path_len,
+						      optional_data, optional_data_len);
+				if (rc < 0)
+					error(24, "Could not parse device path");
+			}
 			printf("%s", text_path);
 			free(text_path);
 		}
@@ -1211,7 +1245,7 @@ usage()
 	printf("\t-q | --quiet            be quiet\n");
 	printf("\t-t | --timeout seconds  set boot manager timeout waiting for user input.\n");
 	printf("\t-T | --delete-timeout   delete Timeout.\n");
-	printf("\t-u | --unicode | --UCS-2  pass extra args as UCS-2 (default is ASCII)\n");
+	printf("\t-u | --unicode | --UCS-2  handle extra args as UCS-2 (default is ASCII)\n");
 	printf("\t-v | --verbose          print additional information\n");
 	printf("\t-V | --version          return version and exit\n");
 	printf("\t-w | --write-signature  write unique sig to MBR if needed\n");
