@@ -39,7 +39,7 @@ print_boot_entry(efi_load_option *loadopt, size_t data_size)
 	uint8_t *optional_data = NULL;
 	size_t optional_data_len = 0;
 	uint16_t pathlen;
-	const unsigned char const *desc;
+	const unsigned char *desc;
 	char *raw;
 	size_t raw_len;
 
