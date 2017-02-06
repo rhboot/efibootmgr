@@ -221,7 +221,7 @@ warn_duplicate_name(list_t *var_list)
 	list_t *pos;
 	var_entry_t *entry;
 	efi_load_option *load_option;
-	const unsigned char const *desc;
+	const unsigned char *desc;
 
 	list_for_each(pos, var_list) {
 		entry = list_entry(pos, var_entry_t, list);
@@ -873,7 +873,7 @@ show_vars(const char *prefix)
 {
 	list_t *pos;
 	var_entry_t *boot;
-	const unsigned char const *description;
+	const unsigned char *description;
 	efi_load_option *load_option;
 	efidp dp = NULL;
 	unsigned char *optional_data = NULL;
