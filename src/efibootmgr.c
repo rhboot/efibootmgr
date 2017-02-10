@@ -1,5 +1,6 @@
 /*
-  efibootmgr.c - Manipulates EFI variables as exported in /proc/efi/vars
+  efibootmgr.c - Manipulates EFI variables as exported in /sys/firmware/efi/
+    efivars or vars (previously /proc/efi/vars)
 
   Copyright (C) 2001-2004 Dell, Inc. <Matt_Domsch@dell.com>
 
@@ -18,7 +19,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 
-  This must tie the EFI_DEVICE_PATH to /boot/efi/EFI/redhat/grub.efi
+  This must tie the EFI_DEVICE_PATH to /boot/efi/EFI/<vendor>/<loader>.efi
   The  EFI_DEVICE_PATH will look something like:
     ACPI device path, length 12 bytes
     Hardware Device Path, PCI, length 6 bytes
@@ -1233,7 +1234,7 @@ usage()
 	printf("\t     --ip-port <local>,<remote>	set local and remote IP ports\n");
 	printf("\t     --ip-origin { {dhcp|static} | { static|stateless|stateful} }\n");
 #endif
-	printf("\t-l | --loader name     (defaults to \\EFI\\redhat\\grub.efi)\n");
+	printf("\t-l | --loader name     (defaults to \""DEFAULT_LOADER"\")\n");
 	printf("\t-L | --label label     Boot manager display label (defaults to \"Linux\")\n");
 	printf("\t-m | --mirror-below-4G t|f mirror memory below 4GB\n");
 	printf("\t-M | --mirror-above-4G X percentage memory to mirror above 4GB\n");
@@ -1263,7 +1264,7 @@ set_default_opts()
 	opts.active          = -1;   /* Don't set it */
 	opts.timeout         = -1;   /* Don't set it */
 	opts.edd10_devicenum = 0x80;
-	opts.loader          = "\\EFI\\redhat\\grub.efi";
+	opts.loader          = DEFAULT_LOADER;
 	opts.label           = (unsigned char *)"Linux";
 	opts.disk            = "/dev/sda";
 	opts.part            = 1;
