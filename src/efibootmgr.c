@@ -1106,12 +1106,12 @@ get_mirror(int which, int *below4g, int *above4g, int *mirrorstatus)
 	if (rc == 0) {
 		abm = (ADDRESS_RANGE_MIRROR_VARIABLE_DATA *)data;
 		if (!which && abm->mirror_version != MIRROR_VERSION) {
-			warningx("** Warning ** : unrecognised version for memory mirror i/f");
-			return 2;
+			rc = 2;
 		}
 		*below4g = abm->mirror_memory_below_4gb;
 		*above4g = abm->mirror_amount_above_4gb;
 		*mirrorstatus = abm->mirror_status;
+		free(data);
 	} else {
 		cond_warning(opts.verbose >= 2,
 			     "Could not read variable '%s'", name);
@@ -1130,13 +1130,18 @@ set_mirror(int below4g, int above4g)
 	uint32_t attributes;
 	int oldbelow4g, oldabove4g;
 
-	if ((s = get_mirror(0, &oldbelow4g, &oldabove4g, &status)) == 0) {
-		if (oldbelow4g == below4g && oldabove4g == above4g)
-			return 0;
-	} else {
-		warningx("** Warning ** : platform does not support memory mirror");
+	if ((s = get_mirror(0, &oldbelow4g, &oldabove4g, &status)) != 0) {
+		if (s == 2)
+			warningx("** Warning ** : unrecognised version for memory mirror i/f");
+		else
+			warningx("** Warning ** : platform does not support memory mirror");
 		return s;
 	}
+
+	below4g = opts.set_mirror_lo ? below4g : oldbelow4g;
+	above4g = opts.set_mirror_hi ? above4g : oldabove4g;
+	if (oldbelow4g == below4g && oldabove4g == above4g)
+		return 0;
 
 	data = (uint8_t *)&abm;
 	data_size = sizeof (abm);
@@ -1145,10 +1150,9 @@ set_mirror(int below4g, int above4g)
 		| EFI_VARIABLE_RUNTIME_ACCESS;
 
 	abm.mirror_version = MIRROR_VERSION;
-	abm.mirror_amount_above_4gb = opts.set_mirror_hi ? above4g : oldabove4g;
-	abm.mirror_memory_below_4gb = opts.set_mirror_lo ? below4g : oldbelow4g;
+	abm.mirror_amount_above_4gb = above4g;
+	abm.mirror_memory_below_4gb = below4g;
 	abm.mirror_status = 0;
-	data = (uint8_t *)&abm;
 	rc = efi_set_variable(ADDRESS_RANGE_MIRROR_VARIABLE_GUID,
 			      ADDRESS_RANGE_MIRROR_VARIABLE_REQUEST, data,
 			      data_size, attributes, 0644);
