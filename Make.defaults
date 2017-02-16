@@ -9,6 +9,9 @@ localedir ?= $(datadir)/locale/
 PCDIR	?= $(libdir)/pkgconfig
 DESTDIR	?=
 
+OS_VENDOR := redhat
+EFI_LOADER := grub.efi
+
 INSTALL ?= install
 CROSS_COMPILE	?=
 PKG_CONFIG = $(CROSS_COMPILE)pkg-config
@@ -29,6 +32,7 @@ cflags	= $(CFLAGS) $(SUBDIR_CFLAGS) \
 	-std=gnu11 -fPIC \
 	-D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -DLOCALEDIR=\"$(localedir)\" \
 	-DEFIBOOTMGR_VERSION="\"$(VERSION)\"" \
+	-DDEFAULT_LOADER=\"\\\\EFI\\\\$(OS_VENDOR)\\\\$(EFI_LOADER)\" \
 	$(if $(findstring clang,$(CC)),$(clang_cflags),) \
 	$(if $(findstring gcc,$(CC)),$(gcc_cflags),) \
 	$(call pkg-config-cflags)
