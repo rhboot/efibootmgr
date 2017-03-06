@@ -6,7 +6,7 @@ include $(TOPDIR)/Make.defaults
 
 SUBDIRS := src
 
-all clean install deps : | Make.version
+all clean install deps : | check_efidir_error Make.version
 	@set -e ; for x in $(SUBDIRS) ; do \
 		$(MAKE) -C $$x $@ ; \
 	done

@@ -9,7 +9,10 @@ localedir ?= $(datadir)/locale/
 PCDIR	?= $(libdir)/pkgconfig
 DESTDIR	?=
 
-OS_VENDOR := redhat
+EFIDIR	?= $(shell x=$$(which --skip-alias --skip-functions git 2>/dev/null) ; [ -n "$$x" ] && git config --get efibootmgr.efidir)
+ifeq ($(EFIDIR),)
+        EFIDIR_ERROR = $(error EFIDIR or .gitconfig efibootmgr.efidir must be set to this distro's reserved EFI System Partition subdirectory name)
+endif
 EFI_LOADER := grub.efi
 
 INSTALL ?= install
@@ -32,7 +35,7 @@ cflags	= $(CFLAGS) $(SUBDIR_CFLAGS) \
 	-std=gnu11 -fPIC \
 	-D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -DLOCALEDIR=\"$(localedir)\" \
 	-DEFIBOOTMGR_VERSION="\"$(VERSION)\"" \
-	-DDEFAULT_LOADER=\"\\\\EFI\\\\$(OS_VENDOR)\\\\$(EFI_LOADER)\" \
+	-DDEFAULT_LOADER=\"\\\\EFI\\\\$(EFIDIR)\\\\$(EFI_LOADER)\" \
 	$(if $(findstring clang,$(CC)),$(clang_cflags),) \
 	$(if $(findstring gcc,$(CC)),$(gcc_cflags),) \
 	$(call pkg-config-cflags)
@@ -47,3 +50,6 @@ ccldflags = $(cflags) $(CCLDFLAGS) $(LDFLAGS) \
 CPPFLAGS?=
 SOFLAGS=-shared
 LDLIBS=$(foreach lib,$(LIBS),-l$(lib)) $(call pkg-config-ldlibs)
+
+.PHONY: check_efidir_error
+check_efidir_error : ; $(EFIDIR_ERROR) $(info Building with EFIDIR as $(EFIDIR))
