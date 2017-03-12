@@ -21,7 +21,6 @@
 /* For PRIx64 */
 #define __STDC_FORMAT_MACROS
 
-#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
