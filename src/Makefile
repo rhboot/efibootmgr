@@ -21,15 +21,19 @@ ALL_SOURCES=$(EFIBOOTMGR_SOURCES)
 
 efibootmgr : $(call objects-of,$(EFIBOOTMGR_SOURCES))
 efibootmgr : PKGS=efivar efiboot
+efibootmgr : LIBS=popt
 
 eficonman : $(call objects-of,$(EFICONMAN_SOURCES))
-eficonman : PKGS=efivar efiboot popt
+eficonman : PKGS=efivar efiboot
+eficonman : LIBS=popt
 
 efibootdump : $(call objects-of,$(EFIBOOTDUMP_SOURCES))
-efibootdump : PKGS=efivar efiboot popt
+efibootdump : PKGS=efivar efiboot
+efibootdump : LIBS=popt
 
 efibootnext : $(call objects-of,$(EFIBOOTNEXT_SOURCES))
-efibootnext : PKGS=efivar efiboot popt
+efibootnext : PKGS=efivar efiboot
+efibootnext : LIBS=popt
 
 deps : $(ALL_SOURCES)
 	$(MAKE) -f $(TOPDIR)/Make.deps deps SOURCES="$(ALL_SOURCES)" SUBDIR_CFLAGS="$(SUBDIR_CFLAGS)"
