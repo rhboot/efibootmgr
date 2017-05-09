@@ -69,3 +69,7 @@ define deps-of =
 	$(foreach src,$(filter %.c,$(1)),$(patsubst %.c,.%.d,$(src))) \
 	$(foreach src,$(filter %.S,$(1)),$(patsubst %.S,.%.d,$(src)))
 endef
+
+define get-config =
+$(shell git config --local --get "efibootmgr.$(1)")
+endef
