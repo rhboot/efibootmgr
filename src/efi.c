@@ -397,7 +397,10 @@ make_linux_load_option(uint8_t **data, size_t *data_size,
 		}
 	}
 
-	needed = efi_loadopt_create(*data, *data_size,
+	size_t data_size_tmp = 0;
+	if (data_size)
+		data_size_tmp = *data_size;
+	needed = efi_loadopt_create(*data, data_size_tmp,
 				      attributes, dp, needed, opts.label,
 				      optional_data, optional_data_size);
 	if (dp) {
