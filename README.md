@@ -103,5 +103,5 @@ Typical usage:
 Many other uses may be found.
 
 Please direct any bugs, features, patches, etc. to Peter Jones,
-https://github.com/rhinstaller/efibootmgr .
+https://github.com/rhboot/efibootmgr .
 
