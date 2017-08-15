@@ -1631,10 +1631,12 @@ main(int argc, char **argv)
 			      prefices[mode]);
 
 		/* Put this boot var in the right Order variable */
-		if (new_entry && !opts.no_order)
+		if (new_entry && !opts.no_order) {
 			ret = add_to_order(order_name[mode], new_entry->num);
-		if (ret < 0)
-			error(6, "Could not add entry to %s", order_name[mode]);
+			if (ret < 0)
+				error(6, "Could not add entry to %s",
+				      order_name[mode]);
+		}
 	}
 
 	if (opts.delete_order) {
