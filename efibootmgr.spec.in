@@ -4,7 +4,7 @@ Version: @@VERSION@@
 Release: 1%{?dist}
 Group: System Environment/Base
 License: GPLv2+
-URL: http://github.com/rhinstaller/%{name}/
+URL: https://github.com/rhboot/%{name}/
 BuildRequires: git, popt-devel
 BuildRequires: efivar-libs >= 30-1, efivar-devel >= 30-1
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXXXX)
@@ -15,13 +15,12 @@ ExclusiveArch: %{ix86} x86_64 aarch64 arm
 Conflicts: elilo <= 3.6-6
 Obsoletes: elilo <= 3.6-6
 
-Source0: https://github.com/rhinstaller/%{name}/releases/download/%{name}-%{version}/%{name}-%{version}.tar.bz2
+Source0: https://github.com/rhboot/%{name}/releases/download/%{name}-%{version}/%{name}-%{version}.tar.bz2
 
 %description
 %{name} displays and allows the user to edit the Intel Extensible
 Firmware Interface (EFI) Boot Manager variables.  Additional
-information about EFI can be found at
-http://developer.intel.com/technology/efi/efi.htm and http://uefi.org/.
+information about EFI can be found at https://firmware.intel.com and http://uefi.org
 
 %prep
 %setup -q
