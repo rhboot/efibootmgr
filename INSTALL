@@ -8,6 +8,5 @@ utility, to be built. If you receive a message like the following:
 
 then you have not installed these dependencies, which can be found at:
 
-efivar: https://github.com/rhinstaller/efivar
-pkg-config: http://pkgconfig.freedesktop.org
-
+efivar: https://github.com/rhboot/efivar
+pkg-config: https://pkgconfig.freedesktop.org
