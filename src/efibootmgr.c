@@ -933,27 +933,36 @@ show_var_path(efi_load_option *load_option, size_t boot_data_size)
 	dp = efi_loadopt_path(load_option, boot_data_size);
 	rc = efidp_format_device_path(text_path, text_path_len,
 				      dp, pathlen);
-	if (rc < 0)
-		error(18, "Could not parse device path");
+	if (rc < 0) {
+		warning("Could not parse device path");
+                return;
+        }
 	rc += 1;
 
 	text_path_len = rc;
 	text_path = calloc(1, rc);
-	if (!text_path)
-		error(19, "Could not parse device path");
+	if (!text_path) {
+		warning("Could not parse device path");
+                return;
+        }
 
 	rc = efidp_format_device_path(text_path, text_path_len,
 				      dp, pathlen);
-	if (rc < 0)
-		error(20, "Could not parse device path");
-	printf("\t%s", text_path);
+        if (rc >= 0)
+	        printf("\t%s", text_path);
 	free(text_path);
-	/* Print optional data */
+	if (rc < 0) {
+		warning("Could not parse device path");
+                return;
+        }
 
+	/* Print optional data */
 	rc = efi_loadopt_optional_data(load_option, boot_data_size,
 				       &optional_data, &optional_data_len);
-	if (rc < 0)
-		error(21, "Could not parse optional data");
+	if (rc < 0) {
+		warning("Could not parse optional data");
+                return;
+        }
 
 	if (opts.unicode) {
 		text_path = ucs2_to_utf8((uint16_t*)optional_data,
@@ -961,17 +970,24 @@ show_var_path(efi_load_option *load_option, size_t boot_data_size)
 	} else {
 		rc = unparse_raw_text(NULL, 0, optional_data,
 				      optional_data_len);
-		if (rc < 0)
-			error(22, "Could not parse optional data");
+		if (rc < 0) {
+			warning("Could not parse optional data");
+                        return;
+                }
 		rc += 1;
 		text_path_len = rc;
 		text_path = calloc(1, rc);
-		if (!text_path)
-			error(23, "Could not parse optional data");
+		if (!text_path) {
+			warning("Could not parse optional data");
+                        return;
+                }
 		rc = unparse_raw_text(text_path, text_path_len,
 				      optional_data, optional_data_len);
-		if (rc < 0)
-			error(24, "Could not parse device path");
+		if (rc < 0) {
+			warning("Could not parse device path");
+                        free(text_path);
+                        return;
+                }
 	}
 	printf("%s", text_path);
 	free(text_path);
@@ -986,12 +1002,16 @@ show_var_path(efi_load_option *load_option, size_t boot_data_size)
 		const uint8_t * const data = (const uint8_t * const)node;
 
 		rc = efidp_next_node(node, &next);
-		if (rc < 0)
-			error(25, "Could not iterate device path");
+		if (rc < 0) {
+			warning("Could not iterate device path");
+                        return;
+                }
 
 		sz = efidp_node_size(node);
-		if (sz <= 0)
-			error(25, "Could not iterate device path");
+		if (sz <= 0) {
+			warning("Could not iterate device path");
+                        return;
+                }
 
 		for (ssize_t j = 0; j < sz; j++)
 			printf("%02hhx%s", data[j], j == sz - 1 ? "" : " ");
