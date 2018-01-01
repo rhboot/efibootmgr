@@ -934,19 +934,25 @@ show_vars(const char *prefix)
 			dp = efi_loadopt_path(load_option, boot->data_size);
 			rc = efidp_format_device_path(text_path, text_path_len,
 						      dp, pathlen);
-			if (rc < 0)
-				error(18, "Could not parse device path");
+			if (rc < 0) {
+				warning("Could not parse device path");
+				continue;
+			}
 			rc += 1;
 
 			text_path_len = rc;
 			text_path = calloc(1, rc);
-			if (!text_path)
-				error(19, "Could not parse device path");
+			if (!text_path) {
+				warning("Could not parse device path");
+				continue;
+			}
 
 			rc = efidp_format_device_path(text_path, text_path_len,
 						      dp, pathlen);
-			if (rc < 0)
-				error(20, "Could not parse device path");
+			if (rc < 0) {
+				warning("Could not parse device path");
+				continue;
+			}
 			printf("\t%s", text_path);
 			free(text_path);
 			text_path_len = 0;
@@ -956,25 +962,33 @@ show_vars(const char *prefix)
 							   boot->data_size,
 							   &optional_data,
 							   &optional_data_len);
-			if (rc < 0)
-				error(21, "Could not parse optional data");
+			if (rc < 0) {
+				warning("Could not parse optional data");
+				continue;
+			}
 
 			if (opts.unicode) {
 				text_path = ucs2_to_utf8((uint16_t*)optional_data, optional_data_len/2);
 			} else {
 				rc = unparse_raw_text(NULL, 0, optional_data,
 						      optional_data_len);
-				if (rc < 0)
-					error(22, "Could not parse optional data");
+				if (rc < 0) {
+					warning("Could not parse optional data");
+					continue;
+				}
 				rc += 1;
 				text_path_len = rc;
 				text_path = calloc(1, rc);
-				if (!text_path)
-					error(23, "Could not parse optional data");
+				if (!text_path) {
+					warning("Could not parse optional data");
+					continue;
+				}
 				rc = unparse_raw_text(text_path, text_path_len,
 						      optional_data, optional_data_len);
-				if (rc < 0)
-					error(24, "Could not parse device path");
+				if (rc < 0) {
+					warning("Could not parse device path");
+					continue;
+				}
 			}
 			printf("%s", text_path);
 			free(text_path);
