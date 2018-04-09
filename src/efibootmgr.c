@@ -716,6 +716,12 @@ parse_order(const char *prefix, char *buffer, uint16_t **order, size_t *length)
 		buf += comma + 1;
 	}
 
+	if (num == 0) {
+		*order = NULL;
+		*length = 0;
+		return 0;
+	}
+
 	data = calloc(num, sizeof (*data));
 	if (!data)
 		return -1;
@@ -851,8 +857,11 @@ set_order(const char *order_name, const char *prefix, int keep_old_entries)
 
 	rc = construct_order(order_name, opts.order, keep_old_entries,
 				(uint16_t **)&data, &data_size);
-	if (rc < 0 || data_size == 0)
+	if (rc < 0 || data_size == 0) {
+		if (data) /* this can't happen, but clang analyzer believes */
+			free(data);
 		return rc;
+	}
 
 	rc = asprintf(&name, "%sOrder", prefix);
 	if (rc < 0)
