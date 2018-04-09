@@ -1165,8 +1165,8 @@ static void
 show_mirror(void)
 {
 	int status;
-	int below4g, above4g;
-	int rbelow4g, rabove4g;
+	int below4g = 0, above4g = 0;
+	int rbelow4g = 0, rabove4g = 0;
 
 	if (get_mirror(0, &below4g, &above4g, &status) == 0) {
 		if (status == 0) {
