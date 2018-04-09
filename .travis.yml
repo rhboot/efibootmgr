@@ -11,7 +11,7 @@ matrix:
      services: docker
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then docker pull vathpela/efivar-travis-rawhide:v2 ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then docker pull vathpela/efibootmgr-travis-rawhide:v0 ; fi
 
 script:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then docker run vathpela/efivar-travis-rawhide:v2 /bin/sh -c "cd /root/efivar && git fetch && git reset --hard origin/master -- && make clean all install && cd ../efibootmgr && git fetch && git reset --hard origin/master -- && ./travis-build.sh --branch $TRAVIS_BRANCH --repo \"$TRAVIS_REPO_SLUG\" --remote \"$TRAVIS_PULL_REQUEST_SLUG\" --pr-sha \"$TRAVIS_PULL_REQUEST_SHA\"" ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then docker run vathpela/efibootmgr-travis-rawhide:v0 /bin/sh -c "cd /root/efibootmgr && git fetch && git reset --hard origin/master -- && make clean all install && cd ../efibootmgr && git fetch && git reset --hard origin/master -- && ./travis-build.sh --branch $TRAVIS_BRANCH --repo \"$TRAVIS_REPO_SLUG\" --remote \"$TRAVIS_PULL_REQUEST_SLUG\" --pr-sha \"$TRAVIS_PULL_REQUEST_SHA\"" ; fi
