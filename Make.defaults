@@ -1,3 +1,4 @@
+NAME	= efibootmgr
 prefix	?= /usr
 libdir	?= $(prefix)/lib64
 datadir	?= $(prefix)/share
@@ -53,3 +54,5 @@ LDLIBS=$(foreach lib,$(LIBS),-l$(lib)) $(call pkg-config-ldlibs)
 
 .PHONY: check_efidir_error
 check_efidir_error : ; $(EFIDIR_ERROR) $(info Building with EFIDIR as $(EFIDIR))
+
+COMMIT_ID=$(shell git log -1 --pretty=%H 2>/dev/null || echo master)
