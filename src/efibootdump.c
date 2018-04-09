@@ -174,7 +174,7 @@ main(int argc, char *argv[])
 		errorx(2, "Invalid argument: \"%s\": %s",
 		       poptBadOption(optcon, 0), poptStrerror(rc));
 
-	argc = poptStrippedArgv(optcon, argc, argv);
+	/* argc = */ poptStrippedArgv(optcon, argc, argv);
 	names = poptGetArgs(optcon);
 	if (!names && !files) {
 		poptPrintUsage(optcon, stderr, 0);

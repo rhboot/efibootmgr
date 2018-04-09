@@ -949,7 +949,6 @@ show_vars(const char *prefix)
 				error(20, "Could not parse device path");
 			printf("\t%s", text_path);
 			free(text_path);
-			text_path_len = 0;
 			/* Print optional data */
 
 			rc = efi_loadopt_optional_data(load_option,
