@@ -34,29 +34,34 @@ distclean :
 	$(MAKE) clean
 	@rm -vf efibootmgr.spec
 
-GITTAG = $(VERSION)
+GITTAG = $(shell bash -c "echo $$(($(VERSION) + 1))")
 
 test-archive: efibootmgr.spec
-	@rm -rf /tmp/efibootmgr-$(VERSION) /tmp/efibootmgr-$(VERSION)-tmp
-	@mkdir -p /tmp/efibootmgr-$(VERSION)-tmp
-	@git archive --format=tar $(shell git branch | awk '/^*/ { print $$2 }') | ( cd /tmp/efibootmgr-$(VERSION)-tmp/ ; tar x )
-	@git diff | ( cd /tmp/efibootmgr-$(VERSION)-tmp/ ; patch -s -p1 -b -z .gitdiff )
-	@mv /tmp/efibootmgr-$(VERSION)-tmp/ /tmp/efibootmgr-$(VERSION)/
-	@cp efibootmgr.spec /tmp/efibootmgr-$(VERSION)/
-	@dir=$$PWD; cd /tmp; tar -c --bzip2 -f $$dir/efibootmgr-$(VERSION).tar.bz2 efibootmgr-$(VERSION)
-	@rm -rf /tmp/efibootmgr-$(VERSION)
-	@echo "The archive is in efibootmgr-$(VERSION).tar.bz2"
+	@rm -rf /tmp/efibootmgr-$(GITTAG) /tmp/efibootmgr-$(GITTAG)-tmp
+	@mkdir -p /tmp/efibootmgr-$(GITTAG)-tmp
+	@git archive --format=tar $(shell git branch | awk '/^*/ { print $$2 }') | ( cd /tmp/efibootmgr-$(GITTAG)-tmp/ ; tar x )
+	@git diff | ( cd /tmp/efibootmgr-$(GITTAG)-tmp/ ; patch -s -p1 -b -z .gitdiff )
+	@mv /tmp/efibootmgr-$(GITTAG)-tmp/ /tmp/efibootmgr-$(GITTAG)/
+	@cp efibootmgr.spec /tmp/efibootmgr-$(GITTAG)/
+	@dir=$$PWD; cd /tmp; tar -c --bzip2 -f $$dir/efibootmgr-$(GITTAG).tar.bz2 efibootmgr-$(GITTAG)
+	@rm -rf /tmp/efibootmgr-$(GITTAG)
+	@echo "The archive is in efibootmgr-$(GITTAG).tar.bz2"
+
+bumpver :
+	@echo VERSION=$(GITTAG) > Make.version
+	@git add Make.version
+	git commit -m "Bump version to $(GITTAG)" -s
 
 tag:
 	git tag -s $(GITTAG) refs/heads/master
 
-archive: tag efibootmgr.spec
-	@rm -rf /tmp/efibootmgr-$(VERSION) /tmp/efibootmgr-$(VERSION)-tmp
-	@mkdir -p /tmp/efibootmgr-$(VERSION)-tmp
-	@git archive --format=tar $(GITTAG) | ( cd /tmp/efibootmgr-$(VERSION)-tmp/ ; tar x )
-	@mv /tmp/efibootmgr-$(VERSION)-tmp/ /tmp/efibootmgr-$(VERSION)/
-	@cp efibootmgr.spec /tmp/efibootmgr-$(VERSION)/
-	@dir=$$PWD; cd /tmp; tar -c --bzip2 -f $$dir/efibootmgr-$(VERSION).tar.bz2 efibootmgr-$(VERSION)
-	@rm -rf /tmp/efibootmgr-$(VERSION)
-	@echo "The archive is in efibootmgr-$(VERSION).tar.bz2"
+archive: bumpver tag efibootmgr.spec
+	@rm -rf /tmp/efibootmgr-$(GITTAG) /tmp/efibootmgr-$(GITTAG)-tmp
+	@mkdir -p /tmp/efibootmgr-$(GITTAG)-tmp
+	@git archive --format=tar $(GITTAG) | ( cd /tmp/efibootmgr-$(GITTAG)-tmp/ ; tar x )
+	@mv /tmp/efibootmgr-$(GITTAG)-tmp/ /tmp/efibootmgr-$(GITTAG)/
+	@cp efibootmgr.spec /tmp/efibootmgr-$(GITTAG)/
+	@dir=$$PWD; cd /tmp; tar -c --bzip2 -f $$dir/efibootmgr-$(GITTAG).tar.bz2 efibootmgr-$(GITTAG)
+	@rm -rf /tmp/efibootmgr-$(GITTAG)
+	@echo "The archive is in efibootmgr-$(GITTAG).tar.bz2"
 
