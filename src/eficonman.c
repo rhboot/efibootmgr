@@ -8,6 +8,8 @@
  * Author: Peter Jones <pjones@redhat.com>
  */
 
+#include "fix_coverity.h"
+
 #include <efivar.h>
 #include <err.h>
 #include <inttypes.h>

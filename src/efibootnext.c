@@ -20,6 +20,8 @@
  *
  */
 
+#include "fix_coverity.h"
+
 #include <alloca.h>
 #include <err.h>
 #include <errno.h>

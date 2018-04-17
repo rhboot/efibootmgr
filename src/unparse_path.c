@@ -21,6 +21,8 @@
 /* For PRIx64 */
 #define __STDC_FORMAT_MACROS
 
+#include "fix_coverity.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
