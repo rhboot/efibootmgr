@@ -47,7 +47,7 @@ gcc_ccldflags = -fno-merge-constants \
 ccldflags = $(cflags) $(CCLDFLAGS) $(LDFLAGS) \
 	$(if $(findstring clang,$(CCLD)),$(clang_ccldflags),) \
 	$(if $(findstring gcc,$(CCLD)),$(gcc_ccldflags),) \
-	$(call pkg-config-ccldflags)
+	$(call pkg-config-ldflags)
 CPPFLAGS?=
 SOFLAGS=-shared
 LDLIBS=$(foreach lib,$(LIBS),-l$(lib)) $(call pkg-config-ldlibs)
