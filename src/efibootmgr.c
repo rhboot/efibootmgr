@@ -1572,7 +1572,6 @@ main(int argc, char **argv)
 		"SysPrepOrder"
 	};
 
-	putenv("LIBEFIBOOT_REPORT_GPT_ERRORS=1");
 	set_default_opts();
 	parse_opts(argc, argv);
 	if (opts.showversion) {
