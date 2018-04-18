@@ -1256,7 +1256,7 @@ usage()
 	printf("\t-N | --delete-bootnext delete BootNext\n");
 	printf("\t-o | --bootorder XXXX,YYYY,ZZZZ,...     explicitly set BootOrder (hex)\n");
 	printf("\t-O | --delete-bootorder delete BootOrder\n");
-	printf("\t-p | --part part        (defaults to 1) containing loader\n");
+	printf("\t-p | --part part        partition containing loader (defaults to 1 on partitioned devices)\n");
 	printf("\t-q | --quiet            be quiet\n");
 	printf("\t-t | --timeout seconds  set boot manager timeout waiting for user input.\n");
 	printf("\t-T | --delete-timeout   delete Timeout.\n");
@@ -1281,7 +1281,7 @@ set_default_opts()
 	opts.loader          = DEFAULT_LOADER;
 	opts.label           = (unsigned char *)"Linux";
 	opts.disk            = "/dev/sda";
-	opts.part            = 1;
+	opts.part            = -1;
 }
 
 static void
