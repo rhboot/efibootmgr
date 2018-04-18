@@ -380,8 +380,10 @@ make_linux_load_option(uint8_t **data, size_t *data_size,
 						opts.disk, opts.part,
 						opts.loader, options,
 						opts.edd10_devicenum);
-		if (needed < 0)
+		if (needed < 0) {
+			efi_error("efi_generate_file_device_path_from_esp() failed");
 			return -1;
+		}
 
 		if (data_size && *data_size) {
 			dp = malloc(needed);
@@ -393,6 +395,7 @@ make_linux_load_option(uint8_t **data, size_t *data_size,
 						opts.loader, options,
 						opts.edd10_devicenum);
 			if (needed < 0) {
+				efi_error("efi_generate_file_device_path_from_esp() failed");
 				free(dp);
 				return -1;
 			}
