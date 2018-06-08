@@ -1289,6 +1289,7 @@ parse_opts(int argc, char **argv)
 {
 	int c, rc;
 	unsigned int num;
+	int snum;
 	float fnum;
 	int option_index = 0;
 
@@ -1390,14 +1391,16 @@ parse_opts(int argc, char **argv)
 			opts.disk = optarg;
 			break;
 		case 'e':
-			rc = sscanf(optarg, "%u", &num);
+			rc = sscanf(optarg, "%d", &snum);
 			if (rc == 1)
-				opts.edd_version = num;
+				opts.edd_version = snum;
 			else
 				errorx(30, "invalid numeric value %s\n",
 				       optarg);
-			if (num != 0 && num != 1 && num != 3)
-				errorx(31, "invalid EDD version %d\n", num);
+			if (snum == -1)
+				snum = 0;
+			if (snum != 0 && snum != 1 && snum != 3)
+				errorx(31, "invalid EDD version %d\n", snum);
 			break;
 		case 'E':
 			rc = sscanf(optarg, "%x", &num);
