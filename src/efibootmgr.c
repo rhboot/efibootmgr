@@ -85,6 +85,8 @@ free_vars(list_t *head)
 
 	list_for_each_safe(pos, n, head) {
 		entry = list_entry(pos, var_entry_t, list);
+		if (entry->name)
+			free(entry->name);
 		if (entry->data)
 			free(entry->data);
 		list_del(&(entry->list));
@@ -128,7 +130,11 @@ read_vars(char **namelist,
 			 * invalid to set it anyway */
 			entry->attributes = entry->attributes & ~(1 << 31);
 
-			entry->name = namelist[i];
+			entry->name = strdup(namelist[i]);
+			if (!entry->name) {
+				efi_error("strdup(\"%s\") failed", namelist[i]);
+				goto err;
+			}
 			entry->guid = EFI_GLOBAL_GUID;
 			list_add_tail(&entry->list, head);
 		}
