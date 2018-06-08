@@ -9,6 +9,12 @@ sbindir	?= $(prefix)/sbin
 localedir ?= $(datadir)/locale/
 PCDIR	?= $(libdir)/pkgconfig
 DESTDIR	?=
+ifneq ($(origin EXTRALIBDIRS),undefined)
+override EXTRALIBDIR := $(foreach dir,$(EXTRALIBDIRS),-L$(dir))
+endif
+ifneq ($(origin EXTRAINCDIRS),undefined)
+override EXTRAINCDIR := $(foreach dir,$(EXTRAINCDIRS),-I$(dir))
+endif
 
 EFIDIR	?= $(shell x=$$(which --skip-alias --skip-functions git 2>/dev/null) ; [ -n "$$x" ] && git config --get efibootmgr.efidir)
 ifeq ($(EFIDIR),)
@@ -31,7 +37,7 @@ PKGS	=
 SUBDIR_CFLAGS ?=
 clang_cflags =
 gcc_cflags =
-cflags	= $(CFLAGS) $(SUBDIR_CFLAGS) \
+cflags	= $(EXTRALIBDIR) $(EXTRAINCDIR) $(CFLAGS) $(SUBDIR_CFLAGS) \
 	-Werror -Wall -Wextra -Wsign-compare -Wstrict-aliasing \
 	-std=gnu11 -fPIC \
 	-D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -DLOCALEDIR=\"$(localedir)\" \
