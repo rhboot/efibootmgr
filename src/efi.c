@@ -333,8 +333,11 @@ make_linux_load_option(uint8_t **data, size_t *data_size,
 						       opts.ip_remote_port,
 						       opts.ip_protocol,
 						       opts.ip_addr_origin);
-		if (needed < 0)
+		if (needed < 0) {
+			efi_error("efi_generate_ipv4_device_path() = %zd (failed)",
+					needed);
 			return -1;
+		}
 		if (data_size && *data_size) {
 			dp = malloc(needed);
 
@@ -351,6 +354,8 @@ make_linux_load_option(uint8_t **data, size_t *data_size,
 							opts.ip_addr_origin);
 			if (needed < 0) {
 				free(dp);
+				efi_error("efi_generate_ipv4_device_path() = %zd (failed)",
+						needed);
 				return -1;
 			}
 		}
@@ -381,7 +386,8 @@ make_linux_load_option(uint8_t **data, size_t *data_size,
 						opts.loader, options,
 						opts.edd10_devicenum);
 		if (needed < 0) {
-			efi_error("efi_generate_file_device_path_from_esp() failed");
+			efi_error("efi_generate_file_device_path_from_esp() = %zd (failed)",
+                                  needed);
 			return -1;
 		}
 
@@ -395,7 +401,8 @@ make_linux_load_option(uint8_t **data, size_t *data_size,
 						opts.loader, options,
 						opts.edd10_devicenum);
 			if (needed < 0) {
-				efi_error("efi_generate_file_device_path_from_esp() failed");
+			        efi_error("efi_generate_file_device_path_from_esp() = %zd (failed)",
+                                          needed);
 				free(dp);
 				return -1;
 			}
@@ -414,8 +421,10 @@ make_linux_load_option(uint8_t **data, size_t *data_size,
 		dp = NULL;
 		errno = saved_errno;
 	}
-	if (needed < 0)
+	if (needed < 0) {
+		efi_error("efi_loadopt_create() = %zd (failed)", needed);
 		return -1;
+        }
 
 	return needed;
 }
