@@ -35,7 +35,7 @@ RANLIB	:= $(CROSS_COMPILE)gcc-ranlib
 PKGS	=
 
 SUBDIR_CFLAGS ?=
-clang_cflags =
+clang_cflags = `${PKG_CONFIG} --cflags efivar`
 gcc_cflags =
 cflags	= $(EXTRALIBDIR) $(EXTRAINCDIR) $(CFLAGS) $(SUBDIR_CFLAGS) \
 	-Werror -Wall -Wextra -Wsign-compare -Wstrict-aliasing \
