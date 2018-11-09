@@ -82,7 +82,7 @@ cond_error(int test, int eval, const char *fmt, ...)
 	vfprintf(stderr, fmt, ap);
 	errno = saved_errno;
 	fprintf(stderr, ": %m\n");
-	conditional_error_reporter(verbose >= 2, 0);
+	conditional_error_reporter(verbose >= 1, 0);
 	va_end(ap);
 	exit(eval);
 }
@@ -99,7 +99,7 @@ error(int eval, const char *fmt, ...)
 	vfprintf(stderr, fmt, ap);
 	errno = saved_errno;
 	fprintf(stderr, ": %m\n");
-	conditional_error_reporter(verbose >= 2, 0);
+	conditional_error_reporter(verbose >= 1, 0);
 	va_end(ap);
 	exit(eval);
 }
@@ -114,7 +114,7 @@ errorx(int eval, const char *fmt, ...)
 	va_start(ap, fmt);
 	vfprintf(stderr, fmt, ap);
 	fprintf(stderr, "\n");
-	conditional_error_reporter(verbose >= 2, 1);
+	conditional_error_reporter(verbose >= 1, 1);
 	va_end(ap);
 	exit(eval);
 }
@@ -132,7 +132,7 @@ cond_warning(int test, const char *fmt, ...)
 	vprintf(fmt, ap);
 	errno = saved_errno;
 	printf(": %m\n");
-	conditional_error_reporter(verbose >= 2, 1);
+	conditional_error_reporter(verbose >= 1, 1);
 	va_end(ap);
 }
 
@@ -147,7 +147,7 @@ warning(const char *fmt, ...)
 	vprintf(fmt, ap);
 	errno = saved_errno;
 	printf(": %m\n");
-	conditional_error_reporter(verbose >= 2, 1);
+	conditional_error_reporter(verbose >= 1, 1);
 	va_end(ap);
 }
 
@@ -160,7 +160,7 @@ warningx(const char *fmt, ...)
 	va_start(ap, fmt);
 	vprintf(fmt, ap);
 	printf("\n");
-	conditional_error_reporter(verbose >= 2, 1);
+	conditional_error_reporter(verbose >= 1, 1);
 	va_end(ap);
 }
 #endif /* EFIBOOTMGR_ERROR_H__ */
