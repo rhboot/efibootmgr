@@ -1311,7 +1311,7 @@ parse_opts(int argc, char **argv)
 			{"create",                 no_argument, 0, 'c'},
 			{"create-only",            no_argument, 0, 'C'},
 			{"remove-dups",            no_argument, 0, 'D'},
-			{"disk",             required_argument, 0, 'd'},
+			{"disk",             optional_argument, 0, 'd'},
 			{"iface",            required_argument, 0, 'i'},
 			{"edd-device",       required_argument, 0, 'E'},
 			{"edd30",            required_argument, 0, 'e'},
@@ -1342,7 +1342,7 @@ parse_opts(int argc, char **argv)
 		};
 
 		c = getopt_long (argc, argv,
-				 "AaBb:cCDd:e:E:gH:i:l:L:M:m:n:No:Op:qt:TuU:v::Vw"
+				 "AaBb:cCDd::e:E:gH:i:l:L:M:m:n:No:Op:qt:TuU:v::Vw"
 				 "@:hry",
 				 long_options, &option_index);
 		if (c == -1)
