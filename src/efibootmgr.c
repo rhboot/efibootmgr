@@ -1688,7 +1688,7 @@ main(int argc, char **argv)
 		} else {
 			ret = set_active_state(prefices[mode]);
 			if (ret < 0)
-				error(16, "%s",
+				error(16,
 				  "Could not set active state for %s%04X",
 				  prefices[mode], opts.num);
 		}
