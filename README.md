@@ -42,7 +42,7 @@ usage: efibootmgr [options]
 Typical usage:
 
 Root can use it to display the current Boot Manager settings.
-
+```
 [root@localhost ~]# efibootmgr
 BootCurrent: 0004
 BootNext: 0003
@@ -53,7 +53,7 @@ Boot0001* CD-ROM Drive(device:FF)
 Boot0002* Hard Drive(Device:80)/HD(Part1,Sig00112233)
 Boot0003* PXE Boot: MAC(00D0B7C15D91)
 Boot0004* Linux
-
+```
 This shows:
 **BootCurrent** - the boot entry used to start the currently running
 system.
