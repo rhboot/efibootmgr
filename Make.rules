@@ -46,8 +46,14 @@ define substitute-version =
 		-e "s,@@VERSION@@,$(VERSION),g"		\
 		-e "s,@@LIBDIR@@,$(libdir),g"		\
 		-e "s,@@LIBEXECDIR@@,$(libexecdir),g"	\
+		-e "s,@@EFIDIR@@,$(EFIDIR),g"		\
+		-e "s,@@EFI_LOADER@@,$(EFI_LOADER),g"	\
+		-e 's,@@DEFAULT_LOADER@@,\\\\EFI\\\\$(EFIDIR)\\\\$(EFI_LOADER),g' \
 		$(1) > $(2)
 endef
+
+%.8 : %.8.in
+	@$(call substitute-version,$<,$@)
 
 %.pc : %.pc.in
 	@$(call substitute-version,$<,$@)

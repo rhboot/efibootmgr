@@ -8,7 +8,7 @@ include $(TOPDIR)/Make.defaults
 SUBDIR_CFLAGS = -I$(SRCDIR)/include
 
 BINTARGETS=efibootmgr efibootdump
-TARGETS=$(BINTARGETS)
+TARGETS=$(BINTARGETS) efibootmgr.8 efibootdump.8
 
 all : deps $(TARGETS)
 
@@ -43,7 +43,7 @@ clean :
 	@rm -rfv *.o *.a *.so $(TARGETS)
 	@rm -rfv .*.d
 
-install :
+install : $(TARGETS)
 	$(INSTALL) -d -m 755 $(DESTDIR)/$(sbindir)/
 	$(INSTALL) -m 755 efibootmgr $(DESTDIR)/$(sbindir)/efibootmgr
 	$(INSTALL) -m 755 efibootdump $(DESTDIR)/$(sbindir)/efibootdump
