@@ -31,8 +31,13 @@ efibootdump : PKGS=efivar efiboot popt
 efibootnext : $(call objects-of,$(EFIBOOTNEXT_SOURCES))
 efibootnext : PKGS=efivar efiboot popt
 
+deps : PKGS=efivar efiboot popt
 deps : $(ALL_SOURCES)
-	$(MAKE) -f $(TOPDIR)/Make.deps deps SOURCES="$(ALL_SOURCES)" SUBDIR_CFLAGS="$(SUBDIR_CFLAGS)"
+	$(MAKE) -f $(TOPDIR)/Make.deps \
+		SOURCES="$(ALL_SOURCES)" \
+		SUBDIR_CFLAGS="$(SUBDIR_CFLAGS)" \
+		PKGS="$(PKGS)" \
+		deps
 
 clean :
 	@rm -rfv *.o *.a *.so $(TARGETS)
