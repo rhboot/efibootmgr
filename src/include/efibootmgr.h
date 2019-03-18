@@ -67,6 +67,7 @@ typedef struct {
 	int bootnext;
 	int verbose;
 	int active;
+	int reconnect;
 	int below4g;
 	int above4g;
 	int deduplicate;

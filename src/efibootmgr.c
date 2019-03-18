@@ -1157,6 +1157,23 @@ set_active_state(const char *prefix)
 }
 
 static int
+set_force_reconnect(const char *prefix)
+{
+	var_entry_t *entry;
+
+	entry = get_entry(&entry_list, opts.num);
+	if (!entry) {
+		/* if we reach here then the number supplied was not found */
+		warnx("%s entry %x not found", prefix, opts.num);
+		errno = ENOENT;
+		return -1;
+	}
+
+	return update_entry_attr(entry, LOAD_OPTION_FORCE_RECONNECT,
+				 opts.reconnect);
+}
+
+static int
 get_mirror(int which, int *below4g, int *above4g, int *mirrorstatus)
 {
 	int rc;
@@ -1294,7 +1311,9 @@ usage()
 	printf("\t-C | --create-only	create new variable bootnum and do not add to bootorder\n");
 	printf("\t-D | --remove-dups	remove duplicate values from BootOrder\n");
 	printf("\t-d | --disk disk       (defaults to /dev/sda) containing loader\n");
-	printf("\t-r | --driver         Operate on Driver variables, not Boot Variables.\n");
+	printf("\t-r | --driver         Operate on Driver variables, not Boot Variables\n");
+	printf("\t-f | --reconnect      Re-connect devices after driver is loaded\n");
+	printf("\t-F | --no-reconnect   Do not re-connect devices after driver is loaded\n");
 	printf("\t-e | --edd [1|3|-1]   force EDD 1.0 or 3.0 creation variables, or guess\n");
 	printf("\t-E | --device num      EDD 1.0 device number (defaults to 0x80)\n");
 	printf("\t-g | --gpt            force disk with invalid PMBR to be treated as GPT\n");
@@ -1335,6 +1354,7 @@ set_default_opts()
 	opts.num             = -1;   /* auto-detect */
 	opts.bootnext        = -1;   /* Don't set it */
 	opts.active          = -1;   /* Don't set it */
+	opts.reconnect       = -1;   /* Don't set it */
 	opts.timeout         = -1;   /* Don't set it */
 	opts.edd10_devicenum = 0x80;
 	opts.loader          = DEFAULT_LOADER;
@@ -1368,6 +1388,8 @@ parse_opts(int argc, char **argv)
 			{"iface",            required_argument, 0, 'i'},
 			{"edd-device",       required_argument, 0, 'E'},
 			{"edd30",            required_argument, 0, 'e'},
+			{"reconnect",              no_argument, 0, 'f'},
+			{"no-reconnect",           no_argument, 0, 'F'},
 			{"gpt",                    no_argument, 0, 'g'},
 			{"keep",                   no_argument, 0, 'k'},
 			{"loader",           required_argument, 0, 'l'},
@@ -1395,7 +1417,7 @@ parse_opts(int argc, char **argv)
 		};
 
 		c = getopt_long (argc, argv,
-				 "AaBb:cCDd:e:E:gH:i:l:L:M:m:n:No:Op:qt:TuU:v::Vw"
+				 "AaBb:cCDd:e:E:fFgH:i:l:L:M:m:n:No:Op:qt:TuU:v::Vw"
 				 "@:hry",
 				 long_options, &option_index);
 		if (c == -1)
@@ -1467,6 +1489,12 @@ parse_opts(int argc, char **argv)
 				opts.edd10_devicenum = num;
 			else
 				errorx(32, "invalid hex value %s\n", optarg);
+			break;
+		case 'f':
+			opts.reconnect = 1;
+			break;
+		case 'F':
+			opts.reconnect = 0;
 			break;
 		case 'g':
 			opts.forcegpt = 1;
@@ -1663,6 +1691,9 @@ main(int argc, char **argv)
 			mode = driver;
 	}
 
+	if (opts.reconnect && !opts.driver)
+		errorx(30, "--reconnect is supported only for driver entries.");
+
 	if (!efi_variables_supported())
 		errorx(2, "EFI variables are not supported on this system.");
 
@@ -1685,13 +1716,26 @@ main(int argc, char **argv)
 	if (opts.active >= 0) {
 		if (opts.num == -1) {
 			errorx(4,
-			       "You must specify a entry to activate (see the -b option");
+			       "You must specify a entry to activate (see the -b option)");
 		} else {
 			ret = set_active_state(prefices[mode]);
 			if (ret < 0)
 				error(16,
 				  "Could not set active state for %s%04X",
 				  prefices[mode], opts.num);
+		}
+	}
+
+	if (opts.reconnect >= 0) {
+		if (opts.num == -1) {
+			errorx(4,
+			       "You must specify a driver entry to set re-connect on (see the -b option)");
+		} else {
+			ret = set_force_reconnect(prefices[mode]);
+			if (ret < 0)
+				error(16,
+				      "Could not set re-connect for %s%04X",
+				      prefices[mode], opts.num);
 		}
 	}
 

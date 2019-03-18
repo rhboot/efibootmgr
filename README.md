@@ -19,6 +19,8 @@ usage: efibootmgr [options]
         -d | --disk disk       (defaults to /dev/sda) containing loader
         -e | --edd [1|3|-1]    force EDD 1.0 or 3.0 creation variables, or guess
         -E | --device num      EDD 1.0 device number (defaults to 0x80)
+        -f | --reconnect       Re-connect devices after driver is loaded
+        -F | --no-reconnect    Do not re-connect devices after driver is loaded
         -g | --gpt             force disk w/ invalid PMBR to be treated as GPT
         -i | --iface name      create a netboot entry for the named interface
         -l | --loader name     (defaults to \elilo.efi)
