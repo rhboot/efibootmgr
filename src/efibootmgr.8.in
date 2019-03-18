@@ -53,6 +53,9 @@ Force EDD 1.0 or 3.0 creation variables, or guess.
 \fB-E | --edd-device \fINUM\fB\fR
 EDD 1.0 device number (defaults to 0x80)
 .TP
+\fB-f | --force-reconnect \fI0|1\fB\fR
+Force reconnect devices after driver loaded (defaults is 1). It acceptable only for Driver#### variables.
+.TP
 \fB-g | --gpt\fR
 Force disk with invalid PMBR to be treated as GPT
 .TP
