@@ -1156,6 +1156,75 @@ set_active_state(const char *prefix)
 }
 
 static int
+set_force_reconnect(const char *prefix)
+{
+	list_t *pos;
+	var_entry_t *entry;
+	efi_load_option *load_option;
+	int rc;
+
+	list_for_each(pos, &entry_list) {
+		entry = list_entry(pos, var_entry_t, list);
+		load_option = (efi_load_option *)entry->data;
+		if (entry->num != opts.num)
+			continue;
+
+		if (opts.reconnect == 1) {
+			if (efi_loadopt_attrs(load_option)
+						& LOAD_OPTION_FORCE_RECONNECT<) {
+				return 0;
+			} else {
+				efi_loadopt_attr_set(load_option,
+							LOAD_OPTION_FORCE_RECONNECT);
+				rc = efi_set_variable(entry->guid,
+						      entry->name,
+						      entry->data,
+						      entry->data_size,
+						      entry->attributes,
+						      0644);
+				if (rc < 0) {
+					char *guid = NULL;
+					int err = errno;
+					efi_guid_to_str(&entry->guid, &guid);
+					errno = err;
+					efi_error(
+					  "efi_set_variable(%s,%s,...)",
+					  guid, entry->name);
+				}
+				return rc;
+			}
+		} else if (opts.reconnect == 0) {
+			if (!(efi_loadopt_attrs(load_option)
+						& LOAD_OPTION_FORCE_RECONNECT)) {
+				return 0;
+			} else {
+				efi_loadopt_attr_clear(load_option,
+							LOAD_OPTION_FORCE_RECONNECT);
+				rc = efi_set_variable(entry->guid,
+						      entry->name,
+						      entry->data,
+						      entry->data_size,
+						      entry->attributes,
+						      0644);
+				if (rc < 0) {
+					char *guid = NULL;
+					int err = errno;
+					efi_guid_to_str(&entry->guid, &guid);
+					errno = err;
+					efi_error("efi_set_variable(%s,%s,...)",
+						  guid, entry->name);
+				}
+				return rc;
+			}
+		}
+	}
+	/* if we reach here then the number supplied was not found */
+	warnx("%s entry %x not found", prefix, opts.num);
+	errno = ENOENT;
+	return -1;
+}
+
+static int
 get_mirror(int which, int *below4g, int *above4g, int *mirrorstatus)
 {
 	int rc;
@@ -1294,6 +1363,7 @@ usage()
 	printf("\t-D | --remove-dups	remove duplicate values from BootOrder\n");
 	printf("\t-d | --disk disk       (defaults to /dev/sda) containing loader\n");
 	printf("\t-r | --driver         Operate on Driver variables, not Boot Variables.\n");
+	printf("\t-f | --recconect [0|1] Force reconnect drives after driver is loaded (defaults is 0).\n");
 	printf("\t-e | --edd [1|3|-1]   force EDD 1.0 or 3.0 creation variables, or guess\n");
 	printf("\t-E | --device num      EDD 1.0 device number (defaults to 0x80)\n");
 	printf("\t-g | --gpt            force disk with invalid PMBR to be treated as GPT\n");
@@ -1334,6 +1404,7 @@ set_default_opts()
 	opts.num             = -1;   /* auto-detect */
 	opts.bootnext        = -1;   /* Don't set it */
 	opts.active          = -1;   /* Don't set it */
+	opts.reconnect       = -1;   /* Don't set it */
 	opts.timeout         = -1;   /* Don't set it */
 	opts.edd10_devicenum = 0x80;
 	opts.loader          = DEFAULT_LOADER;
@@ -1367,6 +1438,7 @@ parse_opts(int argc, char **argv)
 			{"iface",            required_argument, 0, 'i'},
 			{"edd-device",       required_argument, 0, 'E'},
 			{"edd30",            required_argument, 0, 'e'},
+			{"force-reconnect",  required_argument, 0, 'f'},
 			{"gpt",                    no_argument, 0, 'g'},
 			{"keep",                   no_argument, 0, 'k'},
 			{"loader",           required_argument, 0, 'l'},
@@ -1394,7 +1466,7 @@ parse_opts(int argc, char **argv)
 		};
 
 		c = getopt_long (argc, argv,
-				 "AaBb:cCDd:e:E:gH:i:l:L:M:m:n:No:Op:qt:TuU:v::Vw"
+				 "AaBb:cCDd:e:E:f:gH:i:l:L:M:m:n:No:Op:qt:TuU:v::Vw"
 				 "@:hry",
 				 long_options, &option_index);
 		if (c == -1)
@@ -1467,6 +1539,14 @@ parse_opts(int argc, char **argv)
 			else
 				errorx(32, "invalid hex value %s\n", optarg);
 			break;
+		case 'f':
+			rc = sscanf(optarg, "%d", &snum);
+			if (rc == 1)
+				opts.edd_version = snum;
+			else
+				errorx(30, "invalid numeric value %s\n", 
+				       optarg);
+				# what is 30 ?
 		case 'g':
 			opts.forcegpt = 1;
 			break;
@@ -1661,6 +1741,11 @@ main(int argc, char **argv)
 		if (opts.driver)
 			mode = driver;
 	}
+	
+	if (opts.reconnect && !opts.driver) {
+		errorx(30, "--force-reconnect supportable only for --driver option.");
+		# what is 30?
+		
 
 	if (!efi_variables_supported())
 		errorx(2, "EFI variables are not supported on this system.");
@@ -1693,7 +1778,18 @@ main(int argc, char **argv)
 				  prefices[mode], opts.num);
 		}
 	}
-
+	if (opts.reconnect >=0) {
+		if (opts.num == -1) {
+			errorx(4,
+			       "You must specify a entry to activate (see the -b option");
+		} else {
+			ret = set_force_reconect(prefices[mode]);
+			if (ret < 0)
+				error(16,
+				  "Could not set force recoonect for %s%04X",
+				  prefices[mode], opts.num);
+		}
+		
 	if (opts.create) {
 		warn_duplicate_name(&entry_list);
 		new_entry = make_var(prefices[mode], &entry_list);
@@ -1745,7 +1841,7 @@ main(int argc, char **argv)
 		if (ret < 0)
 			error(11, "Could not delete Timeout");
 	}
-
+		
 	if (opts.bootnext >= 0) {
 		if (!is_current_entry(opts.bootnext & 0xFFFF))
 			errorx(12, "Boot entry %X does not exist",
