@@ -1468,7 +1468,7 @@ parse_opts(int argc, char **argv)
 		};
 
 		c = getopt_long (argc, argv,
-				 "AaBb:cCDd:e:E:f:gH:i:l:L:M:m:n:No:Op:qt:TuU:v::Vw"
+				 "AaBb:cCDd:e:E:fFgH:i:l:L:M:m:n:No:Op:qt:TuU:v::Vw"
 				 "@:hry",
 				 long_options, &option_index);
 		if (c == -1)
