@@ -1364,7 +1364,7 @@ usage()
 	printf("\t-d | --disk disk       (defaults to /dev/sda) containing loader\n");
 	printf("\t-r | --driver         Operate on Driver variables, not Boot Variables.\n");
 	printf("\t-f | --force-recconect Force reconnect drives after driver is loaded (acceptable only for DriverXXXX variable).\n");
-	printf("\t-F | --do-not-recconect Do not reconnect drives after driver is loaded (acceptable only for DriverXXXX variable)
+	printf("\t-F | --do-not-recconect Do not reconnect drives after driver is loaded (acceptable only for DriverXXXX variable).\n");
 	printf("\t-e | --edd [1|3|-1]   force EDD 1.0 or 3.0 creation variables, or guess\n");
 	printf("\t-E | --device num      EDD 1.0 device number (defaults to 0x80)\n");
 	printf("\t-g | --gpt            force disk with invalid PMBR to be treated as GPT\n");
@@ -1781,7 +1781,7 @@ main(int argc, char **argv)
 			errorx(4,
 			       "You must specify a entry to set force recconect (see the -b option");
 		} else {
-			ret = set_force_reconect(prefices[mode]);
+			ret = set_force_reconnect(prefices[mode]);
 			if (ret < 0)
 				error(16,
 				  "Could not set force recoonect for %s%04X",
