@@ -1742,7 +1742,7 @@ main(int argc, char **argv)
 			mode = driver;
 	}
 	
-	if (opts.reconnect && !opts.driver) {
+	if (opts.reconnect && !opts.driver)
 		errorx(30, "--force-reconnect supportable only for --driver option.");
 
 	if (!efi_variables_supported())
