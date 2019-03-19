@@ -1787,7 +1787,7 @@ main(int argc, char **argv)
 				  "Could not set force recoonect for %s%04X",
 				  prefices[mode], opts.num);
 		}
-		
+	}
 	if (opts.create) {
 		warn_duplicate_name(&entry_list);
 		new_entry = make_var(prefices[mode], &entry_list);
