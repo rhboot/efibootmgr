@@ -28,9 +28,11 @@
 
 int verbose;
 
-#define  _(String) gettext (String)
-#define Q_(String) dgettext (NULL, String)
-#define C_(Context,String) dgettext (Context,String)
+#if defined(HAVE_NLS)
+#define _(String) gettext (String)
+#else
+#define _(String) String
+#endif
 
 static void
 print_boot_entry(efi_load_option *loadopt, size_t data_size)

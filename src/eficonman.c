@@ -21,9 +21,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define  _(String) gettext (String)
-#define Q_(String) dgettext (NULL, String)
-#define C_(Context,String) dgettext (Context,String)
+#if defined(HAVE_NLS)
+#define _(String) gettext (String)
+#else
+#define _(String) String
+#endif
 
 /* ConIn-8be4df61-93ca-11d2-aa0d-00e098032b8c
  * ConInDev-8be4df61-93ca-11d2-aa0d-00e098032b8c

@@ -1,4 +1,5 @@
 NAME	= efibootmgr
+NLS     = true
 prefix	?= /usr
 libdir	?= $(prefix)/lib64
 datadir	?= $(prefix)/share
@@ -14,6 +15,9 @@ override EXTRALIBDIR := $(foreach dir,$(EXTRALIBDIRS),-L$(dir))
 endif
 ifneq ($(origin EXTRAINCDIRS),undefined)
 override EXTRAINCDIR := $(foreach dir,$(EXTRAINCDIRS),-I$(dir))
+endif
+ifeq ($(NLS),true)
+nls_flags = -DHAVE_NLS
 endif
 
 EFIDIR	?= $(shell x=$$(which --skip-alias --skip-functions git 2>/dev/null) ; [ -n "$$x" ] && git config --get efibootmgr.efidir)
@@ -45,7 +49,7 @@ cflags	= $(EXTRALIBDIR) $(EXTRAINCDIR) $(CFLAGS) $(SUBDIR_CFLAGS) \
 	-DDEFAULT_LOADER=\"\\\\EFI\\\\$(EFIDIR)\\\\$(EFI_LOADER)\" \
 	$(if $(findstring clang,$(CC)),$(clang_cflags),) \
 	$(if $(findstring gcc,$(CC)),$(gcc_cflags),) \
-	$(call pkg-config-cflags)
+	$(call pkg-config-cflags) $(nls_flags)
 clang_ccldflags =
 gcc_ccldflags = -fno-merge-constants \
 	-Wl,--fatal-warnings,--no-allow-shlib-undefined \
