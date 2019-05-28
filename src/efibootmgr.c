@@ -106,13 +106,12 @@ read_vars(char **namelist,
 
 	for (i=0; namelist[i] != NULL; i++) {
 		if (namelist[i]) {
-			entry = malloc(sizeof(var_entry_t));
+			entry = calloc(1, sizeof(var_entry_t));
 			if (!entry) {
-				efi_error("malloc(%zd) failed",
+				efi_error("calloc(1, %zd) failed",
 					  sizeof(var_entry_t));
 				goto err;
 			}
-			memset(entry, 0, sizeof(var_entry_t));
 
 			rc = efi_get_variable(EFI_GLOBAL_GUID, namelist[i],
 					       &entry->data, &entry->data_size,
@@ -611,6 +610,10 @@ delete_var(const char *prefix, uint16_t num)
 				return rc;
 			}
 			list_del(&(entry->list));
+			free(entry->name);
+			free(entry->data);
+			memset(entry, 0, sizeof(*entry));
+			free(entry);
 			break; /* short-circuit since it was found */
 		}
 	}
