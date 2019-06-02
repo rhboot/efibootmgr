@@ -77,7 +77,7 @@ active), and the name displayed on the screen.
 Alternative use cases could be as follows:
 
 1) An OS installer would call `efibootmgr -c`.  This assumes that
-   /boot/efi is your EFI System Partition, and is mounted at /dev/sda1.
+   /dev/sda1 is your EFI System Partition, and is mounted at /boot/efi.
    This creates a new boot option, called "Linux", and puts it at the top
    of the boot order list.  Options may be passed to modify the
    default behavior. The default OS Loader is elilo.efi.
