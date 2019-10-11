@@ -37,6 +37,7 @@
 #include <err.h>
 #include <errno.h>
 #include <limits.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,7 +53,7 @@
 
 #include "list.h"
 #include "efi.h"
-#include "unparse_path.h"
+#include "parse_loader_data.h"
 #include "efibootmgr.h"
 #include "error.h"
 
@@ -926,71 +927,117 @@ show_var_path(efi_load_option *load_option, size_t boot_data_size)
 	size_t text_path_len = 0;
 	uint16_t pathlen;
 	ssize_t rc;
-
 	efidp dp = NULL;
 	unsigned char *optional_data = NULL;
 	size_t optional_data_len=0;
+	bool is_shim = false;
+	const char * const shim_path_segments[] = {
+		"/File(\\EFI\\", "\\shim", ".efi)", NULL
+	};
 
 	pathlen = efi_loadopt_pathlen(load_option,
 				      boot_data_size);
 	dp = efi_loadopt_path(load_option, boot_data_size);
-	rc = efidp_format_device_path(text_path, text_path_len,
-				      dp, pathlen);
+	rc = efidp_format_device_path((unsigned char *)text_path,
+				      text_path_len, dp, pathlen);
 	if (rc < 0) {
 		warning("Could not parse device path");
-                return;
-        }
+		return;
+	}
 	rc += 1;
 
 	text_path_len = rc;
 	text_path = calloc(1, rc);
 	if (!text_path) {
 		warning("Could not parse device path");
-                return;
-        }
+		return;
+	}
 
-	rc = efidp_format_device_path(text_path, text_path_len,
-				      dp, pathlen);
-        if (rc >= 0)
-	        printf("\t%s", text_path);
+	rc = efidp_format_device_path((unsigned char *)text_path,
+				      text_path_len, dp, pathlen);
+	if (rc >= 0) {
+		printf("\t%s", text_path);
+
+		char *a = text_path;
+		for (int i = 0; a && shim_path_segments[i] != NULL; i++) {
+			a = strstr(a, shim_path_segments[i]);
+			if (a)
+				a += strlen(shim_path_segments[i]);
+		}
+		if (a && a[0] == '\0')
+			is_shim = true;
+	}
+
 	free(text_path);
 	if (rc < 0) {
 		warning("Could not parse device path");
-                return;
-        }
+		return;
+	}
 
 	/* Print optional data */
 	rc = efi_loadopt_optional_data(load_option, boot_data_size,
 				       &optional_data, &optional_data_len);
 	if (rc < 0) {
 		warning("Could not parse optional data");
-                return;
-        }
+		return;
+	}
 
-	if (opts.unicode) {
+	typedef ssize_t (*parser_t)(char *buffer, size_t buffer_size,
+				    uint8_t *p, uint64_t length);
+	parser_t parser = NULL;
+	if (is_shim && optional_data_len) {
+		char *a = ucs2_to_utf8((uint16_t*)optional_data,
+				       optional_data_len/2);
+		if (!a) {
+			warning("Could not parse optional data");
+			return;
+		}
+		text_path = calloc(1, sizeof(" File(.")
+				      + strlen(a)
+				      + strlen(")"));
+		if (!text_path) {
+			warning("Could not parse optional data");
+			return;
+		}
+		char *b;
+
+		b = stpcpy(text_path, " File(.");
+		b = stpcpy(b, a);
+		b = stpcpy(b, ")");
+		free(a);
+	} else if (opts.unicode) {
 		text_path = ucs2_to_utf8((uint16_t*)optional_data,
 					 optional_data_len/2);
+		if (!text_path) {
+			warning("Could not parse optional data");
+			return;
+		}
+	} else if (optional_data_len == sizeof(efi_guid_t)) {
+		parser = parse_efi_guid;
 	} else {
-		rc = unparse_raw_text(NULL, 0, optional_data,
-				      optional_data_len);
+		parser = parse_raw_text;
+	}
+
+	if (parser) {
+		rc = parser(NULL, 0, optional_data, optional_data_len);
 		if (rc < 0) {
 			warning("Could not parse optional data");
-                        return;
-                }
+			return;
+		}
 		rc += 1;
 		text_path_len = rc;
 		text_path = calloc(1, rc);
 		if (!text_path) {
 			warning("Could not parse optional data");
-                        return;
-                }
-		rc = unparse_raw_text(text_path, text_path_len,
-				      optional_data, optional_data_len);
+			return;
+		}
+		rc = parser(text_path, text_path_len,
+			    optional_data, optional_data_len);
 		if (rc < 0) {
 			warning("Could not parse device path");
-                        free(text_path);
-                        return;
-                }
+			free(text_path);
+			return;
+		}
 	}
 	printf("%s", text_path);
 	free(text_path);

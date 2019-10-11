@@ -12,9 +12,9 @@ TARGETS=$(BINTARGETS) efibootmgr.8 efibootdump.8
 
 all : deps $(TARGETS)
 
-EFIBOOTMGR_SOURCES = efibootmgr.c efi.c unparse_path.c
+EFIBOOTMGR_SOURCES = efibootmgr.c efi.c parse_loader_data.c
 EFICONMAN_SOURCES = eficonman.c
-EFIBOOTDUMP_SOURCES = efibootdump.c unparse_path.c
+EFIBOOTDUMP_SOURCES = efibootdump.c parse_loader_data.c
 EFIBOOTNEXT_SOURCES = efibootnext.c
 ALL_SOURCES=$(EFIBOOTMGR_SOURCES)
 -include $(call deps-of,$(ALL_SOURCES))

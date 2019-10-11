@@ -1,8 +1,7 @@
 /*
-  unparse_path.[ch]
- 
-  Copyright (C) 2001 Dell Computer Corporation <Matt_Domsch@dell.com>
- 
+  Copyright 2001 Dell Computer Corporation <Matt_Domsch@dell.com>
+  Copyright 2014-2019 Peter Jones <pjones@redhat.com>
+
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
@@ -18,13 +17,15 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef _UNPARSE_PATH_H
-#define _UNPARSE_PATH_H
+#ifndef _PARSE_LOADER_DATA_H
+#define _PARSE_LOADER_DATA_H
 
 #include <stdint.h>
 #include "efi.h"
 
-ssize_t unparse_raw_text(char *buffer, size_t buffer_size,
-			uint8_t *p, uint64_t length);
+ssize_t parse_efi_guid(char *buffer, size_t buffer_size,
+		       uint8_t *p, uint64_t length);
+ssize_t parse_raw_text(char *buffer, size_t buffer_size,
+		       uint8_t *p, uint64_t length);
 
 #endif

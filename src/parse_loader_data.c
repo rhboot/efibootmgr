@@ -32,13 +32,29 @@
 #include <netinet/in.h>
 
 #include "efi.h"
-#include "unparse_path.h"
+#include "parse_loader_data.h"
 
 /* Avoid unaligned access warnings */
 #define get(buf, obj) *(typeof(obj) *)memcpy(buf, &obj, sizeof(obj))
 
+extern int verbose;
+
 ssize_t
-unparse_raw_text(char *buffer, size_t buffer_size, uint8_t *p, uint64_t length)
+parse_efi_guid(char *buffer, size_t buffer_size, uint8_t *p, uint64_t length)
+{
+	ssize_t needed = 0;
+
+	if (length == sizeof(efi_guid_t)) {
+		needed = efi_guid_to_id_guid((efi_guid_t *)p, NULL);
+		if (buffer && needed > 0 && buffer_size >= (size_t)needed)
+			needed = efi_guid_to_id_guid((efi_guid_t *)p, &buffer);
+	}
+
+	return needed;
+}
+
+ssize_t
+parse_raw_text(char *buffer, size_t buffer_size, uint8_t *p, uint64_t length)
 {
 	uint64_t i; unsigned char c;
 

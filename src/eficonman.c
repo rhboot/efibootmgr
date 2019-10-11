@@ -77,7 +77,7 @@ do_list(void)
 		dp = whole_dp;
 		while (dp) {
 			ssize_t sz, ssz;
-			char *s = NULL;
+			unsigned char *s = NULL;
 
 			if (efidp_is_multiinstance(dp)) {
 				sz = efidp_instance_size(dp);
