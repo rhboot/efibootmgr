@@ -34,7 +34,13 @@
 /*******************************************************
  * Boot Option Attributes
  *******************************************************/
-#define LOAD_OPTION_ACTIVE 0x00000001
+#define LOAD_OPTION_ACTIVE		0x00000001
+#define LOAD_OPTION_FORCE_RECONNECT	0x00000002
+#define LOAD_OPTION_HIDDEN		0x00000008
+
+#define LOAD_OPTION_CATEGORY_MASK	0x00001f00
+#define LOAD_OPTION_CATEGORY_BOOT	0x00000000
+#define LOAD_OPTION_CATEGORY_APP	0x00000100
 
 /*******************************************************
  * GUIDs
