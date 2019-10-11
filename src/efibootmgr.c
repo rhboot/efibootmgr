@@ -1089,73 +1089,71 @@ show_order(const char *name)
 	free(order);
 }
 
+static var_entry_t *
+get_entry(list_t *entries, uint16_t num)
+{
+	list_t *pos;
+	var_entry_t *entry = NULL;
+
+	list_for_each(pos, entries) {
+		entry = list_entry(pos, var_entry_t, list);
+		if (entry->num != num) {
+			entry = NULL;
+			continue;
+		}
+	}
+
+	return entry;
+}
+
+static int
+update_entry_attr(var_entry_t *entry, uint64_t attr, bool set)
+{
+	efi_load_option *load_option;
+	uint64_t attrs;
+	int rc;
+
+	load_option = (efi_load_option *)entry->data;
+	attrs = efi_loadopt_attrs(load_option);
+
+	if ((set && (attrs & attr)) || (!set && !(attrs & attr)))
+		return 0;
+
+	if (set)
+		efi_loadopt_attr_set(load_option, attr);
+	else
+		efi_loadopt_attr_clear(load_option, attr);
+
+	rc = efi_set_variable(entry->guid, entry->name,
+			      entry->data, entry->data_size,
+			      entry->attributes, 0644);
+	if (rc < 0) {
+		char *guid = NULL;
+		int err = errno;
+
+		efi_guid_to_str(&entry->guid, &guid);
+		errno = err;
+		efi_error("efi_set_variable(%s,%s,...)",
+			  guid, entry->name);
+	}
+
+	return rc;
+}
+
 static int
 set_active_state(const char *prefix)
 {
-	list_t *pos;
 	var_entry_t *entry;
-	efi_load_option *load_option;
-	int rc;
 
-	list_for_each(pos, &entry_list) {
-		entry = list_entry(pos, var_entry_t, list);
-		load_option = (efi_load_option *)entry->data;
-		if (entry->num != opts.num)
-			continue;
-
-		if (opts.active == 1) {
-			if (efi_loadopt_attrs(load_option)
-						& LOAD_OPTION_ACTIVE) {
-				return 0;
-			} else {
-				efi_loadopt_attr_set(load_option,
-							LOAD_OPTION_ACTIVE);
-				rc = efi_set_variable(entry->guid,
-						      entry->name,
-						      entry->data,
-						      entry->data_size,
-						      entry->attributes,
-						      0644);
-				if (rc < 0) {
-					char *guid = NULL;
-					int err = errno;
-					efi_guid_to_str(&entry->guid, &guid);
-					errno = err;
-					efi_error(
-					  "efi_set_variable(%s,%s,...)",
-					  guid, entry->name);
-				}
-				return rc;
-			}
-		} else if (opts.active == 0) {
-			if (!(efi_loadopt_attrs(load_option)
-						& LOAD_OPTION_ACTIVE)) {
-				return 0;
-			} else {
-				efi_loadopt_attr_clear(load_option,
-							LOAD_OPTION_ACTIVE);
-				rc = efi_set_variable(entry->guid,
-						      entry->name,
-						      entry->data,
-						      entry->data_size,
-						      entry->attributes,
-						      0644);
-				if (rc < 0) {
-					char *guid = NULL;
-					int err = errno;
-					efi_guid_to_str(&entry->guid, &guid);
-					errno = err;
-					efi_error("efi_set_variable(%s,%s,...)",
-						  guid, entry->name);
-				}
-				return rc;
-			}
-		}
+	entry = get_entry(&entry_list, opts.num);
+	if (!entry) {
+		/* if we reach here then the number supplied was not found */
+		warnx("%s entry %x not found", prefix, opts.num);
+		errno = ENOENT;
+		return -1;
 	}
-	/* if we reach here then the number supplied was not found */
-	warnx("%s entry %x not found", prefix, opts.num);
-	errno = ENOENT;
-	return -1;
+
+	return update_entry_attr(entry, LOAD_OPTION_ACTIVE, opts.active);
 }
 
 static int
