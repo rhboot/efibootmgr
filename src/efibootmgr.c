@@ -1355,14 +1355,13 @@ usage()
 	printf("\t-b | --bootnum XXXX   modify BootXXXX (hex)\n");
 	printf("\t-B | --delete-bootnum delete bootnum\n");
 	printf("\t-c | --create         create new variable bootnum and add to bootorder\n");
-	printf("\t-C | --create-only	create new variable bootnum and do not add to bootorder\n");
-	printf("\t-D | --remove-dups	remove duplicate values from BootOrder\n");
-	printf("\t-d | --disk disk       (defaults to /dev/sda) containing loader\n");
-	printf("\t-r | --driver         Operate on Driver variables, not Boot Variables\n");
+	printf("\t-C | --create-only    create new variable bootnum and do not add to bootorder\n");
+	printf("\t-d | --disk disk      Disk containing boot loader (defaults to /dev/sda)\n");
+	printf("\t-D | --remove-dups    remove duplicate values from BootOrder\n");
+	printf("\t-e | --edd [1|3|-1]   force EDD 1.0 or 3.0 creation variables, or guess (deprecated)\n");
+	printf("\t-E | --device num     EDD 1.0 device number (defaults to 0x80)\n");
 	printf("\t-f | --reconnect      Re-connect devices after driver is loaded\n");
 	printf("\t-F | --no-reconnect   Do not re-connect devices after driver is loaded\n");
-	printf("\t-e | --edd [1|3|-1]   force EDD 1.0 or 3.0 creation variables, or guess\n");
-	printf("\t-E | --device num      EDD 1.0 device number (defaults to 0x80)\n");
 	printf("\t-g | --gpt            force disk with invalid PMBR to be treated as GPT\n");
 	printf("\t-i | --iface name     create a netboot entry for the named interface\n");
 #if 0
@@ -1383,6 +1382,7 @@ usage()
 	printf("\t-O | --delete-bootorder delete BootOrder\n");
 	printf("\t-p | --part part        partition containing loader (defaults to 1 on partitioned devices)\n");
 	printf("\t-q | --quiet            be quiet\n");
+	printf("\t-r | --driver           Operate on Driver variables, not Boot Variables\n");
 	printf("\t-t | --timeout seconds  set boot manager timeout waiting for user input.\n");
 	printf("\t-T | --delete-timeout   delete Timeout.\n");
 	printf("\t-u | --unicode | --UCS-2  handle extra args as UCS-2 (default is ASCII)\n");
@@ -1430,14 +1430,14 @@ parse_opts(int argc, char **argv)
 			{"delete-bootnum",         no_argument, 0, 'B'},
 			{"create",                 no_argument, 0, 'c'},
 			{"create-only",            no_argument, 0, 'C'},
-			{"remove-dups",            no_argument, 0, 'D'},
 			{"disk",             required_argument, 0, 'd'},
-			{"iface",            required_argument, 0, 'i'},
-			{"edd-device",       required_argument, 0, 'E'},
+			{"remove-dups",            no_argument, 0, 'D'},
 			{"edd30",            required_argument, 0, 'e'},
+			{"edd-device",       required_argument, 0, 'E'},
 			{"reconnect",              no_argument, 0, 'f'},
 			{"no-reconnect",           no_argument, 0, 'F'},
 			{"gpt",                    no_argument, 0, 'g'},
+			{"iface",            required_argument, 0, 'i'},
 			{"keep",                   no_argument, 0, 'k'},
 			{"loader",           required_argument, 0, 'l'},
 			{"label",            required_argument, 0, 'L'},
@@ -1449,6 +1449,7 @@ parse_opts(int argc, char **argv)
 			{"delete-bootorder",       no_argument, 0, 'O'},
 			{"part",             required_argument, 0, 'p'},
 			{"quiet",                  no_argument, 0, 'q'},
+			{"driver",                 no_argument, 0, 'r'},
 			{"timeout",          required_argument, 0, 't'},
 			{"delete-timeout",         no_argument, 0, 'T'},
 			{"unicode",                no_argument, 0, 'u'},
@@ -1457,7 +1458,6 @@ parse_opts(int argc, char **argv)
 			{"version",                no_argument, 0, 'V'},
 			{"write-signature",        no_argument, 0, 'w'},
 			{"append-binary-args", required_argument, 0, '@'},
-			{"driver",                 no_argument, 0, 'r'},
 			{"sysprep",                no_argument, 0, 'y'},
 			{"help",                   no_argument, 0, 'h'},
 			{0, 0, 0, 0}
