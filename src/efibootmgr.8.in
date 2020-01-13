@@ -1,10 +1,10 @@
 .TH "EFIBOOTMGR" "8" "26 December 2017" "" ""
 
 .SH NAME
-efibootmgr \- manipulate the UEFI Boot Manager
+efibootmgr \- change the UEFI Boot Manager configuration
 .SH SYNOPSIS
 
-\fBefibootmgr\fR [ \fB-a\fR ] [ \fB-A\fR ] [ \fB-b \fIXXXX\fB\fR ] [ \fB-r\fR | \fB-y\fR ] [ \fB-B\fR ] [ \fB-c\fR ] [ \fB-d \fIDISK\fB\fR ] [ \fB-D\fR ] [ \fB-e \fI1|3|-1\fB\fR ] [ \fB-E \fINUM\fB\fR ] [ \fB-f\fR ] [ \fB-F\fR ] [ \fB-g\fR ] [ \fB-i \fINAME\fB\fR ] [ \fB-l \fINAME\fB\fR ] [ \fB-L \fILABEL\fB\fR ] [ \fB-m \fIt|f\fB\fR ] [ \fB-M \fIX\fB\fR ] [ \fB-n \fIXXXX\fB\fR ] [ \fB-N\fR ] [ \fB-o \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR\fI ...\fR ] [ \fB-O\fR ] [ \fB-p \fIPART\fB\fR ] [ \fB-q\fR ] [ \fB-t \fIseconds\fB\fR ] [ \fB-T\fR ] [ \fB-u\fR ] [ \fB-v\fR ] [ \fB-V\fR ] [ \fB-w\fR ] [ \fB-@ \fIfile\fB\fR ]
+\fBefibootmgr\fR [ \fB-a\fR ] [ \fB-A\fR ] [ \fB-b \fIXXXX\fB\fR ] [ \fB-r\fR | \fB-y\fR ] [ \fB-B\fR ] [ \fB-c\fR ] [ \fB-d \fIDISK\fB\fR ] [ \fB-D\fR ] [ \fB-e \fI1|3|-1\fB\fR ] [ \fB-E \fINUM\fB\fR ] [ \fB--full-dev-path\fR | \fB--file-dev-path\fR ] [ \fB-f\fR ] [ \fB-F\fR ] [ \fB-g\fR ] [ \fB-i \fINAME\fB\fR ] [ \fB-l \fINAME\fB\fR ] [ \fB-L \fILABEL\fB\fR ] [ \fB-m \fIt|f\fB\fR ] [ \fB-M \fIX\fB\fR ] [ \fB-n \fIXXXX\fB\fR ] [ \fB-N\fR ] [ \fB-o \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR\fI ...\fR ] [ \fB-O\fR ] [ \fB-p \fIPART\fB\fR ] [ \fB-q\fR ] [ \fB-t \fIseconds\fB\fR ] [ \fB-T\fR ] [ \fB-u\fR ] [ \fB-v\fR ] [ \fB-V\fR ] [ \fB-w\fR ] [ \fB-@ \fIfile\fB\fR ]
 
 .SH "DESCRIPTION"
 .PP
@@ -47,14 +47,38 @@ The disk containing the loader (defaults to
 \fB-D | --remove-dups\fR
 Remove duplicated entries from BootOrder
 .TP
-\fB-e | --edd30 \fI1|3|-1\fB\fR
-Force EDD 1.0 or 3.0 creation variables, or guess.
+\fB-e | --edd \fI1|3\fB\fR
+Force EDD 1.0 or 3.0 creation variables.
+
+Use \fB-e 1\fR together with \fB-E\fR if you are using a very old system which
+uses UEFI to boot, but requires legacy CSM (BIOS) device drivers for storage
+devices.
+
+\fB-e 3\fR is now deprecated, and is an alias for \fB--full-dev-path\fR.
 .TP
 \fB-E | --edd-device \fINUM\fB\fR
-EDD 1.0 device number (defaults to 0x80)
+EDD 1.0 device number (defaults to 0x80).  See \fB--edd\fR.
+.TP
+\fB--full-dev-path\fR
+Force creation of boot entries use a full UEFI device path, starting at the
+PCIe root or equivalent on the current platform.  The default is to use a hard
+disk based HD() abbreviated path.
+
+You shouldn't need to use this option unless the system firmware won't boot off
+of your device using an abbreviated HD() device path.
+
+Note that forcing a full path will fail if we don't know what the system device
+root is, how the specified device is connected to it, or how to encode any one
+of those.
+.TP
+\fB--file-dev-path\fR
+Force creation of boot entries use an abbreviated UEFI device path which starts
+with the File() portion of the path.  The default is to use a hard disk based
+HD() abbreviated path.
 .TP
 \fB-f | --reconnect \fR
 Re-connect devices after driver is loaded.  Only applicable for driver entries.
+.TP
 \fB-F | --do-not-reconnect \fR
 Do not reconnect devices after driver is loaded.  Only applicable for driver entries.
 .TP

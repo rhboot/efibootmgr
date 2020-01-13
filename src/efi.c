@@ -273,39 +273,28 @@ err_needed:
 #endif
 
 static int
-get_edd_version(void)
+get_path_options(void)
 {
-	efi_guid_t guid = BLKX_UNKNOWN_GUID;
-	uint8_t *data = NULL;
-	size_t data_size = 0;
-	uint32_t attributes;
-	efidp_header *path;
-	int rc = 0;
-
-	/* Allow global user option override */
-
-	switch (opts.edd_version)
+	switch (opts.abbreviate_path)
 	{
-	case 0: /* No EDD information */
-		return 0;
-	case 1: /* EDD 1.0 */
-		return 1;
-	case 3: /* EDD 3.0 */
-		return 3;
+	case EFIBOOTMGR_PATH_ABBREV_EDD10:
+		/* EDD 1.0 */
+		return EFIBOOT_ABBREV_EDD10;
+	case EFIBOOTMGR_PATH_ABBREV_NONE:
+		/* EDD 3.0+, which we actually just ignore, because we don't
+		 * actually *have* edd, and can't actually derive a path from
+		 * anything. */
+		return EFIBOOT_ABBREV_NONE;
+	case EFIBOOTMGR_PATH_ABBREV_FILE:
+		/* Abbreviate to a file path */
+		return EFIBOOT_ABBREV_FILE;
+	case EFIBOOTMGR_PATH_ABBREV_UNSPECIFIED:
+	case EFIBOOTMGR_PATH_ABBREV_HD:
 	default:
-		break;
+		/* Abbreviate to an HD path */
+		return EFIBOOT_ABBREV_HD;
 	}
-
-	rc = efi_get_variable(guid, "blk0", &data, &data_size, &attributes);
-	if (rc < 0)
-		return rc;
-
-	path = (efidp_header *)data;
-	if (path->type == 2 && path->subtype == 1)
-		return 3;
-	return 1;
 }
-
 
 /**
  * make_linux_load_option()
@@ -364,23 +353,9 @@ make_linux_load_option(uint8_t **data, size_t *data_size,
 		errno = ENOSYS;
 		return -1;
 	} else {
-		uint32_t options = EFIBOOT_ABBREV_HD;
-		int edd;
+		uint32_t options;
 
-		/* there's really no telling if this is even the right disk,
-		 * but... I also never see blk0 exported to runtime on any
-		 * hardware, so it probably only happens on some old itanium
-		 * box from the beginning of time anyway. */
-		edd = get_edd_version();
-
-		switch (edd) {
-		case 1:
-			options = EFIBOOT_ABBREV_EDD10;
-			break;
-		case 3:
-			options = EFIBOOT_ABBREV_NONE;
-			break;
-		}
+		options = get_path_options();
 
 		needed = efi_generate_file_device_path_from_esp(NULL, 0,
 						opts.disk, opts.part,

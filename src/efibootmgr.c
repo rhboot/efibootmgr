@@ -1358,8 +1358,10 @@ usage()
 	printf("\t-C | --create-only    create new variable bootnum and do not add to bootorder\n");
 	printf("\t-d | --disk disk      Disk containing boot loader (defaults to /dev/sda)\n");
 	printf("\t-D | --remove-dups    remove duplicate values from BootOrder\n");
-	printf("\t-e | --edd [1|3|-1]   force EDD 1.0 or 3.0 creation variables, or guess (deprecated)\n");
+	printf("\t-e | --edd [1|3]      force boot entries to be created using EDD 1.0 or 3.0 info\n");
 	printf("\t-E | --device num     EDD 1.0 device number (defaults to 0x80)\n");
+	printf("\t     --full-dev-path  Use a full device path\n");
+	printf("\t     --file-dev-path  Use an abbreviated File() device path\n");
 	printf("\t-f | --reconnect      Re-connect devices after driver is loaded\n");
 	printf("\t-F | --no-reconnect   Do not re-connect devices after driver is loaded\n");
 	printf("\t-g | --gpt            force disk with invalid PMBR to be treated as GPT\n");
@@ -1431,9 +1433,11 @@ parse_opts(int argc, char **argv)
 			{"create",                 no_argument, 0, 'c'},
 			{"create-only",            no_argument, 0, 'C'},
 			{"disk",             required_argument, 0, 'd'},
-			{"remove-dups",            no_argument, 0, 'D'},
+			{"edd",              required_argument, 0, 'e'},
 			{"edd30",            required_argument, 0, 'e'},
 			{"edd-device",       required_argument, 0, 'E'},
+			{"full-dev-path",          no_argument, 0, 0},
+			{"file-dev-path",          no_argument, 0, 0},
 			{"reconnect",              no_argument, 0, 'f'},
 			{"no-reconnect",           no_argument, 0, 'F'},
 			{"gpt",                    no_argument, 0, 'g'},
@@ -1520,15 +1524,19 @@ parse_opts(int argc, char **argv)
 			break;
 		case 'e':
 			rc = sscanf(optarg, "%d", &snum);
-			if (rc == 1)
-				opts.edd_version = snum;
-			else
+			if (rc != 1)
 				errorx(30, "invalid numeric value %s\n",
 				       optarg);
-			if (snum == -1)
-				snum = 0;
-			if (snum != 0 && snum != 1 && snum != 3)
+
+			if (snum != EFIBOOTMGR_PATH_ABBREV_EDD10 &&
+			    snum != EFIBOOTMGR_PATH_ABBREV_NONE)
 				errorx(31, "invalid EDD version %d\n", snum);
+
+			if (opts.abbreviate_path != EFIBOOTMGR_PATH_ABBREV_UNSPECIFIED &&
+			    opts.abbreviate_path != snum)
+				errx(41, "contradicting --full-device-path/--file-device-path/-e options");
+
+			opts.abbreviate_path = snum;
 			break;
 		case 'E':
 			rc = sscanf(optarg, "%x", &num);
@@ -1679,8 +1687,20 @@ parse_opts(int argc, char **argv)
 			break;
 
 		default:
-			usage();
-			exit(1);
+			if (!strcmp(long_options[option_index].name, "full-dev-path")) {
+				if (opts.abbreviate_path != EFIBOOTMGR_PATH_ABBREV_UNSPECIFIED &&
+				    opts.abbreviate_path != EFIBOOTMGR_PATH_ABBREV_NONE)
+					errx(41, "contradicting --full-dev-path/--file-dev-path/-e options");
+				opts.abbreviate_path = EFIBOOTMGR_PATH_ABBREV_NONE;
+			} else if (!strcmp(long_options[option_index].name, "file-dev-path")) {
+				if (opts.abbreviate_path != EFIBOOTMGR_PATH_ABBREV_UNSPECIFIED &&
+				    opts.abbreviate_path != EFIBOOTMGR_PATH_ABBREV_FILE)
+					errx(41, "contradicting --full-dev-path/--file-dev-path/-e options");
+				opts.abbreviate_path = EFIBOOTMGR_PATH_ABBREV_FILE;
+			} else {
+				usage();
+				exit(1);
+			}
 		}
 	}
 
