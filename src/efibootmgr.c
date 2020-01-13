@@ -1217,7 +1217,7 @@ set_force_reconnect(const char *prefix)
 	}
 
 	return update_entry_attr(entry, LOAD_OPTION_FORCE_RECONNECT,
-				 opts.reconnect);
+				 opts.reconnect > 0);
 }
 
 static int
@@ -1738,7 +1738,7 @@ main(int argc, char **argv)
 			mode = driver;
 	}
 
-	if (opts.reconnect && !opts.driver)
+	if (opts.reconnect > 0 && !opts.driver)
 		errorx(30, "--reconnect is supported only for driver entries.");
 
 	if (!efi_variables_supported())

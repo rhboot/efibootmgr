@@ -320,7 +320,7 @@ make_linux_load_option(uint8_t **data, size_t *data_size,
 {
 	ssize_t needed;
 	uint32_t attributes = opts.active ? LOAD_OPTION_ACTIVE : 0
-			    | opts.reconnect ? LOAD_OPTION_FORCE_RECONNECT : 0;
+			    | (opts.reconnect > 0 ? LOAD_OPTION_FORCE_RECONNECT : 0);
 	int saved_errno;
 	efidp dp = NULL;
 
