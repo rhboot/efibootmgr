@@ -28,6 +28,6 @@ LOCAL_CFLAGS := \
 LOCAL_SRC_FILES := \
 	efi.c \
 	efibootmgr.c \
-	unparse_path.c
+	parse_loader_data.c
 
 include $(BUILD_EXECUTABLE)
