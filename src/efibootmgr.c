@@ -1839,7 +1839,8 @@ main(int argc, char **argv)
 	if (opts.deduplicate) {
 		ret = remove_dupes_from_order(order_name[mode]);
 		if (ret)
-			error(9, "Could not set %s", order_name[mode]);
+			error(9, "Could not remove duplicates from %s order",
+			      order_name[mode]);
 	}
 
 	if (opts.delete_bootnext) {
