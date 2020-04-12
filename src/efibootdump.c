@@ -68,8 +68,7 @@ print_boot_entry(efi_load_option *loadopt, size_t data_size)
 	text_path = alloca(text_path_len);
 	if (!text_path)
 		error(100, "Couldn't allocate memory");
-	rc = efidp_format_device_path((unsigned char *)text_path,
-				      text_path_len, dp, pathlen);
+	rc = efidp_format_device_path(text_path, text_path_len, dp, pathlen);
 	if (rc < 0) {
 		printf("<bad device path>");
 		return;
