@@ -93,6 +93,7 @@ typedef struct {
 	unsigned int no_order:1;
 	unsigned int driver:1;
 	unsigned int sysprep:1;
+	unsigned int explicit_label:1;
 	short int timeout;
 } efibootmgr_opt_t;
 

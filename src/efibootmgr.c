@@ -621,6 +621,38 @@ delete_var(const char *prefix, uint16_t num)
 	return 0;
 }
 
+static int
+delete_label(const char *prefix, const unsigned char *label)
+{
+	list_t *pos;
+	var_entry_t *boot;
+	int num_deleted=0;
+	int rc;
+	efi_load_option *load_option;
+	const unsigned char *desc;
+
+	list_for_each(pos, &entry_list) {
+		boot = list_entry(pos, var_entry_t, list);
+		load_option = (efi_load_option *)boot->data;
+		desc = efi_loadopt_desc(load_option, boot->data_size);
+
+		if (strcmp((char*)desc,(char*)label)==0) {
+			rc = delete_var(prefix,boot->num);
+			if (rc <0) {
+				efi_error("Could not delete %s%04x", prefix, boot->num);
+				return rc;
+			} else
+				num_deleted++;
+		}
+	}
+
+	if (num_deleted == 0){
+		efi_error("Could not delete %s",label);
+		return -1;
+	} else
+		return 0;
+}
+
 static void
 set_var_nums(const char *prefix, list_t *list)
 {
@@ -1573,6 +1605,8 @@ parse_opts(int argc, char **argv)
 			break;
 		case 'L':
 			opts.label = (unsigned char *)optarg;
+			opts.explicit_label = 1;
+
 			break;
 		case 'm':
 			opts.set_mirror_lo = 1;
@@ -1770,13 +1804,19 @@ main(int argc, char **argv)
 	set_var_nums(prefices[mode], &entry_list);
 
 	if (opts.delete) {
-		if (opts.num == -1)
+		if (opts.num == -1 && opts.explicit_label == 0)
 			errorx(3, "You must specify an entry to delete "
-				"(see the -b option).");
+				"(see the -b option or -L option).");
 		else {
-			ret = delete_var(prefices[mode], opts.num);
-			if (ret < 0)
-				error(15, "Could not delete variable");
+			if (opts.num != -1){
+				ret = delete_var(prefices[mode], opts.num);
+				if (ret < 0)
+					error(15, "Could not delete variable");
+			} else {
+				ret = delete_label(prefices[mode], opts.label);
+				if (ret < 0)
+					errorx(15, "Could not delete variable");
+			}
 		}
 	}
 
