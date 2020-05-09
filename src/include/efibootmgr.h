@@ -94,6 +94,7 @@ typedef struct {
 	unsigned int driver:1;
 	unsigned int sysprep:1;
 	short int timeout;
+	int at_index;
 } efibootmgr_opt_t;
 
 extern efibootmgr_opt_t opts;

@@ -23,11 +23,14 @@ usage: efibootmgr [options]
         -F | --no-reconnect    Do not re-connect devices after driver is loaded
         -g | --gpt             force disk w/ invalid PMBR to be treated as GPT
         -i | --iface name      create a netboot entry for the named interface
+        -I | --at-index        place BootOrder entry at specified index
         -l | --loader name     (defaults to \elilo.efi)
         -L | --label label     Boot manager display label (defaults to "Linux")
         -n | --bootnext XXXX   set BootNext to XXXX (hex)
         -N | --delete-bootnext delete BootNext
         -o | --bootorder XXXX,YYYY,ZZZZ,...     explicitly set BootOrder (hex)
+        -o | --bootorder +XXXX    add specified entry to BootOrder or move it
+        -o | --bootorder -XXXX    remove specified entry from BootOrder
         -O | --delete-bootorder   delete BootOrder
         -p | --part part          (defaults to 1) containing loader
         -q | --quiet              be quiet

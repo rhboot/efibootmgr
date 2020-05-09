@@ -4,7 +4,7 @@
 efibootmgr \- change the UEFI Boot Manager configuration
 .SH SYNOPSIS
 
-\fBefibootmgr\fR [ \fB-a\fR ] [ \fB-A\fR ] [ \fB-b \fIXXXX\fB\fR ] [ \fB-r\fR | \fB-y\fR ] [ \fB-B\fR ] [ \fB-c\fR ] [ \fB-d \fIDISK\fB\fR ] [ \fB-D\fR ] [ \fB-e \fI1|3|-1\fB\fR ] [ \fB-E \fINUM\fB\fR ] [ \fB--full-dev-path\fR | \fB--file-dev-path\fR ] [ \fB-f\fR ] [ \fB-F\fR ] [ \fB-g\fR ] [ \fB-i \fINAME\fB\fR ] [ \fB-l \fINAME\fB\fR ] [ \fB-L \fILABEL\fB\fR ] [ \fB-m \fIt|f\fB\fR ] [ \fB-M \fIX\fB\fR ] [ \fB-n \fIXXXX\fB\fR ] [ \fB-N\fR ] [ \fB-o \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR\fI ...\fR ] [ \fB-O\fR ] [ \fB-p \fIPART\fB\fR ] [ \fB-q\fR ] [ \fB-t \fIseconds\fB\fR ] [ \fB-T\fR ] [ \fB-u\fR ] [ \fB-v\fR ] [ \fB-V\fR ] [ \fB-w\fR ] [ \fB-@ \fIfile\fB\fR ]
+\fBefibootmgr\fR [ \fB-a\fR ] [ \fB-A\fR ] [ \fB-b \fIXXXX\fB\fR ] [ \fB-r\fR | \fB-y\fR ] [ \fB-B\fR ] [ \fB-c\fR ] [ \fB-d \fIDISK\fB\fR ] [ \fB-D\fR ] [ \fB-e \fI1|3|-1\fB\fR ] [ \fB-E \fINUM\fB\fR ] [ \fB--full-dev-path\fR | \fB--file-dev-path\fR ] [ \fB-f\fR ] [ \fB-F\fR ] [ \fB-g\fR ] [ \fB-i \fINAME\fB\fR ] [ \fB-l \fINAME\fB\fR ] [ \fB-L \fILABEL\fB\fR ] [ \fB-m \fIt|f\fB\fR ] [ \fB-M \fIX\fB\fR ] [ \fB-n \fIXXXX\fB\fR ] [ \fB-N\fR ] [ \fB-o \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR\fI ...\fR ] [ \fB-o \fI+XXXX\fB\fR ] [ \fB-o \fI-XXXX\fB\fR ] [ \fB-O\fR ] [ \fB-p \fIPART\fB\fR ] [ \fB-q\fR ] [ \fB-t \fIseconds\fB\fR ] [ \fB-T\fR ] [ \fB-u\fR ] [ \fB-v\fR ] [ \fB-V\fR ] [ \fB-w\fR ] [ \fB-@ \fIfile\fB\fR ]
 
 .SH "DESCRIPTION"
 .PP
@@ -88,6 +88,10 @@ Force disk with invalid PMBR to be treated as GPT
 \fB-i | --iface \fINAME\fB\fR
 create a netboot entry for the named interface
 .TP
+\fB-I | --at-index \fIINDEX\fB\fR
+Place entry in BootOrder at specified index. 1 is beginning. If set to greater than number of entries in BootOrder, it will be placed last. (Defaults to 1)
+Used with the -c and -o options
+.TP
 \fB-l | --loader \fINAME\fB\fR
 Specify a loader (defaults to \fI@@DEFAULT_LOADER@@\fR)
 .TP
@@ -108,6 +112,14 @@ Delete BootNext
 .TP
 \fB-o | --bootorder \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR
 Explicitly set BootOrder (hex). Any value from 0 to FFFF is accepted so long as it corresponds to an existing Boot#### variable, and zero padding is not required.
+.TP
+\fB-o | --bootorder \fI+XXXX\fB\fR
+Add Boot#### variable to BootOrder. Any value from 0 to FFFF is accepted so long as it corresponds to an existing Boot#### variable, and zero padding is not required.
+By default the new entry will be placed as the first BootOrder Entry, unless overridden with the -I option. If XXXX already appears in the BootOrder it is moved to
+the new location.
+.TP
+\fB-o | --bootorder \fI-XXXX\fB\fR
+Remove Boot#### variable to BootOrder. Any value from 0 to FFFF is accepted so long as it corresponds to an existing Boot#### variable, and zero padding is not required.
 .TP
 \fB-O | --delete-bootorder\fR
 Delete BootOrder
@@ -205,6 +217,18 @@ behavior. The default OS Loader is \fI@@DEFAULT_LOADER@@\fR\&.
 Assuming the configuration in the first example,
 \fBefibootmgr -o 3,4\fR could be called to specify
 PXE boot first, then Linux boot.
+.SS "Removing from the boot order"
+Assuming the configuration in the first example,
+\fBefibootmgr -o -4\fR could be called to remove
+Linux boot from the BootOrder
+.SS "Adding to the boot order"
+Assuming the configuration in the first example, with Linux boot removed,
+\fBefibootmgr -o +4 -I 2\fR could be called to add it back and
+place it second in the BootOrder
+.SS "Modifying the boot order"
+Assuming the configuration in the first example,
+\fBefibootmgr -o +4 -I 5\fR could be called move the Linux Boot
+to the end of the BootOrder
 .SS "Changing the boot order for the next boot only"
 Assuming the configuration in the first example,
 \fBefibootmgr -n 4\fR could be called to specify
@@ -213,6 +237,7 @@ that the Linux entry be taken on next boot.
 Assuming the configuration in the first example,
 \fBefibootmgr -b 4 -B\fR could be called to delete
 entry 4 and remove it from the BootOrder.
+
 .SS "Creating network boot entries"
 A system administrator wants to create a boot option to network
 boot. You create the boot entry with:

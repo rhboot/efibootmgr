@@ -395,7 +395,7 @@ set_u16(const char *name, uint16_t num)
 }
 
 static int
-add_to_order(const char *name, uint16_t num)
+add_to_order(const char *name, uint16_t num, int index)
 {
 	var_entry_t *order = NULL;
 	uint64_t new_data_size;
@@ -418,8 +418,14 @@ add_to_order(const char *name, uint16_t num)
 	if (!new_data)
 		return -1;
 
-	new_data[0] = num;
-	memcpy(new_data+1, old_data, order->data_size);
+	if (index < 0)
+            index=0;
+	if ((uint64_t)index > order->data_size / sizeof(uint16_t))
+		index = order->data_size / sizeof(uint16_t);
+	memcpy(new_data, old_data, index * sizeof(uint16_t));
+	memcpy(&new_data[index+1], &old_data[index], order->data_size - index * sizeof(uint16_t));
+
+	new_data[index] = num;
 
 	/* Now new_data has what we need */
 	free(order->data);
@@ -1366,6 +1372,7 @@ usage()
 	printf("\t-F | --no-reconnect   Do not re-connect devices after driver is loaded\n");
 	printf("\t-g | --gpt            force disk with invalid PMBR to be treated as GPT\n");
 	printf("\t-i | --iface name     create a netboot entry for the named interface\n");
+	printf("\t-I | --at-index num   place entry at index in BootOrder\n");
 #if 0
 	printf("\t     --ip-addr <local>,<remote>	set local and remote IP addresses\n");
 	printf("\t     --ip-gateway <gateway>	set the network gateway\n");
@@ -1381,6 +1388,8 @@ usage()
 	printf("\t-n | --bootnext XXXX   set BootNext to XXXX (hex)\n");
 	printf("\t-N | --delete-bootnext delete BootNext\n");
 	printf("\t-o | --bootorder XXXX,YYYY,ZZZZ,...     explicitly set BootOrder (hex)\n");
+	printf("\t-o | --bootorder +XXXX                  add XXXX (hex) to BootOrder\n");
+	printf("\t-o | --bootorder -XXXX                  remove XXXX (hex) from BootOrder\n");
 	printf("\t-O | --delete-bootorder delete BootOrder\n");
 	printf("\t-p | --part part        partition containing loader (defaults to 1 on partitioned devices)\n");
 	printf("\t-q | --quiet            be quiet\n");
@@ -1442,6 +1451,7 @@ parse_opts(int argc, char **argv)
 			{"no-reconnect",           no_argument, 0, 'F'},
 			{"gpt",                    no_argument, 0, 'g'},
 			{"iface",            required_argument, 0, 'i'},
+			{"at-index",         required_argument, 0, 'I'},
 			{"keep",                   no_argument, 0, 'k'},
 			{"loader",           required_argument, 0, 'l'},
 			{"label",            required_argument, 0, 'L'},
@@ -1468,7 +1478,7 @@ parse_opts(int argc, char **argv)
 		};
 
 		c = getopt_long (argc, argv,
-				 "AaBb:cCDd:e:E:fFgH:i:l:L:M:m:n:No:Op:qt:TuU:v::Vw"
+				 "AaBb:cCDd:e:E:fFgH:i:I:l:L:M:m:n:No:Op:qt:TuU:v::Vw"
 				 "@:hry",
 				 long_options, &option_index);
 		if (c == -1)
@@ -1565,6 +1575,24 @@ parse_opts(int argc, char **argv)
 			opts.ip_version = EFIBOOTMGR_IPV4;
 			opts.ip_addr_origin = EFIBOOTMGR_IPV4_ORIGIN_DHCP;
 			break;
+		case 'I': {
+			char *endptr = NULL;
+			unsigned long result;
+
+			result = strtoul(optarg, &endptr, 16);
+			if ((result == ULONG_MAX && errno == ERANGE) ||
+					(endptr && *endptr != '\0')) {
+				off_t offset = (intptr_t)endptr
+					       - (intptr_t)optarg;
+				print_error_arrow(optarg, offset,
+						  "Invalid bootorder index value");
+				conditional_error_reporter(opts.verbose >= 1,
+							   1);
+				exit(28);
+			}
+			opts.at_index = result;
+			break;
+		}
 		case 'k':
 			opts.keep_old_entries = 1;
 			break;
@@ -1806,6 +1834,10 @@ main(int argc, char **argv)
 		}
 	}
 
+	if ((opts.at_index && !opts.create && !opts.order) || opts.no_order) {
+		errorx(3, "-I option must be used with -c option or -o option ");
+	}
+
 	if (opts.create) {
 		warn_duplicate_name(&entry_list);
 		new_entry = make_var(prefices[mode], &entry_list);
@@ -1815,7 +1847,7 @@ main(int argc, char **argv)
 
 		/* Put this boot var in the right Order variable */
 		if (new_entry && !opts.no_order) {
-			ret = add_to_order(order_name[mode], new_entry->num);
+			ret = add_to_order(order_name[mode], new_entry->num, opts.at_index-1);
 			if (ret < 0)
 				error(6, "Could not add entry to %s",
 				      order_name[mode]);
@@ -1830,8 +1862,34 @@ main(int argc, char **argv)
 	}
 
 	if (opts.order) {
-		ret = set_order(order_name[mode], prefices[mode],
-				opts.keep_old_entries);
+		if (strlen(opts.order)> 1 && (opts.order[0] == '-' || opts.order[0] == '+')) {
+			char *endptr = NULL;
+			unsigned long result;
+			result = strtoul(opts.order+1, &endptr, 16);
+			if ((result == ULONG_MAX && errno == ERANGE) ||
+					(endptr && *endptr != '\0')) {
+				off_t offset = (intptr_t)endptr
+					       - (intptr_t)optarg;
+				print_error_arrow(optarg, offset,
+						  "Invalid bootnum value");
+				conditional_error_reporter(opts.verbose >= 1,
+							   1);
+				exit(28);
+			}
+			if (result > 0xffff)
+				errorx(29, "Invalid bootnum value: %lX\n",
+					result);
+			if (opts.order[0] == '-')
+				ret = remove_from_order(order_name[mode], result);
+			else if (opts.order[0] == '+') {
+				ret = remove_from_order(order_name[mode], result); /* Ok to not exit */
+				ret = add_to_order(order_name[mode],result,opts.at_index-1);
+			}
+		} else {
+			ret = set_order(order_name[mode], prefices[mode],
+			opts.keep_old_entries);
+		}
+
 		if (ret < 0)
 			error(8, "Could not set %s", order_name[mode]);
 	}
