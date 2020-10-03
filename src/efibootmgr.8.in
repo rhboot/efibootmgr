@@ -116,7 +116,7 @@ Delete BootOrder
 Partition number containing the bootloader (defaults to 1)
 .TP
 \fB-q | --quiet\fR
-Quiet mode - supresses output.
+Quiet mode - suppresses output.
 .TP
 \fB-r | --driver\fR
 Operate on Driver#### variables instead of Boot#### variables.
