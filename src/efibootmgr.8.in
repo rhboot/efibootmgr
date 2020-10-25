@@ -26,26 +26,26 @@ non-volatile variables through
 The following is a list of options accepted by efibootmgr:
 .TP
 \fB-a | --active\fR
-Sets bootnum active
+Sets bootnum active.
 .TP
 \fB-A | --inactive\fR
-Sets bootnum inactive
+Sets bootnum inactive.
 .TP
 \fB-b | --bootnum \fIXXXX\fB\fR
-Modify Boot\fIXXXX\fR (hex)
+Modify Boot\fIXXXX\fR (hex).
 .TP
 \fB-B | --delete-bootnum\fR
-Delete bootnum
+Delete bootnum.
 .TP
 \fB-c | --create\fR
-Create new variable bootnum and add to bootorder
+Create new variable bootnum and add to bootorder.
 .TP
 \fB-d | --disk \fIDISK\fB\fR
 The disk containing the loader (defaults to
-\fI/dev/sda\fR)
+\fI/dev/sda\fR).
 .TP
 \fB-D | --remove-dups\fR
-Remove duplicated entries from BootOrder
+Remove duplicated entries from BootOrder.
 .TP
 \fB-e | --edd \fI1|3\fB\fR
 Force EDD 1.0 or 3.0 creation variables.
@@ -83,37 +83,37 @@ Re-connect devices after driver is loaded.  Only applicable for driver entries.
 Do not reconnect devices after driver is loaded.  Only applicable for driver entries.
 .TP
 \fB-g | --gpt\fR
-Force disk with invalid PMBR to be treated as GPT
+Force disk with invalid PMBR to be treated as GPT.
 .TP
 \fB-i | --iface \fINAME\fB\fR
-create a netboot entry for the named interface
+Create a netboot entry for the named interface.
 .TP
 \fB-l | --loader \fINAME\fB\fR
-Specify a loader (defaults to \fI@@DEFAULT_LOADER@@\fR)
+Specify a loader (defaults to \fI@@DEFAULT_LOADER@@\fR).
 .TP
 \fB-L | --label \fILABEL\fB\fR
-Boot manager display label (defaults to "Linux")
+Boot manager display label (defaults to "Linux").
 .TP
 \fB-m | --mirror-below-4G \fIt|f\fB\fR
-Set t if you want to mirror memory below 4GB
+Set t if you want to mirror memory below 4GB.
 .TP
 \fB-M | --mirror-above-4G \fIX\fB\fR
 X percentage memory to mirror above 4GB. Floating-point value with up to 2 decimal places is accepted.
 .TP
 \fB-n | --bootnext \fIXXXX\fB\fR
-Set BootNext to XXXX (hex)
+Set BootNext to XXXX (hex).
 .TP
 \fB-N | --delete-bootnext\fR
-Delete BootNext
+Delete BootNext.
 .TP
 \fB-o | --bootorder \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR
 Explicitly set BootOrder (hex). Any value from 0 to FFFF is accepted so long as it corresponds to an existing Boot#### variable, and zero padding is not required.
 .TP
 \fB-O | --delete-bootorder\fR
-Delete BootOrder
+Delete BootOrder.
 .TP
 \fB-p | --part \fIPART\fB\fR
-Partition number containing the bootloader (defaults to 1)
+Partition number containing the bootloader (defaults to 1).
 .TP
 \fB-q | --quiet\fR
 Quiet mode - supresses output.
@@ -129,22 +129,22 @@ Delete Timeout variable.
 .TP
 \fB-u | --unicode | --UCS-2 \fR
 Handle extra command line arguments as UCS-2 (default is
-ASCII)
+ASCII).
 .TP
 \fB-v | --verbose\fR
-Verbose mode - prints additional information
+Verbose mode - prints additional information.
 .TP
 \fB-V | --version\fR
 Just print version string and exit.
 .TP
 \fB-w | --write-signature\fR
-write unique signature to the MBR if needed
+Write unique signature to the MBR if needed.
 .TP
 \fB-y | --sysprep\fR
 Operate on SysPrep#### variables instead of Boot#### variables.
 .TP
 \fB-@ | --append-binary-args \fR
-append extra variable args from file (use - to read
+Append extra variable args from file (use - to read
 from stdin). Data in file is appended as command line
 arguments to the boot loader command, with no modification to
 the data, so you can pass any binary or text data necessary.
