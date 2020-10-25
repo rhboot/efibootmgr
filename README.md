@@ -11,33 +11,33 @@ prior to use. Running `modprobe efivars` should do the trick.
 
 ```
 usage: efibootmgr [options]
-        -a | --active          sets bootnum active
-        -A | --inactive        sets bootnum inactive
-        -b | --bootnum XXXX    modify BootXXXX (hex)
-        -B | --delete-bootnum  delete bootnum
-        -c | --create          create new variable bootnum and add to bootorder
-        -d | --disk disk       (defaults to /dev/sda) containing loader
-        -e | --edd [1|3|-1]    force EDD 1.0 or 3.0 creation variables, or guess
+        -a | --active          Sets bootnum active
+        -A | --inactive        Sets bootnum inactive
+        -b | --bootnum XXXX    Modify BootXXXX (hex)
+        -B | --delete-bootnum  Delete bootnum
+        -c | --create          Create new variable bootnum and add to bootorder
+        -d | --disk disk       (Defaults to /dev/sda) containing loader
+        -e | --edd [1|3|-1]    Force EDD 1.0 or 3.0 creation variables, or guess
         -E | --device num      EDD 1.0 device number (defaults to 0x80)
         -f | --reconnect       Re-connect devices after driver is loaded
         -F | --no-reconnect    Do not re-connect devices after driver is loaded
-        -g | --gpt             force disk w/ invalid PMBR to be treated as GPT
-        -i | --iface name      create a netboot entry for the named interface
-        -l | --loader name     (defaults to \elilo.efi)
+        -g | --gpt             Force disk w/ invalid PMBR to be treated as GPT
+        -i | --iface name      Create a netboot entry for the named interface
+        -l | --loader name     (Defaults to \elilo.efi)
         -L | --label label     Boot manager display label (defaults to "Linux")
-        -n | --bootnext XXXX   set BootNext to XXXX (hex)
-        -N | --delete-bootnext delete BootNext
-        -o | --bootorder XXXX,YYYY,ZZZZ,...     explicitly set BootOrder (hex)
-        -O | --delete-bootorder   delete BootOrder
-        -p | --part part          (defaults to 1) containing loader
-        -q | --quiet              be quiet
+        -n | --bootnext XXXX   Set BootNext to XXXX (hex)
+        -N | --delete-bootnext Delete BootNext
+        -o | --bootorder XXXX,YYYY,ZZZZ,...     Explicitly set BootOrder (hex)
+        -O | --delete-bootorder   Delete BootOrder
+        -p | --part part          (Defaults to 1) containing loader
+        -q | --quiet              Be quiet
         -t | --timeout seconds    Boot manager timeout
-        -T | --delete-timeout     delete Timeout value
-        -u | --unicode | --UCS-2  pass extra args as UCS-2 (default is ASCII)
-        -v | --verbose            print additional information
-        -V | --version            return version and exit
-        -w | --write-signature    write unique sig to MBR if needed
-        -@ | --append-binary-args append extra variable args from
+        -T | --delete-timeout     Delete Timeout value
+        -u | --unicode | --UCS-2  Pass extra args as UCS-2 (default is ASCII)
+        -v | --verbose            Print additional information
+        -V | --version            Return version and exit
+        -w | --write-signature    Write unique sig to MBR if needed
+        -@ | --append-binary-args Append extra variable args from
                                   file (use - to read from stdin).
 ```
 

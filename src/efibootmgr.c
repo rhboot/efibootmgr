@@ -1350,22 +1350,22 @@ usage()
 {
 	printf("efibootmgr version %s\n", EFIBOOTMGR_VERSION);
 	printf("usage: efibootmgr [options]\n");
-	printf("\t-a | --active         sets bootnum active\n");
-	printf("\t-A | --inactive       sets bootnum inactive\n");
-	printf("\t-b | --bootnum XXXX   modify BootXXXX (hex)\n");
-	printf("\t-B | --delete-bootnum delete bootnum\n");
-	printf("\t-c | --create         create new variable bootnum and add to bootorder\n");
-	printf("\t-C | --create-only    create new variable bootnum and do not add to bootorder\n");
+	printf("\t-a | --active         Sets bootnum active\n");
+	printf("\t-A | --inactive       Sets bootnum inactive\n");
+	printf("\t-b | --bootnum XXXX   Modify BootXXXX (hex)\n");
+	printf("\t-B | --delete-bootnum Delete bootnum\n");
+	printf("\t-c | --create         Create new variable bootnum and add to bootorder\n");
+	printf("\t-C | --create-only    Create new variable bootnum and do not add to bootorder\n");
 	printf("\t-d | --disk disk      Disk containing boot loader (defaults to /dev/sda)\n");
-	printf("\t-D | --remove-dups    remove duplicate values from BootOrder\n");
-	printf("\t-e | --edd [1|3]      force boot entries to be created using EDD 1.0 or 3.0 info\n");
+	printf("\t-D | --remove-dups    Remove duplicate values from BootOrder\n");
+	printf("\t-e | --edd [1|3]      Force boot entries to be created using EDD 1.0 or 3.0 info\n");
 	printf("\t-E | --device num     EDD 1.0 device number (defaults to 0x80)\n");
 	printf("\t     --full-dev-path  Use a full device path\n");
 	printf("\t     --file-dev-path  Use an abbreviated File() device path\n");
 	printf("\t-f | --reconnect      Re-connect devices after driver is loaded\n");
 	printf("\t-F | --no-reconnect   Do not re-connect devices after driver is loaded\n");
-	printf("\t-g | --gpt            force disk with invalid PMBR to be treated as GPT\n");
-	printf("\t-i | --iface name     create a netboot entry for the named interface\n");
+	printf("\t-g | --gpt            Force disk with invalid PMBR to be treated as GPT\n");
+	printf("\t-i | --iface name     Create a netboot entry for the named interface\n");
 #if 0
 	printf("\t     --ip-addr <local>,<remote>	set local and remote IP addresses\n");
 	printf("\t     --ip-gateway <gateway>	set the network gateway\n");
@@ -1374,26 +1374,26 @@ usage()
 	printf("\t     --ip-port <local>,<remote>	set local and remote IP ports\n");
 	printf("\t     --ip-origin { {dhcp|static} | { static|stateless|stateful} }\n");
 #endif
-	printf("\t-l | --loader name     (defaults to \""DEFAULT_LOADER"\")\n");
+	printf("\t-l | --loader name     (Defaults to \""DEFAULT_LOADER"\")\n");
 	printf("\t-L | --label label     Boot manager display label (defaults to \"Linux\")\n");
-	printf("\t-m | --mirror-below-4G t|f mirror memory below 4GB\n");
-	printf("\t-M | --mirror-above-4G X percentage memory to mirror above 4GB\n");
-	printf("\t-n | --bootnext XXXX   set BootNext to XXXX (hex)\n");
-	printf("\t-N | --delete-bootnext delete BootNext\n");
-	printf("\t-o | --bootorder XXXX,YYYY,ZZZZ,...     explicitly set BootOrder (hex)\n");
-	printf("\t-O | --delete-bootorder delete BootOrder\n");
-	printf("\t-p | --part part        partition containing loader (defaults to 1 on partitioned devices)\n");
-	printf("\t-q | --quiet            be quiet\n");
+	printf("\t-m | --mirror-below-4G t|f Mirror memory below 4GB\n");
+	printf("\t-M | --mirror-above-4G X Percentage memory to mirror above 4GB\n");
+	printf("\t-n | --bootnext XXXX   Set BootNext to XXXX (hex)\n");
+	printf("\t-N | --delete-bootnext Delete BootNext\n");
+	printf("\t-o | --bootorder XXXX,YYYY,ZZZZ,...     Explicitly set BootOrder (hex)\n");
+	printf("\t-O | --delete-bootorder Delete BootOrder\n");
+	printf("\t-p | --part part        Partition containing loader (defaults to 1 on partitioned devices)\n");
+	printf("\t-q | --quiet            Be quiet\n");
 	printf("\t-r | --driver           Operate on Driver variables, not Boot Variables\n");
-	printf("\t-t | --timeout seconds  set boot manager timeout waiting for user input.\n");
-	printf("\t-T | --delete-timeout   delete Timeout.\n");
-	printf("\t-u | --unicode | --UCS-2  handle extra args as UCS-2 (default is ASCII)\n");
-	printf("\t-v | --verbose          print additional information\n");
-	printf("\t-V | --version          return version and exit\n");
-	printf("\t-w | --write-signature  write unique sig to MBR if needed\n");
+	printf("\t-t | --timeout seconds  Set boot manager timeout waiting for user input.\n");
+	printf("\t-T | --delete-timeout   Delete Timeout.\n");
+	printf("\t-u | --unicode | --UCS-2  Handle extra args as UCS-2 (default is ASCII)\n");
+	printf("\t-v | --verbose          Print additional information\n");
+	printf("\t-V | --version          Return version and exit\n");
+	printf("\t-w | --write-signature  Write unique sig to MBR if needed\n");
 	printf("\t-y | --sysprep          Operate on SysPrep variables, not Boot Variables.\n");
-	printf("\t-@ | --append-binary-args file  append extra args from file (use \"-\" for stdin)\n");
-	printf("\t-h | --help             show help/usage\n");
+	printf("\t-@ | --append-binary-args file  Append extra args from file (use \"-\" for stdin)\n");
+	printf("\t-h | --help             Show help/usage\n");
 }
 
 static void
