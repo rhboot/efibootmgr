@@ -6,8 +6,8 @@ the next running boot option, and more.
 Details on the EFI Boot Manager are available from the EFI
 Specification, v1.02 or above, available from: http://www.uefi.org
 
-Note: efibootmgr requires that the kernel module efivars be loaded
-prior to use. Running 'modprobe efivars' should do the trick.
+Note: efibootmgr requires either the efivarfs or the
+legacy efivars kernel module to be loaded prior to use.
 
 usage: efibootmgr [options]
         -a | --active          sets bootnum active
