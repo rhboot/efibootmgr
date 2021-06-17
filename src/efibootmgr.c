@@ -1089,14 +1089,14 @@ show_var_path(efi_load_option *load_option, size_t boot_data_size)
 		rc = efidp_next_node(node, &next);
 		if (rc < 0) {
 			warning("Could not iterate device path");
-                        return;
-                }
+			return;
+		}
 
 		sz = efidp_node_size(node);
 		if (sz <= 0) {
 			warning("Could not iterate device path");
-                        return;
-                }
+			return;
+		}
 
 		for (ssize_t j = 0; j < sz; j++)
 			printf("%02hhx%s", data[j], j == sz - 1 ? "" : " ");
@@ -1502,15 +1502,13 @@ parse_opts(int argc, char **argv)
 			{0, 0, 0, 0}
 		};
 
-		c = getopt_long (argc, argv,
-				 "AaBb:cCDd:e:E:fFgH:i:l:L:M:m:n:No:Op:qt:TuU:v::Vw"
-				 "@:hry",
-				 long_options, &option_index);
+		c = getopt_long(argc, argv,
+				"AaBb:cCDd:e:E:fFgH:i:l:L:M:m:n:No:Op:qt:TuU:v::Vw@:hry",
+				long_options, &option_index);
 		if (c == -1)
 			break;
 
-		switch (c)
-		{
+		switch (c) {
 		case '@':
 			opts.extra_opts_file = optarg;
 			break;
