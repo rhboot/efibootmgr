@@ -4,6 +4,7 @@ include $(TOPDIR)/Make.version
 include $(TOPDIR)/Make.rules
 include $(TOPDIR)/Make.defaults
 include $(TOPDIR)/Make.coverity
+include $(TOPDIR)/Make.fanalyzer
 include $(TOPDIR)/Make.scan-build
 
 SUBDIRS := src

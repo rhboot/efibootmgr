@@ -1,0 +1,9 @@
+GCC_BINARY ?= $(shell x=$$(which --skip-alias --skip-functions gcc 2>/dev/null) ; [ -n "$$x" ] && echo "$$x")
+
+fanalyzer-test : ; $(if $(findstring /,$(GCC_BINARY)),,$(error gcc not found))
+
+fanalyzer : | fanalyzer-test
+fanalyzer : clean
+	$(MAKE) CC=gcc CCACHE_DISABLE=1 CFLAGS="-O2 -g -fanalyzer -Werror=analyzer-null-dereference"
+
+.PHONY : fanalyzer
