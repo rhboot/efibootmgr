@@ -1030,6 +1030,7 @@ show_var_path(efi_load_option *load_option, size_t boot_data_size)
 				      + strlen(a)
 				      + strlen(")"));
 		if (!text_path) {
+			free(a);
 			warning("Could not parse optional data");
 			return;
 		}
@@ -1037,7 +1038,7 @@ show_var_path(efi_load_option *load_option, size_t boot_data_size)
 
 		b = stpcpy(text_path, " File(.");
 		b = stpcpy(b, a);
-		b = stpcpy(b, ")");
+		stpcpy(b, ")");
 		free(a);
 	} else if (opts.unicode) {
 		text_path = ucs2_to_utf8((uint16_t*)optional_data,
@@ -1525,6 +1526,13 @@ parse_opts(int argc, char **argv)
 		case 'b': {
 			char *endptr = NULL;
 			unsigned long result;
+
+			if (!optarg) {
+				errorx(29, "--%s requires an argument",
+				       long_options[option_index]);
+				break;
+			}
+
 			result = strtoul(optarg, &endptr, 16);
 			if ((result == ULONG_MAX && errno == ERANGE) ||
 					(endptr && *endptr != '\0')) {
@@ -1610,7 +1618,15 @@ parse_opts(int argc, char **argv)
 			opts.explicit_label = 1;
 			break;
 		case 'm':
+
+			if (!optarg) {
+				errorx(33, "--%s requires an argument",
+				       long_options[option_index]);
+				break;
+			}
+
 			opts.set_mirror_lo = 1;
+
 			switch (optarg[0]) {
 			case '1': case 'y': case 't':
 				opts.below4g = 1;
@@ -1639,6 +1655,13 @@ parse_opts(int argc, char **argv)
 		case 'n': {
 			char *endptr = NULL;
 			unsigned long result;
+
+			if (!optarg) {
+				errorx(36, "--%s requires an argument",
+				       long_options[option_index]);
+				break;
+			}
+
 			result = strtoul(optarg, &endptr, 16);
 			if ((result == ULONG_MAX && errno == ERANGE) ||
 					(endptr && *endptr != '\0')) {
