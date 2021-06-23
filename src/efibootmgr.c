@@ -938,7 +938,7 @@ ucs2_to_utf8(const uint16_t * const chars, ssize_t limit)
 		return NULL;
 	memset(ret, 0, limit * 6 +1);
 
-	for (i=0, j=0; chars[i] && i < (limit >= 0 ? limit : i+1); i++,j++) {
+	for (i=0, j=0; i < (limit >= 0 ? limit : i+1) && chars[i]; i++,j++) {
 		if (chars[i] <= 0x7f) {
 			ret[j] = chars[i];
 		} else if (chars[i] > 0x7f && chars[i] <= 0x7ff) {
