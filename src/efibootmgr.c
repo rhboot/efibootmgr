@@ -1391,13 +1391,13 @@ usage()
 	printf("\t-B | --delete-bootnum delete bootnum\n");
 	printf("\t-c | --create         create new variable bootnum and add to bootorder\n");
 	printf("\t-C | --create-only    create new variable bootnum and do not add to bootorder\n");
-	printf("\t-d | --disk disk      Disk containing boot loader (defaults to /dev/sda)\n");
+	printf("\t-d | --disk disk      disk containing boot loader (defaults to /dev/sda)\n");
 	printf("\t-D | --remove-dups    remove duplicate values from BootOrder\n");
 	printf("\t-e | --edd [1|3]      force boot entries to be created using EDD 1.0 or 3.0 info\n");
 	printf("\t-E | --device num     EDD 1.0 device number (defaults to 0x80)\n");
-	printf("\t     --full-dev-path  Use a full device path\n");
-	printf("\t     --file-dev-path  Use an abbreviated File() device path\n");
-	printf("\t-f | --reconnect      Re-connect devices after driver is loaded\n");
+	printf("\t     --full-dev-path  use a full device path\n");
+	printf("\t     --file-dev-path  use an abbreviated File() device path\n");
+	printf("\t-f | --reconnect      re-connect devices after driver is loaded\n");
 	printf("\t-F | --no-reconnect   Do not re-connect devices after driver is loaded\n");
 	printf("\t-g | --gpt            force disk with invalid PMBR to be treated as GPT\n");
 	printf("\t-i | --iface name     create a netboot entry for the named interface\n");
@@ -1410,7 +1410,7 @@ usage()
 	printf("\t     --ip-origin { {dhcp|static} | { static|stateless|stateful} }\n");
 #endif
 	printf("\t-l | --loader name     (defaults to \""DEFAULT_LOADER"\")\n");
-	printf("\t-L | --label label     Boot manager display label (defaults to \"Linux\")\n");
+	printf("\t-L | --label label     boot manager display label (defaults to \"Linux\")\n");
 	printf("\t-m | --mirror-below-4G t|f mirror memory below 4GB\n");
 	printf("\t-M | --mirror-above-4G X percentage memory to mirror above 4GB\n");
 	printf("\t-n | --bootnext XXXX   set BootNext to XXXX (hex)\n");
@@ -1419,14 +1419,14 @@ usage()
 	printf("\t-O | --delete-bootorder delete BootOrder\n");
 	printf("\t-p | --part part        partition containing loader (defaults to 1 on partitioned devices)\n");
 	printf("\t-q | --quiet            be quiet\n");
-	printf("\t-r | --driver           Operate on Driver variables, not Boot Variables\n");
+	printf("\t-r | --driver           operate on Driver variables, not Boot Variables\n");
 	printf("\t-t | --timeout seconds  set boot manager timeout waiting for user input.\n");
 	printf("\t-T | --delete-timeout   delete Timeout.\n");
 	printf("\t-u | --unicode | --UCS-2  handle extra args as UCS-2 (default is ASCII)\n");
 	printf("\t-v | --verbose          print additional information\n");
 	printf("\t-V | --version          return version and exit\n");
 	printf("\t-w | --write-signature  write unique sig to MBR if needed\n");
-	printf("\t-y | --sysprep          Operate on SysPrep variables, not Boot Variables.\n");
+	printf("\t-y | --sysprep          operate on SysPrep variables, not Boot Variables\n");
 	printf("\t-@ | --append-binary-args file  append extra args from file (use \"-\" for stdin)\n");
 	printf("\t-h | --help             show help/usage\n");
 }
@@ -1468,6 +1468,7 @@ parse_opts(int argc, char **argv)
 			{"create",                 no_argument, 0, 'c'},
 			{"create-only",            no_argument, 0, 'C'},
 			{"disk",             required_argument, 0, 'd'},
+			{"remove-dups",            no_argument, 0, 'D'},
 			{"edd",              required_argument, 0, 'e'},
 			{"edd30",            required_argument, 0, 'e'},
 			{"edd-device",       required_argument, 0, 'E'},
@@ -1496,14 +1497,14 @@ parse_opts(int argc, char **argv)
 			{"verbose",          optional_argument, 0, 'v'},
 			{"version",                no_argument, 0, 'V'},
 			{"write-signature",        no_argument, 0, 'w'},
-			{"append-binary-args", required_argument, 0, '@'},
 			{"sysprep",                no_argument, 0, 'y'},
+			{"append-binary-args", required_argument, 0, '@'},
 			{"help",                   no_argument, 0, 'h'},
 			{0, 0, 0, 0}
 		};
 
 		c = getopt_long(argc, argv,
-				"AaBb:cCDd:e:E:fFgH:i:l:L:M:m:n:No:Op:qt:TuU:v::Vw@:hry",
+				"aAb:BcCd:De:E:fFgi:kl:L:m:M:n:No:Op:qrt:Tuv::Vwy@:h"
 				long_options, &option_index);
 		if (c == -1)
 			break;
