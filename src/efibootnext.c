@@ -93,15 +93,6 @@ main(int argc, char *argv[])
 			&matcher->in_boot_order, 2,
 			"only match entires not in the boot order", },
 
-		/* this is stuff about our match groups, not about the match
-		 * itself */
-#if 0
-		{"not", '!', ... },
-		{"start", '(', ...},
-		{"end", ')', ... },
-		{"and", 'a', ... },
-		{"or", 'o', ... },
-#endif
 		POPT_TABLEEND
 	};
 

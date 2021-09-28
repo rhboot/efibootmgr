@@ -1401,14 +1401,6 @@ usage()
 	printf("\t-F | --no-reconnect   Do not re-connect devices after driver is loaded\n");
 	printf("\t-g | --gpt            force disk with invalid PMBR to be treated as GPT\n");
 	printf("\t-i | --iface name     create a netboot entry for the named interface\n");
-#if 0
-	printf("\t     --ip-addr <local>,<remote>	set local and remote IP addresses\n");
-	printf("\t     --ip-gateway <gateway>	set the network gateway\n");
-	printf("\t     --ip-netmask <netmask>	set the netmask or prefix length\n");
-	printf("\t     --ip-proto TCP|UDP	set the IP protocol to be used\n");
-	printf("\t     --ip-port <local>,<remote>	set local and remote IP ports\n");
-	printf("\t     --ip-origin { {dhcp|static} | { static|stateless|stateful} }\n");
-#endif
 	printf("\t-l | --loader name     (defaults to \""DEFAULT_LOADER"\")\n");
 	printf("\t-L | --label label     boot manager display label (defaults to \"Linux\")\n");
 	printf("\t-m | --mirror-below-4G t|f mirror memory below 4GB\n");
