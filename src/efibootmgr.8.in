@@ -26,29 +26,29 @@ non-volatile variables through
 The following is a list of options accepted by efibootmgr:
 .TP
 \fB-a | --active\fR
-Sets bootnum active
+Set bootnum active.
 .TP
 \fB-A | --inactive\fR
-Sets bootnum inactive
+Set bootnum inactive.
 .TP
 \fB-b | --bootnum \fIXXXX\fB\fR
-Modify Boot\fIXXXX\fR (hex)
+Modify Boot\fIXXXX\fR (hex).
 .TP
 \fB-B | --delete-bootnum\fR
-Delete bootnum
+Delete bootnum.
 .TP
 \fB-c | --create\fR
-Create new variable bootnum and add to bootorder
+Create new variable bootnum and add to bootorder.
 .TP
 \fB-C | --create-only\fR
-Create new variable bootnum and and do not add to bootorder
+Create new variable bootnum and and do not add to bootorder.
 .TP
 \fB-d | --disk \fIDISK\fB\fR
 The disk containing the loader (defaults to
-\fI/dev/sda\fR)
+\fI/dev/sda\fR).
 .TP
 \fB-D | --remove-dups\fR
-Remove duplicated entries from BootOrder
+Remove duplicated entries from BootOrder.
 .TP
 \fB-e | --edd \fI1|3\fB\fR
 Force EDD 1.0 or 3.0 creation variables.
@@ -86,72 +86,72 @@ Re-connect devices after driver is loaded.  Only applicable for driver entries.
 Do not reconnect devices after driver is loaded.  Only applicable for driver entries.
 .TP
 \fB-g | --gpt\fR
-Force disk with invalid PMBR to be treated as GPT
+Force disk with invalid PMBR to be treated as GPT.
 .TP
 \fB-i | --iface \fINAME\fB\fR
-Create a netboot entry for the named interface
+Create a netboot entry for the named interface.
 .TP
 \fB-k | --keep \fINAME\fB\fR
-Keep old entries when adjusting order
+Keep old entries when adjusting order.
 .TP
 \fB-l | --loader \fINAME\fB\fR
-Specify a loader (defaults to \fI@@DEFAULT_LOADER@@\fR)
+Specify a loader (defaults to \fI@@DEFAULT_LOADER@@\fR).
 .TP
 \fB-L | --label \fILABEL\fB\fR
-Boot manager display label (defaults to "Linux")
+Boot manager display label (defaults to "Linux").
 .TP
 \fB-m | --mirror-below-4G \fIt|f\fB\fR
-Set t if you want to mirror memory below 4GB
+Set t if you want to mirror memory below 4GB.
 .TP
 \fB-M | --mirror-above-4G \fIX\fB\fR
-X percentage memory to mirror above 4GB. Floating-point value with up to 2 decimal places is accepted.
+X percentage memory to mirror above 4GB.  Floating-point value with up to 2 decimal places is accepted.
 .TP
 \fB-n | --bootnext \fIXXXX\fB\fR
-Set BootNext to XXXX (hex)
+Set BootNext to XXXX (hex).
 .TP
 \fB-N | --delete-bootnext\fR
-Delete BootNext
+Delete BootNext.
 .TP
 \fB-o | --bootorder \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR
-Explicitly set BootOrder (hex). Any value from 0 to FFFF is accepted so long as it corresponds to an existing Boot#### variable, and zero padding is not required.
+Explicitly set BootOrder (hex).  Any value from 0 to FFFF is accepted so long as it corresponds to an existing Boot#### variable, and zero padding is not required.
 .TP
 \fB-O | --delete-bootorder\fR
-Delete BootOrder
+Delete BootOrder.
 .TP
 \fB-p | --part \fIPART\fB\fR
-Partition number containing the bootloader (defaults to 1)
+Partition number containing the bootloader (defaults to 1).
 .TP
 \fB-q | --quiet\fR
-Quiet mode - suppresses output
+Quiet mode - suppresses output.
 .TP
 \fB-r | --driver\fR
-Operate on Driver#### variables instead of Boot#### variables
+Operate on Driver#### variables instead of Boot#### variables.
 .TP
 \fB-t | --timeout \fIseconds\fB\fR
-Boot Manager timeout, in \fIseconds\fR\&
+Boot Manager timeout, in \fIseconds\fR\&.
 .TP
 \fB-T | --delete-timeout\fR
-Delete Timeout variable
+Delete Timeout variable.
 .TP
 \fB-u | --unicode | --UCS-2 \fR
 Handle extra command line arguments as UCS-2 (default is
-ASCII)
+ASCII).
 .TP
 \fB-v | --verbose\fR
-Verbose mode - prints additional information
+Verbose mode - prints additional information.
 .TP
 \fB-V | --version\fR
-Just print version string and exit
+Just print version string and exit.
 .TP
 \fB-w | --write-signature\fR
-write unique signature to the MBR if needed
+Write unique signature to the MBR if needed.
 .TP
 \fB-y | --sysprep\fR
-Operate on SysPrep#### variables instead of Boot#### variables
+Operate on SysPrep#### variables instead of Boot#### variables.
 .TP
 \fB-@ | --append-binary-args \fR
-append extra variable args from file (use - to read
-from stdin). Data in file is appended as command line
+Append extra variable args from file (use - to read
+from stdin).  Data in file is appended as command line
 arguments to the boot loader command, with no modification to
 the data, so you can pass any binary or text data necessary.
 .SH "EXAMPLES"
@@ -182,12 +182,12 @@ running system
 \(bu
 BootOrder - the boot order as would appear in the boot manager.
 The boot manager tries to boot the first active entry in this
-list. If unsuccessful, it tries the next entry, and so on.
+list.  If unsuccessful, it tries the next entry, and so on.
 .TP 0.2i
 \(bu
 BootNext - the boot entry which is scheduled to be run on next
-boot. This supercedes BootOrder for one boot only, and is
-deleted by the boot manager after first use. This allows you
+boot.  This supersedes BootOrder for one boot only, and is
+deleted by the boot manager after first use.  This allows you
 to change the next boot behavior without changing BootOrder.
 .TP 0.2i
 \(bu
@@ -203,10 +203,10 @@ flag (* means active) and the name displayed on the screen.
 .SS "Creating a new boot option"
 An OS installer would call \fBefibootmgr -c\fR\&.
 This assumes that \fI/dev/sda1\fR is your EFI System
-Partition, and is mounted at \fI/boot/efi\fR\&. This
+Partition, and is mounted at \fI/boot/efi\fR\&.  This
 creates a new boot option, called "Linux", and puts it at the top of
-the boot order list. Options may be passed to modify the default
-behavior. The default OS Loader is \fI@@DEFAULT_LOADER@@\fR\&.
+the boot order list.  Options may be passed to modify the default
+behavior.  The default OS Loader is \fI@@DEFAULT_LOADER@@\fR\&.
 .SS "Changing the boot order"
 Assuming the configuration in the first example,
 \fBefibootmgr -o 3,4\fR could be called to specify
@@ -221,7 +221,7 @@ Assuming the configuration in the first example,
 entry 4 and remove it from the BootOrder.
 .SS "Creating network boot entries"
 A system administrator wants to create a boot option to network
-boot. You create the boot entry with:
+boot.  You create the boot entry with:
 \fBefibootmgr -c -i eth0 -L netboot [ -l '\\filename.efi' ]\fR
 .SH "BUGS"
 .PP
