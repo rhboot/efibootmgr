@@ -1410,8 +1410,9 @@ usage()
 	printf("\t-f | --reconnect      Re-connect devices after driver is loaded.\n");
 	printf("\t-F | --no-reconnect   Do not re-connect devices after driver is loaded.\n");
 	printf("\t-g | --gpt            Force disk with invalid PMBR to be treated as GPT.\n");
-	printf("\t-i | --iface name     Create a netboot entry for the named interface.\n");
+	printf("\t-i | --iface name     Create a netboot entry for the named interface (IPv4+DHCP support only).\n");
 	printf("\t-I | --index number   When creating an entry, insert it in bootorder at specified position (default: 0).\n");
+	printf("\t     --uri Uri        Specify an Uri (for use with --iface option).\n");
 	printf("\t-l | --loader name     (Defaults to \""DEFAULT_LOADER"\").\n");
 	printf("\t-L | --label label     Boot manager display label (defaults to \"Linux\").\n");
 	printf("\t-m | --mirror-below-4G t|f Mirror memory below 4GB.\n");
@@ -1483,6 +1484,7 @@ parse_opts(int argc, char **argv)
 			{"gpt",                    no_argument, 0, 'g'},
 			{"iface",            required_argument, 0, 'i'},
 			{"index",            required_argument, 0, 'I'},
+			{"uri",	             required_argument, 0, 0},
 			{"keep",                   no_argument, 0, 'k'},
 			{"loader",           required_argument, 0, 'l'},
 			{"label",            required_argument, 0, 'L'},
@@ -1771,6 +1773,8 @@ parse_opts(int argc, char **argv)
 				    opts.abbreviate_path != EFIBOOTMGR_PATH_ABBREV_FILE)
 					errx(41, "contradicting --full-dev-path/--file-dev-path/-e options");
 				opts.abbreviate_path = EFIBOOTMGR_PATH_ABBREV_FILE;
+			} else if (!strcmp(long_options[option_index].name, "uri")) {
+				opts.uri = optarg;
 			} else {
 				usage();
 				exit(1);
@@ -1812,6 +1816,9 @@ main(int argc, char **argv)
 	}
 
 	verbose = opts.verbose;
+
+	if (opts.uri && !opts.iface)
+		errx(25, "--uri is supported only with --iface option.");
 
 	if (opts.sysprep && opts.driver)
 		errx(25, "--sysprep and --driver may not be used together.");
