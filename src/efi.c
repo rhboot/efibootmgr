@@ -174,37 +174,40 @@ make_linux_load_option(uint8_t **data, size_t *data_size,
 	efidp dp = NULL;
 
 	if (opts.iface && opts.ip_version == EFIBOOTMGR_IPV4) {
-		needed = efi_generate_ipv4_device_path(NULL, 0, opts.iface,
-						       opts.local_ip_addr,
-						       opts.remote_ip_addr,
-						       opts.gateway_ip_addr,
-						       opts.ip_netmask,
-						       opts.ip_local_port,
-						       opts.ip_remote_port,
-						       opts.ip_protocol,
-						       opts.ip_addr_origin);
+		needed = efi_generate_ipv4_device_path_with_uri(
+					NULL, 0, opts.iface,
+					opts.local_ip_addr,
+					opts.remote_ip_addr,
+					opts.gateway_ip_addr,
+					opts.ip_netmask,
+					opts.ip_local_port,
+					opts.ip_remote_port,
+					opts.ip_protocol,
+					opts.ip_addr_origin,
+					opts.uri);
 		if (needed < 0) {
-			efi_error("efi_generate_ipv4_device_path() = %zd (failed)",
+			efi_error("efi_generate_ipv4_device_path_with_uri() = %zd (failed)",
 					needed);
 			return -1;
 		}
 		if (data_size && *data_size) {
 			dp = malloc(needed);
 
-			needed = efi_generate_ipv4_device_path(
-							(uint8_t *)dp, needed,
-							opts.iface,
-							opts.local_ip_addr,
-							opts.remote_ip_addr,
-							opts.gateway_ip_addr,
-							opts.ip_netmask,
-							opts.ip_local_port,
-							opts.ip_remote_port,
-							opts.ip_protocol,
-							opts.ip_addr_origin);
+			needed = efi_generate_ipv4_device_path_with_uri(
+					(uint8_t *)dp, needed,
+					opts.iface,
+					opts.local_ip_addr,
+					opts.remote_ip_addr,
+					opts.gateway_ip_addr,
+					opts.ip_netmask,
+					opts.ip_local_port,
+					opts.ip_remote_port,
+					opts.ip_protocol,
+					opts.ip_addr_origin,
+					opts.uri);
 			if (needed < 0) {
 				free(dp);
-				efi_error("efi_generate_ipv4_device_path() = %zd (failed)",
+				efi_error("efi_generate_ipv4_device_path_with_uri() = %zd (failed)",
 						needed);
 				return -1;
 			}

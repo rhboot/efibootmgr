@@ -6,7 +6,7 @@ Group: System Environment/Base
 License: GPLv2+
 URL: https://github.com/rhboot/%{name}/
 BuildRequires: git, popt-devel
-BuildRequires: efivar-libs >= 30-1, efivar-devel >= 30-1
+BuildRequires: efivar-libs >= 39-1, efivar-devel >= 39-1
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXXXX)
 # EFI/UEFI don't exist on PPC
 ExclusiveArch: %{ix86} x86_64 aarch64 arm
