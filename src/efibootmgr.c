@@ -395,7 +395,7 @@ set_u16(const char *name, uint16_t num)
 }
 
 static int
-add_to_order(const char *name, uint16_t num)
+add_to_order(const char *name, uint16_t num, uint16_t insert_at)
 {
 	var_entry_t *order = NULL;
 	uint64_t new_data_size;
@@ -409,8 +409,9 @@ add_to_order(const char *name, uint16_t num)
 		return rc;
 	}
 
-	/* We've now got an array (in order->data) of the
-	 * order.  First add our entry, then copy the old array.
+	/* We've now got an array (in order->data) of the order.  Copy over
+	 * any entries that should precede, add our entry, and then copy the
+	 * rest of the old array.
 	 */
 	old_data = (uint16_t *)order->data;
 	new_data_size = order->data_size + sizeof(uint16_t);
@@ -418,8 +419,16 @@ add_to_order(const char *name, uint16_t num)
 	if (!new_data)
 		return -1;
 
-	new_data[0] = num;
-	memcpy(new_data+1, old_data, order->data_size);
+	if (insert_at != 0) {
+		if (insert_at > order->data_size)
+			insert_at = order->data_size;
+		memcpy(new_data, old_data, insert_at * sizeof(uint16_t));
+	}
+	new_data[insert_at] = num;
+	if (order->data_size - insert_at * sizeof(uint16_t) > 0) {
+		memcpy(new_data + insert_at + 1, old_data + insert_at,
+		       order->data_size - insert_at * sizeof(uint16_t));
+	}
 
 	/* Now new_data has what we need */
 	free(order->data);
@@ -1389,7 +1398,7 @@ usage()
 	printf("\t-A | --inactive       Set bootnum inactive.\n");
 	printf("\t-b | --bootnum XXXX   Modify BootXXXX (hex).\n");
 	printf("\t-B | --delete-bootnum Delete bootnum.\n");
-	printf("\t-c | --create         Create new variable bootnum and add to bootorder.\n");
+	printf("\t-c | --create         Create new variable bootnum and add to bootorder at index (-I).\n");
 	printf("\t-C | --create-only    Create new variable bootnum and do not add to bootorder.\n");
 	printf("\t-d | --disk disk      Disk containing boot loader (defaults to /dev/sda).\n");
 	printf("\t-D | --remove-dups    Remove duplicate values from BootOrder.\n");
@@ -1401,6 +1410,7 @@ usage()
 	printf("\t-F | --no-reconnect   Do not re-connect devices after driver is loaded.\n");
 	printf("\t-g | --gpt            Force disk with invalid PMBR to be treated as GPT.\n");
 	printf("\t-i | --iface name     Create a netboot entry for the named interface.\n");
+	printf("\t-I | --index number   When creating an entry, insert it in bootorder at specified position (default: 0).\n");
 	printf("\t-l | --loader name     (Defaults to \""DEFAULT_LOADER"\").\n");
 	printf("\t-L | --label label     Boot manager display label (defaults to \"Linux\").\n");
 	printf("\t-m | --mirror-below-4G t|f Mirror memory below 4GB.\n");
@@ -1447,6 +1457,7 @@ parse_opts(int argc, char **argv)
 	int snum;
 	float fnum;
 	int option_index = 0;
+	long lindex;
 
 	while (1)
 	{
@@ -1470,6 +1481,7 @@ parse_opts(int argc, char **argv)
 			{"no-reconnect",           no_argument, 0, 'F'},
 			{"gpt",                    no_argument, 0, 'g'},
 			{"iface",            required_argument, 0, 'i'},
+			{"index",            required_argument, 0, 'I'},
 			{"keep",                   no_argument, 0, 'k'},
 			{"loader",           required_argument, 0, 'l'},
 			{"label",            required_argument, 0, 'L'},
@@ -1597,6 +1609,18 @@ parse_opts(int argc, char **argv)
 			opts.iface = optarg;
 			opts.ip_version = EFIBOOTMGR_IPV4;
 			opts.ip_addr_origin = EFIBOOTMGR_IPV4_ORIGIN_DHCP;
+			break;
+		case 'I':
+			if (!optarg) {
+				errorx(1, "--%s requires an argument",
+				       long_options[option_index]);
+			}
+			lindex = atol(optarg);
+			if (lindex < 0 || lindex > UINT16_MAX) {
+				errorx(1, "invalid numeric value %s\n",
+				       optarg);
+			}
+			opts.index = (uint16_t)lindex;
 			break;
 		case 'k':
 			opts.keep_old_entries = 1;
@@ -1870,11 +1894,14 @@ main(int argc, char **argv)
 
 		/* Put this boot var in the right Order variable */
 		if (new_entry && !opts.no_order) {
-			ret = add_to_order(order_name[mode], new_entry->num);
+			ret = add_to_order(order_name[mode], new_entry->num,
+					   opts.index);
 			if (ret < 0)
 				error(6, "Could not add entry to %s",
 				      order_name[mode]);
 		}
+	} else if (opts.index) {
+		error(1, "Index is meaningless without create");
 	}
 
 	if (opts.delete_order) {
