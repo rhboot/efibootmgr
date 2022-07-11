@@ -91,6 +91,9 @@ Force disk with invalid PMBR to be treated as GPT.
 \fB-i | --iface \fINAME\fB\fR
 Create a netboot entry for the named interface.
 .TP
+\fB-I | --index \fIINDEX\fB\fR
+When creating a new entry, insert at the position (0-indexed, defaults to 0).
+.TP
 \fB-k | --keep \fINAME\fB\fR
 Keep old entries when adjusting order.
 .TP
