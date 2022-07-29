@@ -227,7 +227,7 @@ main(int argc, char *argv[])
 		if (data == NULL)
 			error(8, "Could not allocate memory");
 
-		f = fopen(filename, "r");
+		f = fopen(filename, "re");
 		if (!f)
 			error(9, "Could not open \"%s\"", filename);
 
