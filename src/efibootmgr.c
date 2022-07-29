@@ -50,6 +50,7 @@
 #include <efivar.h>
 #include <efiboot.h>
 #include <inttypes.h>
+#include <math.h>
 
 #include "list.h"
 #include "efi.h"
@@ -1449,15 +1450,102 @@ set_default_opts()
 	opts.part            = -1;
 }
 
+static bool
+parse_long(const char *str, long *val)
+{
+	char *temp = NULL;
+	bool rc = true;
+
+	errno = 0;
+	*val = strtol(str, &temp, 0);
+
+	if (temp == str || /*conversion failed*/ \
+		*temp != '\0' || /*trailing text*/ \
+		((*val == LONG_MIN || *val == LONG_MAX) && errno == ERANGE)) /*range error*/
+		rc = false;
+
+	return rc;
+}
+
+static bool
+parse_ulong(const char *str, unsigned long *val)
+{
+	char *temp = NULL;
+	bool rc = true;
+
+	errno = 0;
+	*val = strtoul(str, &temp, 0);
+
+	if (temp == str || /*conversion failed*/ \
+		*temp != '\0' || /*trailing text*/ \
+		((*val == 0/*ULONG_MIN*/ || *val == ULONG_MAX) && errno == ERANGE)) /*range error*/
+		rc = false;
+
+	return rc;
+}
+
+static bool
+parse_float(const char *str, float *val)
+{
+	char *temp = NULL;
+	bool rc = true;
+
+	errno = 0;
+	*val = strtof(str, &temp);
+
+	if (temp == str || /*conversion failed*/ \
+		*temp != '\0' || /*trailing text*/ \
+		(*val == HUGE_VAL && errno == ERANGE)) /*range error*/
+		rc = false;
+
+	return rc;
+}
+
+static bool
+parse_int(const char *str, int *val)
+{
+	long result = 0;
+	bool rc = parse_long(str, &result);
+
+	if (rc && (result >= INT_MIN && result <= INT_MAX)) /*downcast*/
+		*val = (int)result;
+
+	return rc;
+}
+
+static bool
+parse_uint16(const char *str, uint16_t *val)
+{
+	unsigned long result = 0;
+	bool rc = parse_ulong(str, &result);
+
+	if (rc && (result <= UINT16_MAX)) /*downcast*/
+		*val = (uint16_t)result;
+
+	return rc;
+}
+
+static bool
+parse_uint(const char *str, unsigned int *val)
+{
+	unsigned long result = 0;
+	bool rc = parse_ulong(str, &result);
+
+	if (rc && (result <= UINT_MAX)) /*downcast*/
+		*val = (unsigned int)result;
+
+	return rc;
+}
+
 static void
 parse_opts(int argc, char **argv)
 {
-	int c, rc;
+	int c;
 	unsigned int num;
 	int snum;
 	float fnum;
 	int option_index = 0;
-	long lindex;
+	uint16_t lindex;
 
 	while (1)
 	{
@@ -1568,8 +1656,7 @@ parse_opts(int argc, char **argv)
 			opts.disk = optarg;
 			break;
 		case 'e':
-			rc = sscanf(optarg, "%d", &snum);
-			if (rc != 1)
+			if (!parse_int(optarg, &snum))
 				errorx(30, "invalid numeric value %s\n",
 				       optarg);
 
@@ -1584,8 +1671,7 @@ parse_opts(int argc, char **argv)
 			opts.abbreviate_path = snum;
 			break;
 		case 'E':
-			rc = sscanf(optarg, "%x", &num);
-			if (rc == 1)
+			if (parse_uint(optarg, &num))
 				opts.edd10_devicenum = num;
 			else
 				errorx(32, "invalid hex value %s\n", optarg);
@@ -1615,12 +1701,11 @@ parse_opts(int argc, char **argv)
 				errorx(1, "--%s requires an argument",
 				       long_options[option_index]);
 			}
-			lindex = atol(optarg);
-			if (lindex < 0 || lindex > UINT16_MAX) {
+			if (!parse_uint16(optarg, &lindex)) {
 				errorx(1, "invalid numeric value %s\n",
 				       optarg);
 			}
-			opts.index = (uint16_t)lindex;
+			opts.index = lindex;
 			break;
 		case 'k':
 			opts.keep_old_entries = 1;
@@ -1656,8 +1741,7 @@ parse_opts(int argc, char **argv)
 			break;
 		case 'M':
 			opts.set_mirror_hi = 1;
-			rc = sscanf(optarg, "%f", &fnum);
-			if (rc == 1 && fnum <= 50 && fnum >= 0)
+			if (parse_float(optarg, &fnum) && fnum <= 50 && fnum >= 0)
 				/* percent to basis points */
 				opts.above4g = fnum * 100;
 			else
@@ -1701,8 +1785,7 @@ parse_opts(int argc, char **argv)
 			opts.delete_order = 1;
 			break;
 		case 'p':
-			rc = sscanf(optarg, "%u", &num);
-			if (rc == 1)
+			if (parse_uint(optarg, &num))
 				opts.part = num;
 			else
 				errorx(37, "invalid numeric value %s\n",
@@ -1715,8 +1798,7 @@ parse_opts(int argc, char **argv)
 			opts.driver = 1;
 			break;
 		case 't':
-			rc = sscanf(optarg, "%u", &num);
-			if (rc == 1) {
+			if (parse_uint(optarg, &num)) {
 				opts.timeout = num;
 				opts.set_timeout = 1;
 			} else {
@@ -1737,8 +1819,7 @@ parse_opts(int argc, char **argv)
 					opts.verbose = 1;
 				if (!strcmp(optarg, "vv"))
 					opts.verbose = 2;
-				rc = sscanf(optarg, "%u", &num);
-				if (rc == 1)
+				if (parse_uint(optarg, &num))
 					opts.verbose = num;
 				else
 					errorx(39,
