@@ -20,6 +20,11 @@
 #ifndef EFIBOOTMGR_ERROR_H__
 #define EFIBOOTMGR_ERROR_H__ 1
 
+#include <stdio.h>
+#include <errno.h>
+#include <efivar.h>
+#include <stdlib.h>
+
 extern int verbose;
 
 static inline void
