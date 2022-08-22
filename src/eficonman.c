@@ -48,10 +48,10 @@ do_list(void)
 		char *label;
 	} vars[] = {
 		{"ConInDev", "Available console input devices"},
-		{"ConOutDev", "Available console ouput devices"},
+		{"ConOutDev", "Available console output devices"},
 		{"ErrOutDev", "Available error output devices"},
 		{"ConIn", "Configured console input devices"},
-		{"ConOut", "Configured console ouptut devices"},
+		{"ConOut", "Configured console output devices"},
 		{"ErrOut", "Configured error output devices"},
 		{NULL, NULL}
 	};

@@ -72,7 +72,7 @@ main(int argc, char *argv[])
 		{"disk", 'd', POPT_ARG_STRING, matcher->disk, NULL,
 			"disk containing loader", "<disk>" },
 		/* keep edd and device together despite alphabetism */
-		{"edd", 'e', POPT_ARG_STRING, matcher->edd, NULL, 
+		{"edd", 'e', POPT_ARG_STRING, matcher->edd, NULL,
 			"EDD version", "[1|3|[any]]" },
 		{"device", 'E', POPT_ARG_STRING, matcher->edd_devnum, NULL,
 			"EDD 1.0 device number (hex)", "[##|[80]]", },
@@ -91,7 +91,7 @@ main(int argc, char *argv[])
 			"only match entries in the boot order", },
 		{"not-in-boot-order", 'B', POPT_ARG_VAL,
 			&matcher->in_boot_order, 2,
-			"only match entires not in the boot order", },
+			"only match entries not in the boot order", },
 
 		POPT_TABLEEND
 	};

@@ -27,7 +27,7 @@ efibootmgr efibootmgr-static :
 $(SUBDIRS) :
 	$(MAKE) -C $@
 
-.PHONY: $(SUBDIRS) 
+.PHONY: $(SUBDIRS)
 
 efibootmgr.spec : | Makefile Make.version
 
