@@ -45,7 +45,7 @@ print_boot_entry(efi_load_option *loadopt, size_t data_size)
 	size_t raw_len;
 
 	ssize_t rc;
-	efidp dp = NULL;
+	efidp dp;
 
 	printf("%c ", (efi_loadopt_attrs(loadopt) & LOAD_OPTION_ACTIVE)
 	              ? '*' : ' ');
