@@ -161,7 +161,7 @@ free_array(char **array)
 static int
 compare(const void *a, const void *b)
 {
-	int rc = -1;
+	int rc;
 	uint16_t n1, n2;
 	memcpy(&n1, a, sizeof(n1));
 	memcpy(&n2, b, sizeof(n2));
