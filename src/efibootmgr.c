@@ -352,7 +352,7 @@ static int
 read_order(const char *name, var_entry_t **order)
 {
 	int rc;
-	var_entry_t *new = NULL, *bo = NULL;
+	var_entry_t *new = NULL, *bo;
 
 	if (*order == NULL) {
 		new = calloc(1, sizeof (**order));
