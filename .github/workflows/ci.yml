@@ -1,13 +1,13 @@
 {
     "name": "pull-request",
     "on": {
-        "push": { "branches": "master" },
-        "pull_request": { "branches": "master" },
+        "push": { "branches": "main" },
+        "pull_request": { "branches": "main" },
     },
     "jobs": {
         "linux": {
             "runs-on": "ubuntu-latest",
-            "container": "vathpela/efi-ci:f35-x64",
+            "container": "vathpela/efi-ci:f36-x64",
             "steps": [
                 { "uses": "actions/checkout@v2" },
                 { "run": "EFIDIR=test make" },
