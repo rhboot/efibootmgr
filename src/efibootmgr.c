@@ -1192,6 +1192,7 @@ get_entry(list_t *entries, uint16_t num)
 			entry = NULL;
 			continue;
 		}
+		return entry;
 	}
 
 	return entry;
