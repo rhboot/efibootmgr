@@ -420,8 +420,8 @@ add_to_order(const char *name, uint16_t num, uint16_t insert_at)
 		return -1;
 
 	if (insert_at != 0) {
-		if (insert_at > order->data_size)
-			insert_at = order->data_size;
+		if (insert_at * sizeof(uint16_t) > order->data_size)
+			insert_at = order->data_size / sizeof(uint16_t);
 		memcpy(new_data, old_data, insert_at * sizeof(uint16_t));
 	}
 	new_data[insert_at] = num;
