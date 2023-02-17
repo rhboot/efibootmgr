@@ -1509,7 +1509,7 @@ parse_opts(int argc, char **argv)
 		};
 
 		c = getopt_long(argc, argv,
-				"aAb:BcCd:De:E:fFgi:kl:L:m:M:n:No:Op:qrt:Tuv::Vwy@:h",
+				"aAb:BcCd:De:E:fFgi:I:kl:L:m:M:n:No:Op:qrt:Tuv::Vwy@:h",
 				long_options, &option_index);
 		if (c == -1)
 			break;
