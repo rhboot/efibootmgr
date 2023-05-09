@@ -85,7 +85,6 @@ typedef struct {
 	unsigned int showversion:1;
 	unsigned int create:1;
 	unsigned int unicode:1;
-	unsigned int write_signature:1;
 	unsigned int forcegpt:1;
 	unsigned int set_timeout:1;
 	unsigned int delete_timeout:1;

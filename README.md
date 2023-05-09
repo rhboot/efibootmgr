@@ -36,7 +36,6 @@ usage: efibootmgr [options]
         -u | --unicode | --UCS-2  Pass extra args as UCS-2 (default is ASCII).
         -v | --verbose            Print additional information.
         -V | --version            Return version and exit.
-        -w | --write-signature    Write unique sig to MBR if needed.
         -@ | --append-binary-args Append extra variable args from
                                   file (use - to read from stdin).
 ```

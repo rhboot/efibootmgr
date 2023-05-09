@@ -1429,7 +1429,6 @@ usage()
 	printf("\t-u | --unicode | --UCS-2  Handle extra args as UCS-2 (default is ASCII).\n");
 	printf("\t-v | --verbose          Print additional information.\n");
 	printf("\t-V | --version          Return version and exit.\n");
-	printf("\t-w | --write-signature  Write unique sig to MBR if needed.\n");
 	printf("\t-y | --sysprep          Operate on SysPrep variables, not Boot Variables.\n");
 	printf("\t-@ | --append-binary-args file  Append extra args from file (use \"-\" for stdin).\n");
 	printf("\t-h | --help             Show help/usage.\n");
@@ -1503,7 +1502,6 @@ parse_opts(int argc, char **argv)
 			{"UCS-2",                  no_argument, 0, 'u'},
 			{"verbose",          optional_argument, 0, 'v'},
 			{"version",                no_argument, 0, 'V'},
-			{"write-signature",        no_argument, 0, 'w'},
 			{"sysprep",                no_argument, 0, 'y'},
 			{"append-binary-args", required_argument, 0, '@'},
 			{"help",                   no_argument, 0, 'h'},
@@ -1752,10 +1750,6 @@ parse_opts(int argc, char **argv)
 			break;
 		case 'V':
 			opts.showversion = 1;
-			break;
-
-		case 'w':
-			opts.write_signature = 1;
 			break;
 
 		case 'y':

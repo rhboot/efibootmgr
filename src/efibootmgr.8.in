@@ -4,7 +4,7 @@
 efibootmgr \- change the UEFI Boot Manager configuration
 .SH SYNOPSIS
 
-\fBefibootmgr\fR [ \fB-a\fR ] [ \fB-A\fR ] [ \fB-b \fIXXXX\fB\fR ] [ \fB-B\fR ] [ \fB-c\fR ] [ \fB-d \fIDISK\fB\fR ] [ \fB-D\fR ] [ \fB-e \fI1|3|-1\fB\fR ] [ \fB-E \fINUM\fB\fR ] [ \fB--full-dev-path\fR | \fB--file-dev-path\fR ] [ \fB-f\fR ] [ \fB-F\fR ] [ \fB-g\fR ] [ \fB-i \fINAME\fB\fR ] [ \fB-l \fINAME\fB\fR ] [ \fB-L \fILABEL\fB\fR ] [ \fB-m \fIt|f\fB\fR ] [ \fB-M \fIX\fB\fR ] [ \fB-n \fIXXXX\fB\fR ] [ \fB-N\fR ] [ \fB-o \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR\fI ...\fR ] [ \fB-O\fR ] [ \fB-p \fIPART\fB\fR ] [ \fB-q\fR ] [ \fB-r\fR | \fB-y\fR ] [ \fB-t \fIseconds\fB\fR ] [ \fB-T\fR ] [ \fB-u\fR ] [ \fB-v\fR ] [ \fB-V\fR ] [ \fB-w\fR ] [ \fB-@ \fIfile\fB\fR ]
+\fBefibootmgr\fR [ \fB-a\fR ] [ \fB-A\fR ] [ \fB-b \fIXXXX\fB\fR ] [ \fB-B\fR ] [ \fB-c\fR ] [ \fB-d \fIDISK\fB\fR ] [ \fB-D\fR ] [ \fB-e \fI1|3|-1\fB\fR ] [ \fB-E \fINUM\fB\fR ] [ \fB--full-dev-path\fR | \fB--file-dev-path\fR ] [ \fB-f\fR ] [ \fB-F\fR ] [ \fB-g\fR ] [ \fB-i \fINAME\fB\fR ] [ \fB-l \fINAME\fB\fR ] [ \fB-L \fILABEL\fB\fR ] [ \fB-m \fIt|f\fB\fR ] [ \fB-M \fIX\fB\fR ] [ \fB-n \fIXXXX\fB\fR ] [ \fB-N\fR ] [ \fB-o \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR\fI ...\fR ] [ \fB-O\fR ] [ \fB-p \fIPART\fB\fR ] [ \fB-q\fR ] [ \fB-r\fR | \fB-y\fR ] [ \fB-t \fIseconds\fB\fR ] [ \fB-T\fR ] [ \fB-u\fR ] [ \fB-v\fR ] [ \fB-V\fR ] [ \fB-@ \fIfile\fB\fR ]
 
 .SH "DESCRIPTION"
 .PP
@@ -145,9 +145,6 @@ Verbose mode - prints additional information.
 .TP
 \fB-V | --version\fR
 Just print version string and exit.
-.TP
-\fB-w | --write-signature\fR
-Write unique signature to the MBR if needed.
 .TP
 \fB-y | --sysprep\fR
 Operate on SysPrep#### variables instead of Boot#### variables.
