@@ -11,14 +11,21 @@ TARGETS=$(BINTARGETS) efibootmgr.8 efibootdump.8
 all : deps $(TARGETS)
 
 EFIBOOTMGR_SOURCES = efibootmgr.c efi.c parse_loader_data.c
+ifdef JSON
+EFIBOOTMGR_SOURCES += json.c
+endif
 EFICONMAN_SOURCES = eficonman.c
 EFIBOOTDUMP_SOURCES = efibootdump.c parse_loader_data.c
 EFIBOOTNEXT_SOURCES = efibootnext.c
 ALL_SOURCES=$(EFIBOOTMGR_SOURCES)
 -include $(call deps-of,$(ALL_SOURCES))
 
+
 efibootmgr : $(call objects-of,$(EFIBOOTMGR_SOURCES))
 efibootmgr : PKGS=efivar efiboot
+ifdef JSON
+efibootmgr : PKGS+=jansson
+endif
 
 eficonman : $(call objects-of,$(EFICONMAN_SOURCES))
 eficonman : PKGS=efivar efiboot popt

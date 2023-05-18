@@ -95,6 +95,7 @@ typedef struct {
 	unsigned int sysprep:1;
 	unsigned int explicit_label:1;
 	unsigned int list_supported_signature_types:1;
+	unsigned int json:1;
 	short int timeout;
 	uint16_t index;
 } efibootmgr_opt_t;
