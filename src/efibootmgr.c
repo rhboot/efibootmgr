@@ -51,7 +51,6 @@
 #include <efiboot.h>
 #include <inttypes.h>
 
-#include "list.h"
 #include "efi.h"
 #include "parse_loader_data.h"
 #include "efibootmgr.h"
@@ -62,16 +61,6 @@
 #endif
 
 int verbose;
-
-typedef struct _var_entry {
-	char		*name;
-	efi_guid_t	guid;
-	uint8_t		*data;
-	size_t		data_size;
-	uint32_t	attributes;
-	uint16_t	num;
-	list_t		list;
-} var_entry_t;
 
 /* global variables */
 static	LIST_HEAD(entry_list);
@@ -348,7 +337,7 @@ err:
 	return NULL;
 }
 
-static int
+int
 read_order(const char *name, var_entry_t **order)
 {
 	int rc;
@@ -548,7 +537,7 @@ all_done:
 	return rc;
 }
 
-static int
+int
 read_u16(const char *name)
 {
 	efi_guid_t guid = EFI_GLOBAL_GUID;
