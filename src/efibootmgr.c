@@ -1404,7 +1404,7 @@ usage()
 	printf("\t-d | --disk disk      Disk containing boot loader (defaults to /dev/sda).\n");
 	printf("\t-D | --remove-dups    Remove duplicate values from BootOrder.\n");
 	printf("\t-e | --edd [1|3]      Force boot entries to be created using EDD 1.0 or 3.0 info.\n");
-	printf("\t-E | --device num     EDD 1.0 device number (defaults to 0x80).\n");
+	printf("\t-E | --edd-device num     EDD 1.0 device number (defaults to 0x80).\n");
 	printf("\t     --full-dev-path  Use a full device path.\n");
 	printf("\t     --file-dev-path  Use an abbreviated File() device path.\n");
 	printf("\t-f | --reconnect      Re-connect devices after driver is loaded.\n");
