@@ -1928,10 +1928,6 @@ main(int argc, char **argv)
 	}
 
 	if (opts.delete_bootnext) {
-		if (!is_current_entry(opts.delete_bootnext))
-			errorx(17, "Boot entry %04X does not exist",
-				opts.delete_bootnext);
-
 		ret = efi_del_variable(EFI_GLOBAL_GUID, "BootNext");
 		if (ret < 0)
 			error(10, "Could not delete BootNext");
