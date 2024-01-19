@@ -1390,6 +1390,61 @@ show_mirror(void)
 	}
 }
 
+static int
+list_supported_signature_types(void)
+{
+	var_entry_t entry = { 0, };
+	int rc;
+	size_t n_entries;
+	unsigned int i;
+
+	rc = efi_get_variable(EFI_GLOBAL_GUID, "SignatureSupport",
+			      &entry.data, &entry.data_size, &entry.attributes);
+	if (rc == ENOENT) {
+		warning("Firmware does not support any signature types");
+		return 0;
+	}
+	if (rc < 0) {
+		efi_error("efi_get_variable failed");
+		return -1;
+	}
+	if (entry.data_size % sizeof(efi_guid_t) != 0)
+		warning("SignatureSupport variable has suspicious size %zu",
+			entry.data_size);
+
+	n_entries = entry.data_size / sizeof(efi_guid_t);
+
+	for (i = 0; i < n_entries; i++) {
+		efi_guid_t *guid = &((efi_guid_t *)entry.data)[i];
+		char *guidname = NULL;
+
+		rc = efi_guid_to_name(guid, &guidname);
+		if (rc < 0) {
+			efi_error("efi_guid_to_name failed");
+			return -1;
+		}
+		printf("%s", guidname);
+		free(guidname);
+		guidname = NULL;
+
+		if (verbose >= 1) {
+			rc = efi_guid_to_str(guid, &guidname);
+
+			if (rc < 0) {
+				putchar('\n');
+				efi_error("efi_guid_to_str failed");
+				return -1;
+			}
+			printf(" %s", guidname);
+			free(guidname);
+		}
+
+		putchar('\n');
+	}
+
+	return 0;
+}
+
 static void
 usage()
 {
@@ -1494,6 +1549,7 @@ parse_opts(int argc, char **argv)
 			{"part",             required_argument, 0, 'p'},
 			{"quiet",                  no_argument, 0, 'q'},
 			{"driver",                 no_argument, 0, 'r'},
+			{"list-signature-types",   no_argument, 0, 's'},
 			{"timeout",          required_argument, 0, 't'},
 			{"delete-timeout",         no_argument, 0, 'T'},
 			{"unicode",                no_argument, 0, 'u'},
@@ -1507,7 +1563,7 @@ parse_opts(int argc, char **argv)
 		};
 
 		c = getopt_long(argc, argv,
-				"aAb:BcCd:De:E:fFgi:I:kl:L:m:M:n:No:Op:qrt:Tuv::Vwy@:h",
+				"aAb:BcCd:De:E:fFgi:I:kl:L:m:M:n:No:Op:qrst:Tuv::Vwy@:h",
 				long_options, &option_index);
 		if (c == -1)
 			break;
@@ -1713,6 +1769,9 @@ parse_opts(int argc, char **argv)
 		case 'r':
 			opts.driver = 1;
 			break;
+		case 's':
+			opts.list_supported_signature_types = 1;
+			break;
 		case 't':
 			rc = sscanf(optarg, "%u", &num);
 			if (rc == 1) {
@@ -1806,6 +1865,13 @@ main(int argc, char **argv)
 	}
 
 	verbose = opts.verbose;
+
+	if (opts.list_supported_signature_types) {
+		int rc = list_supported_signature_types();
+		if (rc < 0)
+			errorx(40, "Could not read and display supported signature types\n");
+		exit(0);
+	}
 
 	if (opts.sysprep && opts.driver)
 		errx(25, "--sysprep and --driver may not be used together.");
