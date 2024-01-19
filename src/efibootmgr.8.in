@@ -4,7 +4,7 @@
 efibootmgr \- change the UEFI Boot Manager configuration
 .SH SYNOPSIS
 
-\fBefibootmgr\fR [ \fB-a\fR ] [ \fB-A\fR ] [ \fB-b \fIXXXX\fB\fR ] [ \fB-B\fR ] [ \fB-c\fR ] [ \fB-d \fIDISK\fB\fR ] [ \fB-D\fR ] [ \fB-e \fI1|3|-1\fB\fR ] [ \fB-E \fINUM\fB\fR ] [ \fB--full-dev-path\fR | \fB--file-dev-path\fR ] [ \fB-f\fR ] [ \fB-F\fR ] [ \fB-g\fR ] [ \fB-i \fINAME\fB\fR ] [ \fB-l \fINAME\fB\fR ] [ \fB-L \fILABEL\fB\fR ] [ \fB-m \fIt|f\fB\fR ] [ \fB-M \fIX\fB\fR ] [ \fB-n \fIXXXX\fB\fR ] [ \fB-N\fR ] [ \fB-o \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR\fI ...\fR ] [ \fB-O\fR ] [ \fB-p \fIPART\fB\fR ] [ \fB-q\fR ] [ \fB-r\fR | \fB-y\fR ] [ \fB-t \fIseconds\fB\fR ] [ \fB-T\fR ] [ \fB-u\fR ] [ \fB-v\fR ] [ \fB-V\fR ] [ \fB-@ \fIfile\fB\fR ]
+\fBefibootmgr\fR [ \fB-a\fR ] [ \fB-A\fR ] [ \fB-b \fIXXXX\fB\fR ] [ \fB-B\fR ] [ \fB-c\fR ] [ \fB-d \fIDISK\fB\fR ] [ \fB-D\fR ] [ \fB-e \fI1|3|-1\fB\fR ] [ \fB-E \fINUM\fB\fR ] [ \fB--full-dev-path\fR | \fB--file-dev-path\fR ] [ \fB-f\fR ] [ \fB-F\fR ] [ \fB-g\fR ] [ \fB-i \fINAME\fB\fR ] [ \fB-l \fINAME\fB\fR ] [ \fB-L \fILABEL\fB\fR ] [ \fB-m \fIt|f\fB\fR ] [ \fB-M \fIX\fB\fR ] [ \fB-n \fIXXXX\fB\fR ] [ \fB-N\fR ] [ \fB-o \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR\fI ...\fR ] [ \fB-O\fR ] [ \fB-p \fIPART\fB\fR ] [ \fB-q\fR ] [ \fB-r\fR | \fB-y\fR ] [ \fB-s\fR ] [ \fB-t \fIseconds\fB\fR ] [ \fB-T\fR ] [ \fB-u\fR ] [ \fB-v\fR ] [ \fB-V\fR ] [ \fB-@ \fIfile\fB\fR ]
 
 .SH "DESCRIPTION"
 .PP
@@ -130,6 +130,11 @@ Quiet mode - suppresses output.
 \fB-r | --driver\fR
 Operate on Driver#### variables instead of Boot#### variables.
 .TP
+\fB-s | --list-signature-types\fR
+List cryptographic signature types supported on this machine and exit.  If in
+verbose mode, the symbolic name as well as the raw GUID will be displayed.
+Consult the UEFI Specification for more details.
+.TP
 \fB-t | --timeout \fIseconds\fB\fR
 Boot Manager timeout, in \fIseconds\fR\&.
 .TP
@@ -223,6 +228,32 @@ entry 4 and remove it from the BootOrder.
 A system administrator wants to create a boot option to network
 boot.  You create the boot entry with:
 \fBefibootmgr -c -i eth0 -L netboot [ -l '\\filename.efi' ]\fR
+.SS "Displaying the supported cryptographic signature types"
+\fR
+.nf
+.B
+[root@localhost ~]# efibootmgr -s
+x509_sha256
+x509_sha384
+x509_sha512
+sha256
+x509_cert
+rsa2048
+rsa2048_sha256
+rsa2048_sha1
+external_management
+.B
+[root@localhost ~]# efibootmgr -s -v
+x509_sha256 3bd2a492-96c0-4079-b420-fcf98ef103ed
+x509_sha384 7076876e-80c2-4ee6-aad2-28b349a6865b
+x509_sha512 446dbf63-2502-4cda-bcfa-2465d2b0fe9d
+sha256 c1c41626-504c-4092-aca9-41f936934328
+x509_cert a5c059a1-94e4-4aa7-87b5-ab155c2bf072
+rsa2048 3c5766e8-269c-4e34-aa14-ed776e85b3b6
+rsa2048_sha256 e2b36190-879b-4a3d-ad8d-f2e7bba32784
+rsa2048_sha1 67f8444f-8743-48f1-a328-1eaab8736080
+external_management 452e8ced-dfff-4b8c-ae01-5118862e682c
+.fi
 .SH "BUGS"
 .PP
 Please direct any bugs, features, patches, etc. to the Red Hat bootloader team at https://github.com/rhboot/efibootmgr \&.
