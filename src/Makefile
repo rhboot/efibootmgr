@@ -5,8 +5,6 @@ include $(TOPDIR)/Make.version
 include $(TOPDIR)/Make.rules
 include $(TOPDIR)/Make.defaults
 
-SUBDIR_CFLAGS = -I$(SRCDIR)/include
-
 BINTARGETS=efibootmgr efibootdump
 TARGETS=$(BINTARGETS) efibootmgr.8 efibootdump.8
 
@@ -35,7 +33,6 @@ deps : PKGS=efivar efiboot popt
 deps : $(ALL_SOURCES)
 	$(MAKE) -f $(TOPDIR)/Make.deps \
 		SOURCES="$(ALL_SOURCES)" \
-		SUBDIR_CFLAGS="$(SUBDIR_CFLAGS)" \
 		PKGS="$(PKGS)" \
 		deps
 
