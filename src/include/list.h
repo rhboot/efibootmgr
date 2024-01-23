@@ -2,9 +2,7 @@
    Copied from the Linux 2.4.4 kernel, in linux/include/linux/list.h
 */
 
-#ifndef _LINUX_LIST_H
-#define _LINUX_LIST_H
-
+#pragma once
 
 /*
  * Simple doubly linked list implementation.
@@ -163,7 +161,3 @@ static __inline__ void list_splice(struct list_head *list, struct list_head *hea
 #define list_for_each_safe(pos, n, head) \
 	for (pos = (head)->next, n = pos->next; pos != (head); \
 		pos = n, n = pos->next)
-
-
-
-#endif

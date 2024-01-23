@@ -18,8 +18,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef EFI_H
-#define EFI_H
+#pragma once
 
 /*
  * Extensible Firmware Interface
@@ -69,5 +68,3 @@ typedef struct {
 
 #define ADDRESS_RANGE_MIRROR_VARIABLE_CURRENT "MirrorCurrent"
 #define ADDRESS_RANGE_MIRROR_VARIABLE_REQUEST "MirrorRequest"
-
-#endif /* EFI_H */

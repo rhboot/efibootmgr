@@ -17,8 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef _PARSE_LOADER_DATA_H
-#define _PARSE_LOADER_DATA_H
+#pragma once
 
 #include <stdint.h>
 #include "efi.h"
@@ -27,5 +26,3 @@ ssize_t parse_efi_guid(char *buffer, size_t buffer_size,
 		       uint8_t *p, uint64_t length);
 ssize_t parse_raw_text(char *buffer, size_t buffer_size,
 		       uint8_t *p, uint64_t length);
-
-#endif

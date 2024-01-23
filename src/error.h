@@ -17,8 +17,8 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-#ifndef EFIBOOTMGR_ERROR_H__
-#define EFIBOOTMGR_ERROR_H__ 1
+
+#pragma once
 
 extern int verbose;
 
@@ -163,4 +163,3 @@ warningx(const char *fmt, ...)
 	conditional_error_reporter(verbose >= 1, 1);
 	va_end(ap);
 }
-#endif /* EFIBOOTMGR_ERROR_H__ */
