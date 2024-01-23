@@ -18,8 +18,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _EFIBOOTMGR_H
-#define _EFIBOOTMGR_H
+#pragma once
 
 #define EFIBOOTMGR_IPV4 0
 #define EFIBOOTMGR_IPV6 1
@@ -99,5 +98,3 @@ typedef struct {
 } efibootmgr_opt_t;
 
 extern efibootmgr_opt_t opts;
-
-#endif

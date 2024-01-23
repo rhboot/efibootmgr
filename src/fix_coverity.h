@@ -5,8 +5,7 @@
  * Distributed under terms of the GPLv3 license.
  */
 
-#ifndef FIX_COVERITY_H
-#define FIX_COVERITY_H
+#pragma once
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -90,5 +89,4 @@ typedef _Complex float __cfloat128 __attribute__ ((__mode__ (__TC__)));
 #undef __COVERITY_GCC_VERSION_AT_LEAST
 #endif
 
-#endif /* !FIX_COVERITY_H */
 // vim:fenc=utf-8:tw=75
