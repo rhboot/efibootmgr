@@ -4,7 +4,7 @@
 efibootmgr \- change the UEFI Boot Manager configuration
 .SH SYNOPSIS
 
-\fBefibootmgr\fR [ \fB-a\fR ] [ \fB-A\fR ] [ \fB-b \fIXXXX\fB\fR ] [ \fB-B\fR ] [ \fB-c\fR ] [ \fB-d \fIDISK\fB\fR ] [ \fB-D\fR ] [ \fB-e \fI1|3|-1\fB\fR ] [ \fB-E \fINUM\fB\fR ] [ \fB--full-dev-path\fR | \fB--file-dev-path\fR ] [ \fB-f\fR ] [ \fB-F\fR ] [ \fB-g\fR ] [ \fB-i \fINAME\fB\fR ] [ \fB-l \fINAME\fB\fR ] [ \fB-L \fILABEL\fB\fR ] [ \fB-m \fIt|f\fB\fR ] [ \fB-M \fIX\fB\fR ] [ \fB-n \fIXXXX\fB\fR ] [ \fB-N\fR ] [ \fB-o \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR\fI ...\fR ] [ \fB-O\fR ] [ \fB-p \fIPART\fB\fR ] [ \fB-q\fR ] [ \fB-r\fR | \fB-y\fR ] [ \fB-t \fIseconds\fB\fR ] [ \fB-T\fR ] [ \fB-u\fR ] [ \fB-v\fR ] [ \fB-V\fR ] [ \fB-w\fR ] [ \fB-@ \fIfile\fB\fR ]
+\fBefibootmgr\fR [ \fB-a\fR ] [ \fB-A\fR ] [ \fB-b \fIXXXX\fB\fR ] [ \fB-B\fR ] [ \fB-c\fR ] [ \fB-d \fIDISK\fB\fR ] [ \fB-D\fR ] [ \fB-e \fI1|3|-1\fB\fR ] [ \fB-E \fINUM\fB\fR ] [ \fB--full-dev-path\fR | \fB--file-dev-path\fR ] [ \fB-f\fR ] [ \fB-F\fR ] [ \fB-g\fR ] [ \fB-i \fINAME\fB\fR ] [ \fB-l \fINAME\fB\fR ] [ \fB-L \fILABEL\fB\fR ] [ \fB-m \fIt|f\fB\fR ] [ \fB-M \fIX\fB\fR ] [ \fB-n \fIXXXX\fB\fR ] [ \fB-N\fR ] [ \fB-o \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR\fI ...\fR ] [ \fB-O\fR ] [ \fB-p \fIPART\fB\fR ] [ \fB-q\fR ] [ \fB-r\fR | \fB-y\fR ] [ \fB-t \fIseconds\fB\fR ] [ \fB-T\fR ] [ \fB-u\fR ] [ \fB-v\fR ] [ \fB-V\fR ] [ \fB-w\fR ] [ \fB-@ \fIfile\fB\fR ] [\fIboot_cmdline\fB\fR ]
 
 .SH "DESCRIPTION"
 .PP
@@ -157,6 +157,13 @@ Append extra variable args from file (use - to read
 from stdin).  Data in file is appended as command line
 arguments to the boot loader command, with no modification to
 the data, so you can pass any binary or text data necessary.
+.SH "ARGUMENTS"
+.PP
+.TP
+\fBboot_cmdline \fR
+If provided, extra arguments are appended to the boot entry,
+and are passed as command line arguments to the EFI program
+specified with \fB-l\fR.
 .SH "EXAMPLES"
 \fR
 .SS "Displaying the current settings (must be root):"
@@ -222,6 +229,16 @@ that the Linux entry be taken on next boot.
 Assuming the configuration in the first example,
 \fBefibootmgr -b 4 -B\fR could be called to delete
 entry 4 and remove it from the BootOrder.
+.SS "Booting EFISTUB kernel"
+\fR
+.nf
+.B
+[root@localhost ~]# efibootmgr -c -d /dev/sda -p 1 -L "Linux" -l '\EFI\vmlinuz' -u 'root=/dev/sda3 ro initrd=EFI/initramfs-linux.img'
+.fi
+Kernels built with EFISTUB support can be boot directly as an EFI program.
+To provide the necessary kernel command line in this case via \fBefibootmgr\fR.
+It is important to use \fB-u\fR in this case because the kernel expects to read
+these options in UCS-2. See also \fB-@\fR.
 .SS "Creating network boot entries"
 A system administrator wants to create a boot option to network
 boot.  You create the boot entry with:
