@@ -100,3 +100,24 @@ Alternative use cases could be as follows:
    `efibootmgr -c -i eth0 -L netboot`
 
 Please direct any bugs, features, patches, etc. to the Red Hat bootloader team at https://github.com/rhboot/efibootmgr .
+
+Meson Notes
+===========
+
+Following the port to Meson, we no longer build *in-place*.
+
+Create a `build` directory and configure and build the project there. e.g.
+
+    mkdir build
+    cd build
+    meson setup ../
+    ninja
+
+The old build targets are now as follows:
+
+ * `make archive` -> `ninja dist`
+ * `make distclean` -> `ninja clean`
+ * `make scanbuild` -> `ninja scan-build`
+ * `make fanalyzer` -> `meson configure -Db_sanitize=address,undefined && ninja`
+ * `make efibootmgr-static` -> `meson configure -Dprefer_static=true && ninja`
+ * `EFIDIR=fedora make` -> `meson configure -Defidir=fedora && ninja`

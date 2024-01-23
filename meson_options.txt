@@ -1,0 +1,15 @@
+option('efidir',
+  type: 'string',
+  value: 'fedora',
+  description: 'Default EFI directory, e.g. fedora',
+)
+option('efi_loader',
+  type: 'string',
+  value: 'grub.efi',
+  description: 'Default EFI loader, e.g. grub.efi',
+)
+option('efi_label',
+  type: 'string',
+  value: 'Linux',
+  description: 'Default EFI label, e.g. Linux',
+)
