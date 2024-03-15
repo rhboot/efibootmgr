@@ -58,7 +58,6 @@ typedef struct {
 	uint16_t ip_remote_port;
 	uint16_t ip_protocol;
 	uint8_t ip_addr_origin;
-	char *uri;
 
 	char *loader;
 	unsigned char *label;
