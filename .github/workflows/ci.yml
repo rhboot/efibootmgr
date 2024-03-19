@@ -10,7 +10,7 @@
             "container": "vathpela/efi-ci:f36-x64",
             "steps": [
                 { "uses": "actions/checkout@v2" },
-                { "run": "EFIDIR=test make" },
+                { "run": "meson build && ninja -C build" },
             ],
         },
     },
