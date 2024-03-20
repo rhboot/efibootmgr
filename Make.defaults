@@ -46,6 +46,9 @@ cflags	= $(EXTRALIBDIR) $(EXTRAINCDIR) $(CFLAGS) $(SUBDIR_CFLAGS) \
 	$(if $(findstring clang,$(CC)),$(clang_cflags),) \
 	$(if $(findstring gcc,$(CC)),$(gcc_cflags),) \
 	$(call pkg-config-cflags)
+ifdef JSON
+	cflags += -DJSON
+endif
 clang_ccldflags =
 gcc_ccldflags = -fno-merge-constants \
 	-Wl,--fatal-warnings,--no-allow-shlib-undefined \

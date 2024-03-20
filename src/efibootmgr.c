@@ -51,27 +51,17 @@
 #include <efiboot.h>
 #include <inttypes.h>
 
-#include "list.h"
 #include "efi.h"
 #include "parse_loader_data.h"
 #include "efibootmgr.h"
 #include "error.h"
+#include "json.h"
 
 #ifndef EFIBOOTMGR_VERSION
 #define EFIBOOTMGR_VERSION "unknown (fix Makefile!)"
 #endif
 
 int verbose;
-
-typedef struct _var_entry {
-	char		*name;
-	efi_guid_t	guid;
-	uint8_t		*data;
-	size_t		data_size;
-	uint32_t	attributes;
-	uint16_t	num;
-	list_t		list;
-} var_entry_t;
 
 /* global variables */
 static	LIST_HEAD(entry_list);
@@ -348,7 +338,7 @@ err:
 	return NULL;
 }
 
-static int
+int
 read_order(const char *name, var_entry_t **order)
 {
 	int rc;
@@ -548,7 +538,7 @@ all_done:
 	return rc;
 }
 
-static int
+int
 read_u16(const char *name)
 {
 	efi_guid_t guid = EFI_GLOBAL_GUID;
@@ -1467,6 +1457,7 @@ usage()
 	printf("\t-g | --gpt            Force disk with invalid PMBR to be treated as GPT.\n");
 	printf("\t-i | --iface name     Create a netboot entry for the named interface.\n");
 	printf("\t-I | --index number   When creating an entry, insert it in bootorder at specified position (default: 0).\n");
+	printf("\t-j | --json           Enable JSON output\n");
 	printf("\t-l | --loader name     (Defaults to \""DEFAULT_LOADER"\").\n");
 	printf("\t-L | --label label     Boot manager display label (defaults to \"Linux\").\n");
 	printf("\t-m | --mirror-below-4G t|f Mirror memory below 4GB.\n");
@@ -1537,6 +1528,7 @@ parse_opts(int argc, char **argv)
 			{"gpt",                    no_argument, 0, 'g'},
 			{"iface",            required_argument, 0, 'i'},
 			{"index",            required_argument, 0, 'I'},
+			{"json",                   no_argument, 0, 'j'},
 			{"keep",                   no_argument, 0, 'k'},
 			{"loader",           required_argument, 0, 'l'},
 			{"label",            required_argument, 0, 'L'},
@@ -1563,7 +1555,7 @@ parse_opts(int argc, char **argv)
 		};
 
 		c = getopt_long(argc, argv,
-				"aAb:BcCd:De:E:fFgi:I:kl:L:m:M:n:No:Op:qrst:Tuv::Vwy@:h",
+				"aAb:BcCd:De:E:fFgi:I:jkl:L:m:M:n:No:Op:qrst:Tuv::Vwy@:h",
 				long_options, &option_index);
 		if (c == -1)
 			break;
@@ -1676,6 +1668,9 @@ parse_opts(int argc, char **argv)
 				       optarg);
 			}
 			opts.index = (uint16_t)lindex;
+			break;
+		case 'j':
+			opts.json = 1;
 			break;
 		case 'k':
 			opts.keep_old_entries = 1;
@@ -2017,7 +2012,7 @@ main(int argc, char **argv)
 		ret=set_mirror(opts.below4g, opts.above4g);
 	}
 
-	if (!opts.quiet && ret == 0) {
+	if (!opts.quiet && !opts.json && ret == 0) {
 		switch (mode) {
 		case boot:
 			num = read_u16("BootNext");
@@ -2046,6 +2041,11 @@ main(int argc, char **argv)
 			break;
 		}
 	}
+
+	if (!opts.quiet && opts.json && ret == 0) {
+		print_json(&entry_list, mode, prefices, order_name);
+	}
+
 	free_vars(&entry_list);
 	free_array(names);
 	if (ret)
