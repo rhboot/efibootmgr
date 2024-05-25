@@ -11,33 +11,42 @@ legacy efivars kernel module to be loaded prior to use.
 
 ```
 usage: efibootmgr [options]
-        -a | --active          Set bootnum active.
-        -A | --inactive        Set bootnum inactive.
-        -b | --bootnum XXXX    Modify BootXXXX (hex).
-        -B | --delete-bootnum  Delete bootnum.
-        -c | --create          Create new variable bootnum and add to bootorder.
-        -d | --disk disk       (Defaults to /dev/sda) containing loader.
-        -e | --edd [1|3|-1]    Force EDD 1.0 or 3.0 creation variables, or guess.
-        -E | --device num      EDD 1.0 device number (defaults to 0x80).
-        -f | --reconnect       Re-connect devices after driver is loaded.
-        -F | --no-reconnect    Do not re-connect devices after driver is loaded.
-        -g | --gpt             Force disk w/ invalid PMBR to be treated as GPT.
-        -i | --iface name      Create a netboot entry for the named interface.
-        -l | --loader name     (Defaults to \elilo.efi).
-        -L | --label label     Boot manager display label (defaults to "Linux").
-        -n | --bootnext XXXX   Set BootNext to XXXX (hex).
-        -N | --delete-bootnext Delete BootNext.
-        -o | --bootorder XXXX,YYYY,ZZZZ,...     Explicitly set BootOrder (hex).
-        -O | --delete-bootorder   Delete BootOrder.
-        -p | --part part          (Defaults to 1) containing loader.
-        -q | --quiet              Be quiet.
-        -t | --timeout seconds    Boot manager timeout.
-        -T | --delete-timeout     Delete Timeout value.
-        -u | --unicode | --UCS-2  Pass extra args as UCS-2 (default is ASCII).
-        -v | --verbose            Print additional information.
-        -V | --version            Return version and exit.
-        -@ | --append-binary-args Append extra variable args from
-                                  file (use - to read from stdin).
+	-a | --active         Set bootnum active.
+	-A | --inactive       Set bootnum inactive.
+	-b | --bootnum XXXX   Modify BootXXXX (hex).
+	-B | --delete-bootnum Delete bootnum.
+	-c | --create         Create new variable bootnum and add to bootorder at index (-I).
+	-C | --create-only    Create new variable bootnum and do not add to bootorder.
+	-d | --disk disk      Disk containing boot loader (defaults to /dev/sda).
+	-D | --remove-dups    Remove duplicate values from BootOrder.
+	-e | --edd [1|3]      Force boot entries to be created using EDD 1.0 or 3.0 info.
+	-E | --edd-device num     EDD 1.0 device number (defaults to 0x80).
+	    --full-dev-path  Use a full device path.
+	    --file-dev-path  Use an abbreviated File() device path.
+	-f | --reconnect      Re-connect devices after driver is loaded.
+	-F | --no-reconnect   Do not re-connect devices after driver is loaded.
+	-g | --gpt            Force disk with invalid PMBR to be treated as GPT.
+	-i | --iface name     Create a netboot entry for the named interface.
+	-I | --index number   When creating an entry, insert it in bootorder at specified position (default: 0).
+	-l | --loader name     (Defaults to "\EFI\fedora\grub.efi").
+	-L | --label label     Boot manager display label (defaults to "Linux").
+	-m | --mirror-below-4G t|f Mirror memory below 4GB.
+	-M | --mirror-above-4G X Percentage memory to mirror above 4GB.
+	-n | --bootnext XXXX   Set BootNext to XXXX (hex).
+	-N | --delete-bootnext Delete BootNext.
+	-o | --bootorder XXXX,YYYY,ZZZZ,...     Explicitly set BootOrder (hex).
+	-O | --delete-bootorder Delete BootOrder.
+	-p | --part part        Partition containing loader (defaults to 1 on partitioned devices).
+	-q | --quiet            Be quiet.
+	-r | --driver           Operate on Driver variables, not Boot Variables.
+	-t | --timeout seconds  Set boot manager timeout waiting for user input.
+	-T | --delete-timeout   Delete Timeout.
+	-u | --unicode | --UCS-2  Use UCS-2 encoding (instead of ASCII) to display/encode entry data.
+	-v | --verbose          Print additional information.
+	-V | --version          Return version and exit.
+	-y | --sysprep          Operate on SysPrep variables, not Boot Variables.
+	-@ | --append-binary-args file  Append extra args from file (use "-" for stdin).
+	-h | --help             Show help/usage.
 ```
 
 Typical usage:

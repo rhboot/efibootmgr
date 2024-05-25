@@ -142,8 +142,7 @@ Boot Manager timeout, in \fIseconds\fR\&.
 Delete Timeout variable.
 .TP
 \fB-u | --unicode | --UCS-2 \fR
-Handle extra command line arguments as UCS-2 (default is
-ASCII).
+Use UCS-2 encoding (instead of ASCII) to display/encode entry data.
 .TP
 \fB-v | --verbose\fR
 Verbose mode - prints additional information.

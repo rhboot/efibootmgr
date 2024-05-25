@@ -1078,7 +1078,7 @@ show_var_path(efi_load_option *load_option, size_t boot_data_size)
 		rc = parser(text_path, text_path_len,
 			    optional_data, optional_data_len);
 		if (rc < 0) {
-			warning("Could not parse device path");
+			warning("Could not parse optional data");
 			free(text_path);
 			return;
 		}
@@ -1480,7 +1480,7 @@ usage()
 	printf("\t-r | --driver           Operate on Driver variables, not Boot Variables.\n");
 	printf("\t-t | --timeout seconds  Set boot manager timeout waiting for user input.\n");
 	printf("\t-T | --delete-timeout   Delete Timeout.\n");
-	printf("\t-u | --unicode | --UCS-2  Handle extra args as UCS-2 (default is ASCII).\n");
+	printf("\t-u | --unicode | --UCS-2  Use UCS-2 encoding (instead of ASCII) to display/encode entry data.\n");
 	printf("\t-v | --verbose          Print additional information.\n");
 	printf("\t-V | --version          Return version and exit.\n");
 	printf("\t-y | --sysprep          Operate on SysPrep variables, not Boot Variables.\n");
@@ -1923,7 +1923,7 @@ main(int argc, char **argv)
 	if (opts.active >= 0) {
 		if (opts.num == -1) {
 			errorx(4,
-			       "You must specify a entry to activate (see the -b option)");
+			       "You must specify an entry to activate (see the -b option)");
 		} else {
 			ret = set_active_state(prefices[mode]);
 			if (ret < 0)
