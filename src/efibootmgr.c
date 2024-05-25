@@ -1035,7 +1035,7 @@ show_var_path(efi_load_option *load_option, size_t boot_data_size)
 			warning("Could not parse optional data");
 			return;
 		}
-		text_path = calloc(1, sizeof(" File(.")
+		text_path = calloc(1, sizeof("File(.")
 				      + strlen(a)
 				      + strlen(")"));
 		if (!text_path) {
@@ -1045,7 +1045,7 @@ show_var_path(efi_load_option *load_option, size_t boot_data_size)
 		}
 		char *b;
 
-		b = stpcpy(text_path, " File(.");
+		b = stpcpy(text_path, "File(.");
 		b = stpcpy(b, a);
 		stpcpy(b, ")");
 		free(a);
@@ -1083,6 +1083,8 @@ show_var_path(efi_load_option *load_option, size_t boot_data_size)
 			return;
 		}
 	}
+	if (strlen(text_path) > 0)
+		printf(" ");
 	printf("%s", text_path);
 	free(text_path);
 	printf("\n");
