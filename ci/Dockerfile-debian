@@ -1,0 +1,4 @@
+FROM debian:unstable
+RUN apt-get update -qq
+RUN apt-get install -yq --no-install-recommends meson ninja-build pkg-config gcc libefivar-dev libefiboot-dev libpopt-dev
+WORKDIR /build

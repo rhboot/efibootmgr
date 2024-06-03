@@ -31,7 +31,7 @@
 
 */
 
-#include "fix_coverity.h"
+#include "config.h"
 
 #include <ctype.h>
 #include <err.h>
@@ -1468,7 +1468,7 @@ usage()
 	printf("\t-i | --iface name     Create a netboot entry for the named interface.\n");
 	printf("\t-I | --index number   When creating an entry, insert it in bootorder at specified position (default: 0).\n");
 	printf("\t-l | --loader name     (Defaults to \""DEFAULT_LOADER"\").\n");
-	printf("\t-L | --label label     Boot manager display label (defaults to \"Linux\").\n");
+	printf("\t-L | --label label     Boot manager display label (defaults to \""EFI_LABEL"\").\n");
 	printf("\t-m | --mirror-below-4G t|f Mirror memory below 4GB.\n");
 	printf("\t-M | --mirror-above-4G X Percentage memory to mirror above 4GB.\n");
 	printf("\t-n | --bootnext XXXX   Set BootNext to XXXX (hex).\n");
@@ -1499,7 +1499,7 @@ set_default_opts()
 	opts.timeout         = -1;   /* Don't set it */
 	opts.edd10_devicenum = 0x80;
 	opts.loader          = DEFAULT_LOADER;
-	opts.label           = (unsigned char *)"Linux";
+	opts.label           = (unsigned char *)EFI_LABEL;
 	opts.disk            = "/dev/sda";
 	opts.part            = -1;
 }

@@ -20,7 +20,7 @@
  *
  */
 
-#include "fix_coverity.h"
+#include "config.h"
 
 #include <alloca.h>
 #include <err.h>

@@ -1,0 +1,3 @@
+FROM fedora:40
+RUN dnf -y install meson gcc redhat-rpm-config efivar-devel popt-devel
+WORKDIR /build

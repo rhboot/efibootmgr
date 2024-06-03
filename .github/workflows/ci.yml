@@ -1,17 +1,24 @@
-{
-    "name": "pull-request",
-    "on": {
-        "push": { "branches": "main" },
-        "pull_request": { "branches": "main" },
-    },
-    "jobs": {
-        "linux": {
-            "runs-on": "ubuntu-latest",
-            "container": "vathpela/efi-ci:f36-x64",
-            "steps": [
-                { "uses": "actions/checkout@v2" },
-                { "run": "EFIDIR=test make" },
-            ],
-        },
-    },
-}
+name: Build and Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        distro:
+          - fedora
+          - debian
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t efibootmgr-${{ matrix.distro }} -f ci/Dockerfile-${{ matrix.distro }} .
+      - run: docker run -t -v `pwd`:/build efibootmgr-${{ matrix.distro }} ./ci/build-${{ matrix.distro }}.sh
