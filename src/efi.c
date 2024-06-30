@@ -53,6 +53,8 @@ select_var_names_by_prefix(const efi_guid_t *guid, const char *prefix,
 	efi_guid_t global = EFI_GLOBAL_GUID;
 	size_t plen = strlen(prefix);
 	const char *num = name + plen;
+	if (strlen(name) < plen + 4)
+		return 0;
 	if (!strncmp(name, prefix, plen) &&
 			isxdigit(num[0]) && isxdigit(num[1]) &&
 			isxdigit(num[2]) && isxdigit(num[3]) &&
