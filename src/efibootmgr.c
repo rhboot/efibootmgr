@@ -974,9 +974,6 @@ show_var_path(efi_load_option *load_option, size_t boot_data_size)
 	unsigned char *optional_data = NULL;
 	size_t optional_data_len=0;
 	bool is_shim = false;
-	const char * const shim_path_segments[] = {
-		"/File(\\EFI\\", "\\shim", ".efi)", NULL
-	};
 
 	pathlen = efi_loadopt_pathlen(load_option,
 				      boot_data_size);
@@ -1001,13 +998,7 @@ show_var_path(efi_load_option *load_option, size_t boot_data_size)
 	if (rc >= 0) {
 		printf("\t%s", text_path);
 
-		char *a = text_path;
-		for (int i = 0; a && shim_path_segments[i] != NULL; i++) {
-			a = strstr(a, shim_path_segments[i]);
-			if (a)
-				a += strlen(shim_path_segments[i]);
-		}
-		if (a && a[0] == '\0')
+		if (strstr(text_path, "/File(\\"))
 			is_shim = true;
 	}
 
