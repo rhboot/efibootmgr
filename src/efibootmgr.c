@@ -1088,9 +1088,9 @@ show_var_path(efi_load_option *load_option, size_t boot_data_size)
 	printf("\n");
 
 	const_efidp node = dp;
-	if (opts.verbose >= 1)
+	if (opts.verbose >= 2)
 		printf("      dp: ");
-	for (rc = 1; opts.verbose >= 1 && rc > 0; ) {
+	for (rc = 1; opts.verbose >= 2 && rc > 0; ) {
 		ssize_t sz;
 		const_efidp next = NULL;
 		const uint8_t * const data = (const uint8_t * const)node;
@@ -1113,9 +1113,9 @@ show_var_path(efi_load_option *load_option, size_t boot_data_size)
 
 		node = next;
 	}
-	if (opts.verbose >= 1 && optional_data_len)
+	if (opts.verbose >= 2 && optional_data_len)
 		printf("    data: ");
-	for (unsigned int j = 0; opts.verbose >= 1 && j < optional_data_len; j++)
+	for (unsigned int j = 0; opts.verbose >= 2 && j < optional_data_len; j++)
 		printf("%02hhx%s", optional_data[j], j == optional_data_len - 1 ? "\n" : " ");
 }
 
