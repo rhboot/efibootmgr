@@ -1120,29 +1120,36 @@ show_var_path(efi_load_option *load_option, size_t boot_data_size)
 }
 
 static void
+show_one_var(const char *prefix, var_entry_t *boot)
+{
+	efi_load_option *load_option;
+	const unsigned char *description;
+
+	load_option = (efi_load_option *)boot->data;
+	description = efi_loadopt_desc(load_option, boot->data_size);
+	if (boot->name)
+		printf("%s", boot->name);
+	else
+		printf("%s%04X", prefix, boot->num);
+
+	printf("%c ", (efi_loadopt_attrs(load_option)
+		       & LOAD_OPTION_ACTIVE) ? '*' : ' ');
+	printf("%s", description);
+
+	show_var_path(load_option, boot->data_size);
+
+	fflush(stdout);
+}
+
+static void
 show_vars(const char *prefix)
 {
 	list_t *pos;
 	var_entry_t *boot;
-	const unsigned char *description;
-	efi_load_option *load_option;
 
 	list_for_each(pos, &entry_list) {
 		boot = list_entry(pos, var_entry_t, list);
-		load_option = (efi_load_option *)boot->data;
-		description = efi_loadopt_desc(load_option, boot->data_size);
-		if (boot->name)
-			printf("%s", boot->name);
-		else
-			printf("%s%04X", prefix, boot->num);
-
-		printf("%c ", (efi_loadopt_attrs(load_option)
-			       & LOAD_OPTION_ACTIVE) ? '*' : ' ');
-		printf("%s", description);
-
-		show_var_path(load_option, boot->data_size);
-
-		fflush(stdout);
+		show_one_var(prefix, boot);
 	}
 }
 
@@ -1230,6 +1237,74 @@ update_entry_attr(var_entry_t *entry, uint64_t attr, bool set)
 	}
 
 	return rc;
+}
+
+static void
+query_bootnum(const int num, const char *prefix, list_t *list)
+{
+	list_t *pos;
+
+	list_for_each(pos, list) {
+		var_entry_t *var;
+		efi_load_option *load_option;
+		const unsigned char *description;
+
+		var = list_entry(pos, var_entry_t, list);
+		load_option = (efi_load_option *)var->data;
+		description = efi_loadopt_desc(load_option, var->data_size);
+		if (var->num != num) {
+			if (verbose >= 2) {
+				if (var->name)
+					printf("%s (\"%s\") does not match %s%04X\n",
+					       var->name, description, prefix, num);
+				else
+					printf("%s%04X (\"%s\") does not match %s%04X\n",
+					       prefix, var->num, description, prefix, num);
+			}
+			continue;
+		}
+
+		if (verbose > 1)
+			show_one_var(prefix, var);
+
+		exit(0);
+	}
+	exit(1);
+}
+
+static void
+query_label(const unsigned char * const label, const char *prefix, list_t *list)
+{
+	list_t *pos;
+
+	list_for_each(pos, list) {
+		var_entry_t *var;
+		efi_load_option *load_option;
+		const unsigned char *description;
+
+		var = list_entry(pos, var_entry_t, list);
+
+		load_option = (efi_load_option *)var->data;
+		description = efi_loadopt_desc(load_option, var->data_size);
+
+		if (strcmp((const char *)label, (const char *)description)) {
+			if (verbose >= 2) {
+				if (var->name)
+					printf("%s (\"%s\") does not match \"%s\"\n",
+					       var->name, description, label);
+				else
+					printf("%s%04X (\"%s\") does not match \"%s\"\n",
+					       prefix, var->num, description, label);
+			}
+			continue;
+		}
+
+		if (verbose >= 1)
+			show_one_var(prefix, var);
+
+		exit(0);
+	}
+	exit(1);
 }
 
 static int
@@ -1476,6 +1551,7 @@ usage()
 	printf("\t-o | --bootorder XXXX,YYYY,ZZZZ,...     Explicitly set BootOrder (hex).\n");
 	printf("\t-O | --delete-bootorder Delete BootOrder.\n");
 	printf("\t-p | --part part        Partition containing loader (defaults to 1 on partitioned devices).\n");
+	printf("\t-Q | --query            Query for existence of a bootnum or label\n");
 	printf("\t-q | --quiet            Be quiet.\n");
 	printf("\t-r | --driver           Operate on Driver variables, not Boot Variables.\n");
 	printf("\t-t | --timeout seconds  Set boot manager timeout waiting for user input.\n");
@@ -1547,6 +1623,7 @@ parse_opts(int argc, char **argv)
 			{"bootorder",        required_argument, 0, 'o'},
 			{"delete-bootorder",       no_argument, 0, 'O'},
 			{"part",             required_argument, 0, 'p'},
+			{"query",		   no_argument, 0, 'Q'},
 			{"quiet",                  no_argument, 0, 'q'},
 			{"driver",                 no_argument, 0, 'r'},
 			{"list-signature-types",   no_argument, 0, 's'},
@@ -1563,7 +1640,7 @@ parse_opts(int argc, char **argv)
 		};
 
 		c = getopt_long(argc, argv,
-				"aAb:BcCd:De:E:fFgi:I:kl:L:m:M:n:No:Op:qrst:Tuv::Vwy@:h",
+				"aAb:BcCd:De:E:fFgi:I:kl:L:m:M:n:No:Op:Qqrst:Tuv::Vwy@:h",
 				long_options, &option_index);
 		if (c == -1)
 			break;
@@ -1763,6 +1840,9 @@ parse_opts(int argc, char **argv)
 				errorx(37, "invalid numeric value %s\n",
 				       optarg);
 			break;
+		case 'Q':
+			opts.query = 1;
+			break;
 		case 'q':
 			opts.quiet = 1;
 			break;
@@ -1902,6 +1982,17 @@ main(int argc, char **argv)
 	read_var_names(prefices[mode], &names);
 	read_vars(names, &entry_list);
 	set_var_nums(prefices[mode], &entry_list);
+
+	if (opts.query) {
+		if ((opts.num == -1 && !opts.explicit_label) ||
+		    (opts.num != -1 && opts.explicit_label))
+			errx(42, "--query requires either a bootnum or a label");
+
+		if (opts.num != -1)
+			query_bootnum(opts.num, prefices[mode], &entry_list);
+		else
+			query_label(opts.label, prefices[mode], &entry_list);
+	}
 
 	if (opts.delete) {
 		if (opts.num == -1 && opts.explicit_label == 0) {
