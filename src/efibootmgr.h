@@ -82,6 +82,8 @@ typedef struct {
 	unsigned int delete_order:1;
 	unsigned int delete_bootnext:1;
 	unsigned int query:1;
+	unsigned int show_bootnum:1;
+	unsigned int show_order:1;
 	unsigned int quiet:1;
 	unsigned int showversion:1;
 	unsigned int create:1;

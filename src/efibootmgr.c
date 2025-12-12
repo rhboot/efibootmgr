@@ -1240,9 +1240,42 @@ update_entry_attr(var_entry_t *entry, uint64_t attr, bool set)
 }
 
 static void
-query_bootnum(const int num, const char *prefix, list_t *list)
+show_one_order_position(const uint16_t num, uint16_t *order, size_t order_size)
+{
+	for (size_t i = 0; i < order_size; i++) {
+		if (order[i] == num)
+			printf("%zu\n", i);
+	}
+}
+
+static void
+query_bootnum(const int num, const char *prefix, list_t *list,
+	     bool show_bootnum, bool show_order, const char *order_name)
 {
 	list_t *pos;
+	int status = 1;
+	uint16_t *order = NULL;
+	size_t order_size = 0;
+	uint32_t attrs = 0;
+
+	if (show_order) {
+		int rc;
+
+		rc = efi_get_variable(EFI_GLOBAL_GUID, order_name,
+				      (uint8_t **)&order, &order_size, &attrs);
+
+		cond_warning(opts.verbose >= 2 && rc < 0,
+			  "Could not read variable '%s'", prefix);
+		if (rc == 0) {
+			if (order_size % 2 != 0) {
+				warnx("%s has non-conforming size %zu, ignoring.\n",
+				      order_name, order_size);
+				free(order);
+				order = NULL;
+				order_size = 0;
+			}
+		}
+	}
 
 	list_for_each(pos, list) {
 		var_entry_t *var;
@@ -1264,18 +1297,52 @@ query_bootnum(const int num, const char *prefix, list_t *list)
 			continue;
 		}
 
+		if (show_bootnum)
+			printf("%04X\n", var->num);
+
+		if (show_order && order)
+			show_one_order_position(num, order, order_size);
+
 		if (verbose > 1)
 			show_one_var(prefix, var);
 
-		exit(0);
+		status = 0;
+		break;
 	}
-	exit(1);
+	if (order)
+		free(order);
+
+	exit(status);
 }
 
 static void
-query_label(const unsigned char * const label, const char *prefix, list_t *list)
+query_label(const unsigned char * const label, const char *prefix, list_t *list,
+	    bool show_bootnum, bool show_order, const char *order_name)
 {
 	list_t *pos;
+	unsigned int status = 1;
+	uint16_t *order = NULL;
+	size_t order_size = 0;
+	uint32_t attrs = 0;
+
+	if (show_order) {
+		int rc;
+
+		rc = efi_get_variable(EFI_GLOBAL_GUID, order_name,
+				      (uint8_t **)&order, &order_size, &attrs);
+
+		cond_warning(opts.verbose >= 2 && rc < 0,
+			  "Could not read variable '%s'", prefix);
+		if (rc == 0) {
+			if (order_size % 2 != 0) {
+				warnx("%s has non-conforming size %zu, ignoring.\n",
+				      order_name, order_size);
+				free(order);
+				order = NULL;
+				order_size = 0;
+			}
+		}
+	}
 
 	list_for_each(pos, list) {
 		var_entry_t *var;
@@ -1299,12 +1366,21 @@ query_label(const unsigned char * const label, const char *prefix, list_t *list)
 			continue;
 		}
 
+		if (show_bootnum)
+			printf("%04X\n", var->num);
+
+		if (show_order && order)
+			show_one_order_position(var->num, order, order_size);
+
 		if (verbose >= 1)
 			show_one_var(prefix, var);
 
-		exit(0);
+		status = 0;
 	}
-	exit(1);
+
+	if (order)
+		free(order);
+	exit(status);
 }
 
 static int
@@ -1624,6 +1700,8 @@ parse_opts(int argc, char **argv)
 			{"delete-bootorder",       no_argument, 0, 'O'},
 			{"part",             required_argument, 0, 'p'},
 			{"query",		   no_argument, 0, 'Q'},
+			{"show-bootnum",           no_argument, 0, 0},
+			{"show-order-position",    no_argument, 0, 0},
 			{"quiet",                  no_argument, 0, 'q'},
 			{"driver",                 no_argument, 0, 'r'},
 			{"list-signature-types",   no_argument, 0, 's'},
@@ -1904,6 +1982,12 @@ parse_opts(int argc, char **argv)
 				    opts.abbreviate_path != EFIBOOTMGR_PATH_ABBREV_FILE)
 					errx(41, "contradicting --full-dev-path/--file-dev-path/-e options");
 				opts.abbreviate_path = EFIBOOTMGR_PATH_ABBREV_FILE;
+			} else if (!strcmp(long_options[option_index].name, "show-bootnum")) {
+				opts.query = 1;
+				opts.show_bootnum = 1;
+			} else if (!strcmp(long_options[option_index].name, "show-order-position")) {
+				opts.query = 1;
+				opts.show_order = 1;
 			} else {
 				usage();
 				exit(1);
@@ -1988,10 +2072,17 @@ main(int argc, char **argv)
 		    (opts.num != -1 && opts.explicit_label))
 			errx(42, "--query requires either a bootnum or a label");
 
+		if (opts.show_bootnum && opts.show_order)
+			errx(42, "--show-bootnum and --show-order-position cannot be used together.");
+
 		if (opts.num != -1)
-			query_bootnum(opts.num, prefices[mode], &entry_list);
+			query_bootnum(opts.num, prefices[mode], &entry_list,
+				      opts.show_bootnum, opts.show_order,
+				      order_name[mode]);
 		else
-			query_label(opts.label, prefices[mode], &entry_list);
+			query_label(opts.label, prefices[mode], &entry_list,
+				      opts.show_bootnum, opts.show_order,
+				      order_name[mode]);
 	}
 
 	if (opts.delete) {
