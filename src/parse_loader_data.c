@@ -21,7 +21,7 @@
 /* For PRIx64 */
 #define __STDC_FORMAT_MACROS
 
-#include "fix_coverity.h"
+#include "fix_coverity.h" // IWYU pragma: keep
 
 #include <fcntl.h>
 #include <inttypes.h>
@@ -32,7 +32,6 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#include "efi.h"
 #include "parse_loader_data.h"
 
 /* Avoid unaligned access warnings */

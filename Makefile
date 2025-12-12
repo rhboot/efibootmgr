@@ -27,13 +27,17 @@ efibootmgr efibootmgr-static :
 $(SUBDIRS) :
 	$(MAKE) -C $@
 
+compile_commands.json : Makefile
+	make clean
+	bear -- make COMPILER=clang all
+
 .PHONY: $(SUBDIRS)
 
 efibootmgr.spec : | Makefile Make.version
 
 distclean :
 	$(MAKE) clean
-	@rm -vf efibootmgr.spec
+	@rm -vf efibootmgr.spec compile_commands.json
 
 GITTAG = $(shell bash -c "echo $$(($(VERSION) + 1))")
 

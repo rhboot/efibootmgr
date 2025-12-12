@@ -4,7 +4,7 @@
 efibootmgr \- change the UEFI Boot Manager configuration
 .SH SYNOPSIS
 
-\fBefibootmgr\fR [ \fB-a\fR ] [ \fB-A\fR ] [ \fB-b \fIXXXX\fB\fR ] [ \fB-B\fR ] [ \fB-c\fR ] [ \fB-d \fIDISK\fB\fR ] [ \fB-D\fR ] [ \fB-e \fI1|3|-1\fB\fR ] [ \fB-E \fINUM\fB\fR ] [ \fB--full-dev-path\fR | \fB--file-dev-path\fR ] [ \fB-f\fR ] [ \fB-F\fR ] [ \fB-g\fR ] [ \fB-i \fINAME\fB\fR ] [ \fB-l \fINAME\fB\fR ] [ \fB-L \fILABEL\fB\fR ] [ \fB-m \fIt|f\fB\fR ] [ \fB-M \fIX\fB\fR ] [ \fB-n \fIXXXX\fB\fR ] [ \fB-N\fR ] [ \fB-o \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR\fI ...\fR ] [ \fB-O\fR ] [ \fB-p \fIPART\fB\fR ] [ \fB-q\fR ] [ \fB-r\fR | \fB-y\fR ] [ \fB-s\fR ] [ \fB-t \fIseconds\fB\fR ] [ \fB-T\fR ] [ \fB-u\fR ] [ \fB-v\fR ] [ \fB-V\fR ] [ \fB-@ \fIfile\fB\fR ]
+\fBefibootmgr\fR [ \fB-a\fR ] [ \fB-A\fR ] [ \fB-b \fIXXXX\fB\fR ] [ \fB-B\fR ] [ \fB-c\fR ] [ \fB-d \fIDISK\fB\fR ] [ \fB-D\fR ] [ \fB-e \fI1|3|-1\fB\fR ] [ \fB-E \fINUM\fB\fR ] [ \fB--full-dev-path\fR | \fB--file-dev-path\fR ] [ \fB-f\fR ] [ \fB-F\fR ] [ \fB-g\fR ] [ \fB-i \fINAME\fB\fR ] [ \fB-l \fINAME\fB\fR ] [ \fB-L \fILABEL\fB\fR ] [ \fB-m \fIt|f\fB\fR ] [ \fB-M \fIX\fB\fR ] [ \fB-n \fIXXXX\fB\fR ] [ \fB-N\fR ] [ \fB-o \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR\fI ...\fR ] [ \fB-O\fR ] [ \fB-p \fIPART\fB\fR ] [ \fB-Q\fR ] [ \fB-q\fR ] [ \fB-r\fR | \fB-y\fR ] [ \fB-s\fR ] [ \fB-t \fIseconds\fB\fR ] [ \fB-T\fR ] [ \fB-u\fR ] [ \fB-v\fR ] [ \fB-V\fR ] [ \fB-@ \fIfile\fB\fR ] [ \fB--show-bootnum\fR ] [ \fB--show-order-position\fR ] [ \fB--append-order\fR ]
 
 .SH "DESCRIPTION"
 .PP
@@ -38,7 +38,7 @@ Modify Boot\fIXXXX\fR (hex).
 Delete bootnum.
 .TP
 \fB-c | --create\fR
-Create new variable bootnum and add to bootorder.
+Create new variable bootnum and add to bootorder.  By default this inserts at the beginning, but this can be changed with \fB--index N\fR or \fB--append-order\fR.
 .TP
 \fB-C | --create-only\fR
 Create new variable bootnum and and do not add to bootorder.
@@ -94,6 +94,9 @@ Create a netboot entry for the named interface.
 \fB-I | --index \fIINDEX\fB\fR
 When creating a new entry, insert at the position (0-indexed, defaults to 0).
 .TP
+\fB--append-order\fR
+When creating a new entry, insert to the end of the boot order.
+.TP
 \fB-k | --keep \fINAME\fB\fR
 Keep old entries when adjusting order.
 .TP
@@ -123,6 +126,15 @@ Delete BootOrder.
 .TP
 \fB-p | --part \fIPART\fB\fR
 Partition number containing the bootloader (defaults to 1).
+.TP
+\fB-Q | --query\fR
+Query mode - test for a Boot entry by number or label.  This requires either \fB--bootnum\fR or \fB--label\fR.  If the specified entry is found, \fBefibootmgr\fR exits with success, otherwise it exits with status of 1.
+.TP
+\fB--show-bootnum\fR
+Query mode - show the boot number entry for this label.  If the label is duplicated, it'll list all of them, one per line.  Must be used with \fB--query\fR.
+.TP
+\fB--show-order-position\fR
+Query mode - show all positions in the boot order for a given boot number or label, one per line, 0-indexed.  If a label is duplicated, it'll list all of them.  Must be used with \fB--query\fR.
 .TP
 \fB-q | --quiet\fR
 Quiet mode - suppresses output.
@@ -253,6 +265,12 @@ rsa2048 3c5766e8-269c-4e34-aa14-ed776e85b3b6
 rsa2048_sha256 e2b36190-879b-4a3d-ad8d-f2e7bba32784
 rsa2048_sha1 67f8444f-8743-48f1-a328-1eaab8736080
 external_management 452e8ced-dfff-4b8c-ae01-5118862e682c
+.fi
+.SS "Querying for a boot entry"
+\fR
+.nf
+[root@localhost ~]# if ! efibootmgr -Q -b 0001 ; then efibootmgr -b 0001 -c \fI...\fR; fi
+[root@localhost ~]# if ! efibootmgr -Q -L Linux ; then efibootmgr -L Linux -c \fI...\fR; fi
 .fi
 .SH "BUGS"
 .PP

@@ -31,7 +31,7 @@
 
 */
 
-#include "fix_coverity.h"
+#include "fix_coverity.h" // IWYU pragma: keep
 
 #include <ctype.h>
 #include <err.h>
@@ -395,7 +395,7 @@ set_u16(const char *name, uint16_t num)
 }
 
 static int
-add_to_order(const char *name, uint16_t num, uint16_t insert_at)
+add_to_order(const char *name, uint16_t num, int32_t insert_at)
 {
 	var_entry_t *order = NULL;
 	uint64_t new_data_size;
@@ -419,10 +419,14 @@ add_to_order(const char *name, uint16_t num, uint16_t insert_at)
 	if (!new_data)
 		return -1;
 
-	if (insert_at != 0) {
+	if (insert_at > 0) {
 		if (insert_at * sizeof(uint16_t) > order->data_size)
 			insert_at = order->data_size / sizeof(uint16_t);
 		memcpy(new_data, old_data, insert_at * sizeof(uint16_t));
+	}
+	if (insert_at < 0) {
+		insert_at = order->data_size / sizeof(uint16_t);
+		memcpy(new_data, old_data, order->data_size);
 	}
 	new_data[insert_at] = num;
 	if (order->data_size - insert_at * sizeof(uint16_t) > 0) {
@@ -1088,9 +1092,9 @@ show_var_path(efi_load_option *load_option, size_t boot_data_size)
 	printf("\n");
 
 	const_efidp node = dp;
-	if (opts.verbose >= 1)
+	if (opts.verbose >= 2)
 		printf("      dp: ");
-	for (rc = 1; opts.verbose >= 1 && rc > 0; ) {
+	for (rc = 1; opts.verbose >= 2 && rc > 0; ) {
 		ssize_t sz;
 		const_efidp next = NULL;
 		const uint8_t * const data = (const uint8_t * const)node;
@@ -1113,10 +1117,32 @@ show_var_path(efi_load_option *load_option, size_t boot_data_size)
 
 		node = next;
 	}
-	if (opts.verbose >= 1 && optional_data_len)
+	if (opts.verbose >= 2 && optional_data_len)
 		printf("    data: ");
-	for (unsigned int j = 0; opts.verbose >= 1 && j < optional_data_len; j++)
+	for (unsigned int j = 0; opts.verbose >= 2 && j < optional_data_len; j++)
 		printf("%02hhx%s", optional_data[j], j == optional_data_len - 1 ? "\n" : " ");
+}
+
+static void
+show_one_var(const char *prefix, var_entry_t *boot)
+{
+	efi_load_option *load_option;
+	const unsigned char *description;
+
+	load_option = (efi_load_option *)boot->data;
+	description = efi_loadopt_desc(load_option, boot->data_size);
+	if (boot->name)
+		printf("%s", boot->name);
+	else
+		printf("%s%04X", prefix, boot->num);
+
+	printf("%c ", (efi_loadopt_attrs(load_option)
+		       & LOAD_OPTION_ACTIVE) ? '*' : ' ');
+	printf("%s", description);
+
+	show_var_path(load_option, boot->data_size);
+
+	fflush(stdout);
 }
 
 static void
@@ -1124,25 +1150,10 @@ show_vars(const char *prefix)
 {
 	list_t *pos;
 	var_entry_t *boot;
-	const unsigned char *description;
-	efi_load_option *load_option;
 
 	list_for_each(pos, &entry_list) {
 		boot = list_entry(pos, var_entry_t, list);
-		load_option = (efi_load_option *)boot->data;
-		description = efi_loadopt_desc(load_option, boot->data_size);
-		if (boot->name)
-			printf("%s", boot->name);
-		else
-			printf("%s%04X", prefix, boot->num);
-
-		printf("%c ", (efi_loadopt_attrs(load_option)
-			       & LOAD_OPTION_ACTIVE) ? '*' : ' ');
-		printf("%s", description);
-
-		show_var_path(load_option, boot->data_size);
-
-		fflush(stdout);
+		show_one_var(prefix, boot);
 	}
 }
 
@@ -1230,6 +1241,150 @@ update_entry_attr(var_entry_t *entry, uint64_t attr, bool set)
 	}
 
 	return rc;
+}
+
+static void
+show_one_order_position(const uint16_t num, uint16_t *order, size_t order_size)
+{
+	for (size_t i = 0; i < order_size; i++) {
+		if (order[i] == num)
+			printf("%zu\n", i);
+	}
+}
+
+static void
+query_bootnum(const int num, const char *prefix, list_t *list,
+	     bool show_bootnum, bool show_order, const char *order_name)
+{
+	list_t *pos;
+	int status = 1;
+	uint16_t *order = NULL;
+	size_t order_size = 0;
+	uint32_t attrs = 0;
+
+	if (show_order) {
+		int rc;
+
+		rc = efi_get_variable(EFI_GLOBAL_GUID, order_name,
+				      (uint8_t **)&order, &order_size, &attrs);
+
+		cond_warning(opts.verbose >= 2 && rc < 0,
+			  "Could not read variable '%s'", prefix);
+		if (rc == 0) {
+			if (order_size % 2 != 0) {
+				warnx("%s has non-conforming size %zu, ignoring.\n",
+				      order_name, order_size);
+				free(order);
+				order = NULL;
+				order_size = 0;
+			}
+		}
+	}
+
+	list_for_each(pos, list) {
+		var_entry_t *var;
+		efi_load_option *load_option;
+		const unsigned char *description;
+
+		var = list_entry(pos, var_entry_t, list);
+		load_option = (efi_load_option *)var->data;
+		description = efi_loadopt_desc(load_option, var->data_size);
+		if (var->num != num) {
+			if (verbose >= 2) {
+				if (var->name)
+					printf("%s (\"%s\") does not match %s%04X\n",
+					       var->name, description, prefix, num);
+				else
+					printf("%s%04X (\"%s\") does not match %s%04X\n",
+					       prefix, var->num, description, prefix, num);
+			}
+			continue;
+		}
+
+		if (show_bootnum)
+			printf("%04X\n", var->num);
+
+		if (show_order && order)
+			show_one_order_position(num, order, order_size);
+
+		if (verbose > 1)
+			show_one_var(prefix, var);
+
+		status = 0;
+		break;
+	}
+	if (order)
+		free(order);
+
+	exit(status);
+}
+
+static void
+query_label(const unsigned char * const label, const char *prefix, list_t *list,
+	    bool show_bootnum, bool show_order, const char *order_name)
+{
+	list_t *pos;
+	unsigned int status = 1;
+	uint16_t *order = NULL;
+	size_t order_size = 0;
+	uint32_t attrs = 0;
+
+	if (show_order) {
+		int rc;
+
+		rc = efi_get_variable(EFI_GLOBAL_GUID, order_name,
+				      (uint8_t **)&order, &order_size, &attrs);
+
+		cond_warning(opts.verbose >= 2 && rc < 0,
+			  "Could not read variable '%s'", prefix);
+		if (rc == 0) {
+			if (order_size % 2 != 0) {
+				warnx("%s has non-conforming size %zu, ignoring.\n",
+				      order_name, order_size);
+				free(order);
+				order = NULL;
+				order_size = 0;
+			}
+		}
+	}
+
+	list_for_each(pos, list) {
+		var_entry_t *var;
+		efi_load_option *load_option;
+		const unsigned char *description;
+
+		var = list_entry(pos, var_entry_t, list);
+
+		load_option = (efi_load_option *)var->data;
+		description = efi_loadopt_desc(load_option, var->data_size);
+
+		if (strcmp((const char *)label, (const char *)description)) {
+			if (verbose >= 2) {
+				if (var->name)
+					printf("%s (\"%s\") does not match \"%s\"\n",
+					       var->name, description, label);
+				else
+					printf("%s%04X (\"%s\") does not match \"%s\"\n",
+					       prefix, var->num, description, label);
+			}
+			continue;
+		}
+
+		if (show_bootnum)
+			printf("%04X\n", var->num);
+
+		if (show_order && order)
+			show_one_order_position(var->num, order, order_size);
+
+		if (verbose >= 1)
+			show_one_var(prefix, var);
+
+		status = 0;
+	}
+
+	if (order)
+		free(order);
+	exit(status);
 }
 
 static int
@@ -1476,6 +1631,7 @@ usage()
 	printf("\t-o | --bootorder XXXX,YYYY,ZZZZ,...     Explicitly set BootOrder (hex).\n");
 	printf("\t-O | --delete-bootorder Delete BootOrder.\n");
 	printf("\t-p | --part part        Partition containing loader (defaults to 1 on partitioned devices).\n");
+	printf("\t-Q | --query            Query for existence of a bootnum or label\n");
 	printf("\t-q | --quiet            Be quiet.\n");
 	printf("\t-r | --driver           Operate on Driver variables, not Boot Variables.\n");
 	printf("\t-t | --timeout seconds  Set boot manager timeout waiting for user input.\n");
@@ -1521,6 +1677,7 @@ parse_opts(int argc, char **argv)
 		{
 			{"active",                 no_argument, 0, 'a'},
 			{"inactive",               no_argument, 0, 'A'},
+			{"append-order",           no_argument, 0, 0},
 			{"bootnum",          required_argument, 0, 'b'},
 			{"delete-bootnum",         no_argument, 0, 'B'},
 			{"create",                 no_argument, 0, 'c'},
@@ -1547,6 +1704,9 @@ parse_opts(int argc, char **argv)
 			{"bootorder",        required_argument, 0, 'o'},
 			{"delete-bootorder",       no_argument, 0, 'O'},
 			{"part",             required_argument, 0, 'p'},
+			{"query",		   no_argument, 0, 'Q'},
+			{"show-bootnum",           no_argument, 0, 0},
+			{"show-order-position",    no_argument, 0, 0},
 			{"quiet",                  no_argument, 0, 'q'},
 			{"driver",                 no_argument, 0, 'r'},
 			{"list-signature-types",   no_argument, 0, 's'},
@@ -1563,7 +1723,7 @@ parse_opts(int argc, char **argv)
 		};
 
 		c = getopt_long(argc, argv,
-				"aAb:BcCd:De:E:fFgi:I:kl:L:m:M:n:No:Op:qrst:Tuv::Vwy@:h",
+				"aAb:BcCd:De:E:fFgi:I:kl:L:m:M:n:No:Op:Qqrst:Tuv::Vwy@:h",
 				long_options, &option_index);
 		if (c == -1)
 			break;
@@ -1671,11 +1831,11 @@ parse_opts(int argc, char **argv)
 				       long_options[option_index]);
 			}
 			lindex = atol(optarg);
-			if (lindex < 0 || lindex > UINT16_MAX) {
+			if (lindex > UINT16_MAX) {
 				errorx(1, "invalid numeric value %s\n",
 				       optarg);
 			}
-			opts.index = (uint16_t)lindex;
+			opts.index = (int32_t)lindex;
 			break;
 		case 'k':
 			opts.keep_old_entries = 1;
@@ -1763,6 +1923,9 @@ parse_opts(int argc, char **argv)
 				errorx(37, "invalid numeric value %s\n",
 				       optarg);
 			break;
+		case 'Q':
+			opts.query = 1;
+			break;
 		case 'q':
 			opts.quiet = 1;
 			break;
@@ -1824,6 +1987,14 @@ parse_opts(int argc, char **argv)
 				    opts.abbreviate_path != EFIBOOTMGR_PATH_ABBREV_FILE)
 					errx(41, "contradicting --full-dev-path/--file-dev-path/-e options");
 				opts.abbreviate_path = EFIBOOTMGR_PATH_ABBREV_FILE;
+			} else if (!strcmp(long_options[option_index].name, "show-bootnum")) {
+				opts.query = 1;
+				opts.show_bootnum = 1;
+			} else if (!strcmp(long_options[option_index].name, "show-order-position")) {
+				opts.query = 1;
+				opts.show_order = 1;
+			} else if (!strcmp(long_options[option_index].name, "append-order")) {
+				opts.index = -1;
 			} else {
 				usage();
 				exit(1);
@@ -1902,6 +2073,24 @@ main(int argc, char **argv)
 	read_var_names(prefices[mode], &names);
 	read_vars(names, &entry_list);
 	set_var_nums(prefices[mode], &entry_list);
+
+	if (opts.query) {
+		if ((opts.num == -1 && !opts.explicit_label) ||
+		    (opts.num != -1 && opts.explicit_label))
+			errx(42, "--query requires either a bootnum or a label");
+
+		if (opts.show_bootnum && opts.show_order)
+			errx(42, "--show-bootnum and --show-order-position cannot be used together.");
+
+		if (opts.num != -1)
+			query_bootnum(opts.num, prefices[mode], &entry_list,
+				      opts.show_bootnum, opts.show_order,
+				      order_name[mode]);
+		else
+			query_label(opts.label, prefices[mode], &entry_list,
+				      opts.show_bootnum, opts.show_order,
+				      order_name[mode]);
+	}
 
 	if (opts.delete) {
 		if (opts.num == -1 && opts.explicit_label == 0) {

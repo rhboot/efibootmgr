@@ -25,7 +25,8 @@ EFI_LOADER := grub.efi
 INSTALL ?= install
 CROSS_COMPILE	?=
 PKG_CONFIG = $(CROSS_COMPILE)pkg-config
-CC	:= $(if $(filter default,$(origin CC)),$(CROSS_COMPILE)gcc,$(CC))
+COMPILER ?= gcc
+CC	:= $(CROSS_COMPILE)$(COMPILER)
 CCLD	:= $(if $(filter undefined,$(origin CCLD)),$(CC),$(CCLD))
 CFLAGS	?= -O2 -g -flto
 AR	:= $(CROSS_COMPILE)gcc-ar
@@ -43,8 +44,8 @@ cflags	= $(EXTRALIBDIR) $(EXTRAINCDIR) $(CFLAGS) $(SUBDIR_CFLAGS) \
 	-D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -DLOCALEDIR=\"$(localedir)\" \
 	-DEFIBOOTMGR_VERSION="\"$(VERSION)\"" \
 	-DDEFAULT_LOADER=\"\\\\EFI\\\\$(EFIDIR)\\\\$(EFI_LOADER)\" \
-	$(if $(findstring clang,$(CC)),$(clang_cflags),) \
-	$(if $(findstring gcc,$(CC)),$(gcc_cflags),) \
+	$(if $(findstring clang,$(COMPILER)),$(clang_cflags),) \
+	$(if $(findstring gcc,$(COMPILER)),$(gcc_cflags),) \
 	$(call pkg-config-cflags)
 clang_ccldflags =
 gcc_ccldflags = -fno-merge-constants \

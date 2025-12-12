@@ -1,4 +1,5 @@
 .*.sw?
+.cache/
 *.E
 *.o
 *.patch
@@ -8,5 +9,6 @@ core.*
 efibootmgr*.zip
 efibootmgr.spec
 .*.d
+compile_commands.json
 cov-int
 scan-results/
