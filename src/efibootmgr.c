@@ -395,7 +395,7 @@ set_u16(const char *name, uint16_t num)
 }
 
 static int
-add_to_order(const char *name, uint16_t num, uint16_t insert_at)
+add_to_order(const char *name, uint16_t num, int32_t insert_at)
 {
 	var_entry_t *order = NULL;
 	uint64_t new_data_size;
@@ -419,10 +419,14 @@ add_to_order(const char *name, uint16_t num, uint16_t insert_at)
 	if (!new_data)
 		return -1;
 
-	if (insert_at != 0) {
+	if (insert_at > 0) {
 		if (insert_at * sizeof(uint16_t) > order->data_size)
 			insert_at = order->data_size / sizeof(uint16_t);
 		memcpy(new_data, old_data, insert_at * sizeof(uint16_t));
+	}
+	if (insert_at < 0) {
+		insert_at = order->data_size / sizeof(uint16_t);
+		memcpy(new_data, old_data, order->data_size);
 	}
 	new_data[insert_at] = num;
 	if (order->data_size - insert_at * sizeof(uint16_t) > 0) {
@@ -1673,6 +1677,7 @@ parse_opts(int argc, char **argv)
 		{
 			{"active",                 no_argument, 0, 'a'},
 			{"inactive",               no_argument, 0, 'A'},
+			{"append-order",           no_argument, 0, 0},
 			{"bootnum",          required_argument, 0, 'b'},
 			{"delete-bootnum",         no_argument, 0, 'B'},
 			{"create",                 no_argument, 0, 'c'},
@@ -1826,11 +1831,11 @@ parse_opts(int argc, char **argv)
 				       long_options[option_index]);
 			}
 			lindex = atol(optarg);
-			if (lindex < 0 || lindex > UINT16_MAX) {
+			if (lindex > UINT16_MAX) {
 				errorx(1, "invalid numeric value %s\n",
 				       optarg);
 			}
-			opts.index = (uint16_t)lindex;
+			opts.index = (int32_t)lindex;
 			break;
 		case 'k':
 			opts.keep_old_entries = 1;
@@ -1988,6 +1993,8 @@ parse_opts(int argc, char **argv)
 			} else if (!strcmp(long_options[option_index].name, "show-order-position")) {
 				opts.query = 1;
 				opts.show_order = 1;
+			} else if (!strcmp(long_options[option_index].name, "append-order")) {
+				opts.index = -1;
 			} else {
 				usage();
 				exit(1);

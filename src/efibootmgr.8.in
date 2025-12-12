@@ -4,7 +4,7 @@
 efibootmgr \- change the UEFI Boot Manager configuration
 .SH SYNOPSIS
 
-\fBefibootmgr\fR [ \fB-a\fR ] [ \fB-A\fR ] [ \fB-b \fIXXXX\fB\fR ] [ \fB-B\fR ] [ \fB-c\fR ] [ \fB-d \fIDISK\fB\fR ] [ \fB-D\fR ] [ \fB-e \fI1|3|-1\fB\fR ] [ \fB-E \fINUM\fB\fR ] [ \fB--full-dev-path\fR | \fB--file-dev-path\fR ] [ \fB-f\fR ] [ \fB-F\fR ] [ \fB-g\fR ] [ \fB-i \fINAME\fB\fR ] [ \fB-l \fINAME\fB\fR ] [ \fB-L \fILABEL\fB\fR ] [ \fB-m \fIt|f\fB\fR ] [ \fB-M \fIX\fB\fR ] [ \fB-n \fIXXXX\fB\fR ] [ \fB-N\fR ] [ \fB-o \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR\fI ...\fR ] [ \fB-O\fR ] [ \fB-p \fIPART\fB\fR ] [ \fB-Q\fR ] [ \fB-q\fR ] [ \fB-r\fR | \fB-y\fR ] [ \fB-s\fR ] [ \fB-t \fIseconds\fB\fR ] [ \fB-T\fR ] [ \fB-u\fR ] [ \fB-v\fR ] [ \fB-V\fR ] [ \fB-@ \fIfile\fB\fR ] [ \fB--show-bootnum\fR ] [ \fB--show-order-position\fR ]
+\fBefibootmgr\fR [ \fB-a\fR ] [ \fB-A\fR ] [ \fB-b \fIXXXX\fB\fR ] [ \fB-B\fR ] [ \fB-c\fR ] [ \fB-d \fIDISK\fB\fR ] [ \fB-D\fR ] [ \fB-e \fI1|3|-1\fB\fR ] [ \fB-E \fINUM\fB\fR ] [ \fB--full-dev-path\fR | \fB--file-dev-path\fR ] [ \fB-f\fR ] [ \fB-F\fR ] [ \fB-g\fR ] [ \fB-i \fINAME\fB\fR ] [ \fB-l \fINAME\fB\fR ] [ \fB-L \fILABEL\fB\fR ] [ \fB-m \fIt|f\fB\fR ] [ \fB-M \fIX\fB\fR ] [ \fB-n \fIXXXX\fB\fR ] [ \fB-N\fR ] [ \fB-o \fIXXXX\fB,\fIYYYY\fB,\fIZZZZ\fB\fR\fI ...\fR ] [ \fB-O\fR ] [ \fB-p \fIPART\fB\fR ] [ \fB-Q\fR ] [ \fB-q\fR ] [ \fB-r\fR | \fB-y\fR ] [ \fB-s\fR ] [ \fB-t \fIseconds\fB\fR ] [ \fB-T\fR ] [ \fB-u\fR ] [ \fB-v\fR ] [ \fB-V\fR ] [ \fB-@ \fIfile\fB\fR ] [ \fB--show-bootnum\fR ] [ \fB--show-order-position\fR ] [ \fB--append-order\fR ]
 
 .SH "DESCRIPTION"
 .PP
@@ -38,7 +38,7 @@ Modify Boot\fIXXXX\fR (hex).
 Delete bootnum.
 .TP
 \fB-c | --create\fR
-Create new variable bootnum and add to bootorder.
+Create new variable bootnum and add to bootorder.  By default this inserts at the beginning, but this can be changed with \fB--index N\fR or \fB--append-order\fR.
 .TP
 \fB-C | --create-only\fR
 Create new variable bootnum and and do not add to bootorder.
@@ -93,6 +93,9 @@ Create a netboot entry for the named interface.
 .TP
 \fB-I | --index \fIINDEX\fB\fR
 When creating a new entry, insert at the position (0-indexed, defaults to 0).
+.TP
+\fB--append-order\fR
+When creating a new entry, insert to the end of the boot order.
 .TP
 \fB-k | --keep \fINAME\fB\fR
 Keep old entries when adjusting order.
