@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stddef.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <dirent.h>
@@ -730,21 +731,25 @@ is_current_entry(int b)
 }
 
 static void
-print_error_arrow(char *buffer, off_t offset, char *fmt, ...)
+print_error_arrow(const char *buffer, ptrdiff_t offset, const char *fmt, ...)
 {
 	va_list ap;
-	size_t size;
-	unsigned int i;
+	int size;
 
 	va_start(ap, fmt);
 	size = vfprintf(stderr, fmt, ap);
 	va_end(ap);
-	fprintf(stderr, "%s\n", buffer);
+	fprintf(stderr, " %s\n ", buffer);
 
-	for (i = 0; i < size + 2; i++)
-		fprintf(stderr, " ");
-	for (i = 0; i < offset; i++)
-		fprintf(stderr, " ");
+	if (size > 0)
+		offset += size;
+
+	while (offset > 0) {
+		int width = offset > INT_MAX ? INT_MAX : offset;
+		offset -= width;
+		fprintf(stderr, "%*s", width, "");
+	}
+
 	fprintf(stderr, "^\n");
 }
 
@@ -761,8 +766,7 @@ parse_order(const char *prefix, char *buffer, uint16_t **order, size_t *length)
 	while ((intptr_t)buf < end) {
 		size_t comma = strcspn(buf, ",");
 		if (comma == 0) {
-			off_t offset = (intptr_t)buf - (intptr_t)buffer;
-			print_error_arrow(buffer, offset, "Malformed %s order",
+			print_error_arrow(buffer, buf - buffer, "Malformed %s order",
 					  prefix);
 			exit(8);
 		} else {
@@ -789,21 +793,20 @@ parse_order(const char *prefix, char *buffer, uint16_t **order, size_t *length)
 		size_t comma = strcspn(buf, ",");
 
 		buf[comma] = '\0';
-		char *endptr = NULL;
+		char *endptr;
+		errno = 0;
 		result = strtoul(buf, &endptr, 16);
 		if ((result == ULONG_MAX && errno == ERANGE) ||
-				(endptr && *endptr != '\0')) {
-			off_t offset = (intptr_t)endptr - (intptr_t)buffer;
-			print_error_arrow(buffer, offset, "Invalid %s order",
+				(*endptr != '\0')) {
+			print_error_arrow(buffer, endptr - buffer, "Invalid %s order",
 					  prefix);
 			free(data);
 			exit(8);
 		}
 		if (result > 0xffff) {
-			off_t offset = (intptr_t)buf - (intptr_t)buffer;
 			warnx("Invalid %s order entry value: %lX", prefix,
 				result);
-			print_error_arrow(buffer, offset, "Invalid %s order",
+			print_error_arrow(buffer, buf - buffer, "Invalid %s order",
 					  prefix);
 			free(data);
 			exit(8);
@@ -811,8 +814,7 @@ parse_order(const char *prefix, char *buffer, uint16_t **order, size_t *length)
 
 		/* make sure this is an existing entry */
 		if (!is_current_entry(result)) {
-			off_t offset = (intptr_t)buf - (intptr_t)buffer;
-			print_error_arrow(buffer, offset,
+			print_error_arrow(buffer, buf - buffer,
 					  "Invalid %s order entry value",
 					  prefix);
 			warnx("entry %04lX does not exist", result);
@@ -1582,7 +1584,7 @@ parse_opts(int argc, char **argv)
 			opts.delete = 1;
 			break;
 		case 'b': {
-			char *endptr = NULL;
+			char *endptr;
 			unsigned long result;
 
 			if (!optarg) {
@@ -1591,12 +1593,11 @@ parse_opts(int argc, char **argv)
 				break;
 			}
 
+			errno = 0;
 			result = strtoul(optarg, &endptr, 16);
 			if ((result == ULONG_MAX && errno == ERANGE) ||
-					(endptr && *endptr != '\0')) {
-				off_t offset = (intptr_t)endptr
-					       - (intptr_t)optarg;
-				print_error_arrow(optarg, offset,
+					(*endptr != '\0') || (*optarg == '\0')) {
+				print_error_arrow(optarg, endptr - optarg,
 						  "Invalid bootnum value");
 				conditional_error_reporter(opts.verbose >= 1,
 							   1);
@@ -1723,7 +1724,7 @@ parse_opts(int argc, char **argv)
 			opts.delete_bootnext = 1;
 			break;
 		case 'n': {
-			char *endptr = NULL;
+			char *endptr;
 			unsigned long result;
 
 			if (!optarg) {
@@ -1732,12 +1733,11 @@ parse_opts(int argc, char **argv)
 				break;
 			}
 
+			errno = 0;
 			result = strtoul(optarg, &endptr, 16);
 			if ((result == ULONG_MAX && errno == ERANGE) ||
-					(endptr && *endptr != '\0')) {
-				off_t offset = (intptr_t)endptr
-					       - (intptr_t)optarg;
-				print_error_arrow(optarg, offset,
+					(*endptr != '\0') || (*optarg == '\0')) {
+				print_error_arrow(optarg, endptr - optarg,
 						  "Invalid BootNext value");
 				conditional_error_reporter(opts.verbose >= 1,
 							   1);
