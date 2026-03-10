@@ -809,16 +809,11 @@ parse_order(const char *prefix, char *buffer, uint16_t **order, size_t *length)
 			exit(8);
 		}
 
-		/* make sure this is an existing entry */
-		if (!is_current_entry(result)) {
-			off_t offset = (intptr_t)buf - (intptr_t)buffer;
-			print_error_arrow(buffer, offset,
-					  "Invalid %s order entry value",
-					  prefix);
+		/* warn if this entry doesn't exist, but allow it since
+		 * firmware may add entries to the boot order that don't
+		 * have corresponding Boot#### variables */
+		if (!is_current_entry(result))
 			warnx("entry %04lX does not exist", result);
-			free(data);
-			exit(8);
-		}
 
 		data[i++] = result;
 		buf[comma] = ',';
