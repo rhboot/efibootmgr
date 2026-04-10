@@ -296,7 +296,7 @@ make_var(const char *prefix, list_t *var_list)
 		goto err;
 	}
 	entry->data_size = needed;
-	entry->data = malloc(needed);
+    entry->data = malloc(needed + (opts.unicode ? sizeof(uint16_t) : 0));
 	if (!entry->data) {
 		efi_error("malloc(%zd) failed", needed);
 		goto err;
@@ -325,6 +325,11 @@ make_var(const char *prefix, list_t *var_list)
 	entry->attributes = EFI_VARIABLE_NON_VOLATILE |
 			    EFI_VARIABLE_BOOTSERVICE_ACCESS |
 			    EFI_VARIABLE_RUNTIME_ACCESS;
+    if (opts.unicode) {
+        entry->data[entry->data_size] = '\0';
+        entry->data[entry->data_size + 1] = '\0';
+        entry->data_size += sizeof(uint16_t);
+    }
 	rc = efi_set_variable(entry->guid, entry->name, entry->data,
 				entry->data_size, entry->attributes, 0644);
 	if (rc < 0) {
