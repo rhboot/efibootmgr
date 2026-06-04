@@ -41,7 +41,7 @@ Delete bootnum.
 Create new variable bootnum and add to bootorder.
 .TP
 \fB-C | --create-only\fR
-Create new variable bootnum and and do not add to bootorder.
+Create new variable bootnum and do not add to bootorder.
 .TP
 \fB-d | --disk \fIDISK\fB\fR
 The disk containing the loader (defaults to
