@@ -35,6 +35,8 @@
 #define EFIBOOTMGR_PATH_ABBREV_NONE		3
 #define EFIBOOTMGR_PATH_ABBREV_FILE		4
 
+#include "list.h"
+
 typedef enum {
 	boot,
 	driver,
@@ -93,8 +95,22 @@ typedef struct {
 	unsigned int sysprep:1;
 	unsigned int explicit_label:1;
 	unsigned int list_supported_signature_types:1;
+	unsigned int json:1;
 	short int timeout;
 	uint16_t index;
 } efibootmgr_opt_t;
 
+typedef struct _var_entry {
+	char		*name;
+	efi_guid_t	guid;
+	uint8_t		*data;
+	size_t		data_size;
+	uint32_t	attributes;
+	uint16_t	num;
+	list_t		list;
+} var_entry_t;
+
 extern efibootmgr_opt_t opts;
+
+int read_u16(const char *name);
+int read_order(const char *name, var_entry_t **order);
