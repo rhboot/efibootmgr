@@ -1003,7 +1003,7 @@ show_var_path(efi_load_option *load_option, size_t boot_data_size)
 
 		char *a = text_path;
 		for (int i = 0; a && shim_path_segments[i] != NULL; i++) {
-			a = strstr(a, shim_path_segments[i]);
+			a = strcasestr(a, shim_path_segments[i]);
 			if (a)
 				a += strlen(shim_path_segments[i]);
 		}
