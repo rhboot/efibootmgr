@@ -10,7 +10,7 @@ TARGETS=$(BINTARGETS) efibootmgr.8 efibootdump.8
 
 all : deps $(TARGETS)
 
-EFIBOOTMGR_SOURCES = efibootmgr.c efi.c parse_loader_data.c
+EFIBOOTMGR_SOURCES = efibootmgr.c efi.c parse_loader_data.c shim-hive.c
 EFICONMAN_SOURCES = eficonman.c
 EFIBOOTDUMP_SOURCES = efibootdump.c parse_loader_data.c
 EFIBOOTNEXT_SOURCES = efibootnext.c

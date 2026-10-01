@@ -65,6 +65,8 @@ typedef struct {
 	int keep_old_entries;
 	char *testfile;
 	char *extra_opts_file;
+	char **hive_items;
+	size_t n_hive_items;
 	uint32_t part;
 	int abbreviate_path;
 	uint32_t edd10_devicenum;
@@ -83,6 +85,7 @@ typedef struct {
 	unsigned int showversion:1;
 	unsigned int create:1;
 	unsigned int unicode:1;
+	unsigned int hive:1;
 	unsigned int forcegpt:1;
 	unsigned int set_timeout:1;
 	unsigned int delete_timeout:1;
