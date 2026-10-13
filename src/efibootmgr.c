@@ -55,6 +55,7 @@
 #include "efi.h"
 #include "parse_loader_data.h"
 #include "efibootmgr.h"
+#include "shim-hive.h"
 #include "error.h"
 
 #ifndef EFIBOOTMGR_VERSION
@@ -1028,7 +1029,14 @@ show_var_path(efi_load_option *load_option, size_t boot_data_size)
 	typedef ssize_t (*parser_t)(char *buffer, size_t buffer_size,
 				    uint8_t *p, uint64_t length);
 	parser_t parser = NULL;
-	if (is_shim && optional_data_len) {
+	if (optional_data_len &&
+	    shim_hive_validate(optional_data, optional_data_len) == 0) {
+		text_path = shim_hive_format(optional_data, optional_data_len);
+		if (!text_path) {
+			warning("Could not format ShimHive optional data");
+			return;
+		}
+	} else if (is_shim && optional_data_len) {
 		char *a = ucs2_to_utf8((uint16_t*)optional_data,
 				       optional_data_len/2);
 		if (!a) {
@@ -1481,6 +1489,7 @@ usage()
 	printf("\t-t | --timeout seconds  Set boot manager timeout waiting for user input.\n");
 	printf("\t-T | --delete-timeout   Delete Timeout.\n");
 	printf("\t-u | --unicode | --UCS-2  Handle extra args as UCS-2 (default is ASCII).\n");
+	printf("\t     --hive KEY=VALUE   Add a ShimHive item to load option OptionalData (repeatable).\n");
 	printf("\t-v | --verbose          Print additional information.\n");
 	printf("\t-V | --version          Return version and exit.\n");
 	printf("\t-y | --sysprep          Operate on SysPrep variables, not Boot Variables.\n");
@@ -1513,6 +1522,7 @@ parse_opts(int argc, char **argv)
 	float fnum;
 	int option_index = 0;
 	long lindex;
+	enum { OPT_HIVE = 0x100 };
 
 	while (1)
 	{
@@ -1554,6 +1564,7 @@ parse_opts(int argc, char **argv)
 			{"delete-timeout",         no_argument, 0, 'T'},
 			{"unicode",                no_argument, 0, 'u'},
 			{"UCS-2",                  no_argument, 0, 'u'},
+			{"hive",             required_argument, 0, OPT_HIVE},
 			{"verbose",          optional_argument, 0, 'v'},
 			{"version",                no_argument, 0, 'V'},
 			{"sysprep",                no_argument, 0, 'y'},
@@ -1569,6 +1580,23 @@ parse_opts(int argc, char **argv)
 			break;
 
 		switch (c) {
+		case OPT_HIVE: {
+			char **new_items;
+
+			if (!strchr(optarg, '=') || optarg[0] == '=')
+				errorx(1, "--hive requires KEY=VALUE");
+			if (opts.n_hive_items == UINT8_MAX)
+				errorx(1, "too many --hive items");
+			new_items = realloc(opts.hive_items,
+					    (opts.n_hive_items + 1) *
+					    sizeof(*opts.hive_items));
+			if (!new_items)
+				error(1, "Could not allocate ShimHive item");
+			opts.hive_items = new_items;
+			opts.hive_items[opts.n_hive_items++] = optarg;
+			opts.hive = 1;
+			break;
+		}
 		case '@':
 			opts.extra_opts_file = optarg;
 			break;
@@ -1835,6 +1863,15 @@ parse_opts(int argc, char **argv)
 		opts.argc = argc;
 		opts.argv = argv;
 		opts.optind = optind;
+	}
+
+	if (opts.hive) {
+		if (opts.unicode)
+			errx(41, "--hive cannot be combined with --unicode");
+		if (opts.extra_opts_file)
+			errx(41, "--hive cannot be combined with --append-binary-args");
+		if (optind < argc)
+			errx(41, "--hive cannot be combined with positional extra arguments");
 	}
 }
 

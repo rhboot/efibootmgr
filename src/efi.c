@@ -44,7 +44,40 @@
 #include <linux/ethtool.h>
 #include "efi.h"
 #include "efibootmgr.h"
+#include "shim-hive.h"
 #include "list.h"
+
+static ssize_t
+get_hive_args(uint8_t *data, ssize_t data_size)
+{
+	struct shim_hive_item *items;
+	ssize_t ret;
+	size_t i;
+
+	items = calloc(opts.n_hive_items, sizeof(*items));
+	if (!items)
+		return -1;
+
+	for (i = 0; i < opts.n_hive_items; i++) {
+		char *eq = strchr(opts.hive_items[i], '=');
+
+		if (!eq || eq == opts.hive_items[i]) {
+			free(items);
+			errno = EINVAL;
+			return -1;
+		}
+		items[i].key = opts.hive_items[i];
+		items[i].value = (uint8_t *)eq + 1;
+		items[i].value_len = strlen(eq + 1);
+		*eq = '\0';
+	}
+
+	ret = shim_hive_serialize(items, opts.n_hive_items, data, data_size);
+	for (i = 0; i < opts.n_hive_items; i++)
+		strchr(opts.hive_items[i], '\0')[0] = '=';
+	free(items);
+	return ret;
+}
 
 static int
 select_var_names_by_prefix(const efi_guid_t *guid, const char *prefix,
@@ -332,6 +365,9 @@ get_extra_args(uint8_t *data, ssize_t data_size)
 	int i;
 	ssize_t needed = 0, sz;
 	off_t off = 0;
+
+	if (opts.hive)
+		return get_hive_args(data, data_size);
 
 	if (opts.extra_opts_file) {
 		if (!strcmp(opts.extra_opts_file, "-"))
