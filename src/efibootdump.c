@@ -98,11 +98,13 @@ print_boot_entry(efi_load_option *loadopt, size_t data_size)
 	rc = parse_raw_text(raw, raw_len, optional_data, optional_data_len);
 	if (rc < 0) {
 		printf("<bad optional data>");
-	} else if (rc > 0) {
+	} else if (optional_data_len > 0) {
+		printf(" Data{");
 		for (unsigned int i = 0; i < optional_data_len; i++)
 			putchar(isprint(optional_data[i])
 				? optional_data[i]
 				: '.');
+		printf("}");
 	}
 
 	printf("\n");
